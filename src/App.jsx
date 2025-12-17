@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AppLayout } from './layouts/AppLayout';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { AppLayout } from './layouts/AppLayout.jsx';
 
 // Páginas
-import Login from './pages/Login';
-import Home from './pages/Home';
-import AddTransaction from './pages/AddTransaction';
-import Extract from './pages/Extract';
-import Settings from './pages/Settings';
+import Login from './pages/Login.jsx';
+import Home from './pages/Home.jsx';
+import AddTransaction from './pages/AddTransaction.jsx';
+import Extract from './pages/Extract.jsx';
+import Settings from './pages/Settings.jsx';
+import Analysis from './pages/Analysis.jsx'; // <--- Nova Importação
 
-// Componente para proteger rotas (só logados acessam)
 function PrivateRoute({ children }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">Carregando Fluxo...</div>;
@@ -27,6 +27,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/add" element={<AddTransaction />} />
             <Route path="/extract" element={<Extract />} />
+            <Route path="/analysis" element={<Analysis />} /> {/* <--- Nova Rota */}
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
