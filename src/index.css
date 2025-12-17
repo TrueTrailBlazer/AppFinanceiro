@@ -1,7 +1,23 @@
 @import "tailwindcss";
 
-/* O resto do seu CSS (se tiver) pode ficar abaixo */
 body {
   background-color: #050505;
   color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Esconder barra de rolagem mas permitir rolar (opcional, fica mais bonito) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #333;
 }
