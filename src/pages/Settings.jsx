@@ -1,42 +1,56 @@
 import { useAuth } from '../contexts/AuthContext';
-import { User, Shield, LogOut } from 'lucide-react';
+import { User, Shield, LogOut, ChevronRight, Wallet } from 'lucide-react';
 
 export default function Settings() {
   const { user, signOut } = useAuth();
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <h1 className="text-2xl font-bold">Configurações</h1>
+  const MenuItem = ({ icon: Icon, label, subLabel, onClick, color = "text-white" }) => (
+    <button onClick={onClick} className="w-full flex items-center justify-between p-4 bg-[#121212] border border-[#222] hover:border-gray-700 transition-colors first:rounded-t-2xl last:rounded-b-2xl border-b-0 last:border-b group">
+      <div className="flex items-center gap-4">
+        <div className={`p-2 rounded-lg bg-[#0a0a0a] ${color}`}>
+          <Icon size={20} />
+        </div>
+        <div className="text-left">
+          <p className={`font-medium ${color}`}>{label}</p>
+          {subLabel && <p className="text-xs text-gray-500">{subLabel}</p>}
+        </div>
+      </div>
+      <ChevronRight size={18} className="text-gray-600 group-hover:text-gray-400" />
+    </button>
+  );
 
-      <div className="bg-[#121212] border border-[#222] rounded-2xl p-6 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+      
+      {/* Cabeçalho do Perfil */}
+      <div className="flex flex-col items-center pt-4">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-4xl font-bold text-white shadow-2xl mb-4">
           {user?.email?.[0].toUpperCase()}
         </div>
-        <div>
-          <p className="text-sm text-gray-500">Conta conectada</p>
-          <p className="font-bold text-lg">{user?.email}</p>
-        </div>
+        <h2 className="text-xl font-bold text-white">{user?.email?.split('@')[0]}</h2>
+        <p className="text-sm text-gray-500">{user?.email}</p>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm font-bold text-gray-500 uppercase ml-2">Geral</p>
-        <div className="bg-[#121212] border border-[#222] rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-[#222] flex items-center gap-3 text-gray-300">
-            <User size={20} /> Editar Perfil <span className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded ml-auto">Em breve</span>
-          </div>
-          <div className="p-4 flex items-center gap-3 text-gray-300">
-            <Shield size={20} /> Segurança <span className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded ml-auto">Em breve</span>
-          </div>
-        </div>
+      {/* Menu de Opções */}
+      <div className="flex flex-col rounded-2xl shadow-sm">
+        <div className="text-xs font-bold text-gray-500 uppercase ml-4 mb-2 tracking-wider">Conta</div>
+        <MenuItem icon={User} label="Dados Pessoais" subLabel="Nome, email e telefone" />
+        <MenuItem icon={Wallet} label="Minhas Contas" subLabel="Gerenciar bancos e cartões" />
+        <MenuItem icon={Shield} label="Segurança" subLabel="Senha e autenticação" />
       </div>
 
-      <button onClick={signOut} className="w-full p-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors">
-        <LogOut size={20} /> Desconectar da conta
-      </button>
+      <div className="flex flex-col">
+        <button 
+          onClick={signOut} 
+          className="w-full p-4 bg-red-500/5 border border-red-500/20 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-500/10 transition-colors"
+        >
+          <LogOut size={20} /> Sair do App
+        </button>
+      </div>
 
-      <p className="text-center text-xs text-gray-600 mt-10">
-        Versão 1.0.0 • FluxoApp
-      </p>
+      <div className="text-center space-y-2">
+        <p className="text-xs text-gray-700">Fluxo v1.2.0</p>
+      </div>
     </div>
   );
 }

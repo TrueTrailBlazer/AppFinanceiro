@@ -1,80 +1,133 @@
 import { useEffect, useState, useMemo } from 'react';
-import { supabase } from '../services/supabase.js';
+import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { SummaryCard } from '../components/ui/SummaryCard';
-import { TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Home() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Estado para controlar o mês atual (Data baseada no dia 1 do mês)
+  const [currentDate, setCurrentDate] = useState(newqhDate());
+
+  // Função para navegar entre meses
+  const changeMonth = (direction) => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(currentDate.getMonth() + direction);
+    setCurrentDate(newDate);
+  };
+
+  // Formata o título do mês (ex: "Janeiro 2024")
+  const monthTitle = useMemo(() => {
+    return currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }, [currentDate]);
+
+  function newqhDate() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
 
   useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
+
+    const fetchMonthData = async () => {
+      setLoading(true);
+      
+      // Calcular primeiro e último dia do mês selecionado
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
       const { data } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .gte('created_at', startOfMonth)
+        .lte('created_at', endOfMonth)
+        .order('created_at', { ascending: false });
+
       if (data) setTransactions(data);
+      setLoading(false);
     };
-    fetch();
-  }, [user]);
+
+    fetchMonthData();
+  }, [user, currentDate]);
 
   const summary = useMemo(() => {
     const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
     const expense = transactions.filter(t => t.type !== 'income').reduce((acc, t) => acc + Number(t.amount), 0);
-    return { income, expense, balance: income - expense };
+    const balance = income - expense;
+    return { income, expense, balance };
   }, [transactions]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <header className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-xl font-bold">Olá, Investidor</h2>
-          <p className="text-gray-500 text-sm">Resumo deste mês</p>
+      
+      {/* --- SELETOR DE MÊS (NAV SUPERIOR) --- */}
+      <div className="flex items-center justify-between bg-[#121212] p-2 rounded-2xl border border-[#222]">
+        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-[#222] rounded-xl transition-colors">
+          <ChevronLeft className="text-gray-400" />
+        </button>
+        
+        <div className="flex items-center gap-2">
+          <Calendar size={18} className="text-blue-500" />
+          <span className="font-bold text-lg capitalize text-white">{monthTitle}</span>
         </div>
-      </header>
 
-      {/* Cards Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SummaryCard title="Saldo Atual" value={summary.balance} type={summary.balance >= 0 ? 'success' : 'danger'} />
-        <div className="grid grid-cols-2 gap-4 md:col-span-2">
-          <SummaryCard title="Entradas" value={summary.income} type="highlight" />
-          <SummaryCard title="Saídas" value={summary.expense} type="neutral" />
-        </div>
+        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-[#222] rounded-xl transition-colors">
+          <ChevronRight className="text-gray-400" />
+        </button>
       </div>
 
-      {/* Últimas Transações */}
-      <div className="space-y-4 pt-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-bold text-gray-300 flex items-center gap-2"><Clock size={18} /> Recentes</h3>
-          <Link to="/extract" className="text-sm text-blue-500 hover:text-blue-400">Ver tudo</Link>
+      {/* --- CARDS DE RESUMO --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card de Sobra (Destaque) */}
+        <div className={`md:col-span-2 p-6 rounded-3xl border transition-all flex flex-col justify-center items-center gap-2
+          ${summary.balance >= 0 
+            ? 'bg-gradient-to-br from-green-900/20 to-green-900/5 border-green-500/30' 
+            : 'bg-gradient-to-br from-red-900/20 to-red-900/5 border-red-500/30'
+          }`}>
+          <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">Sobra do Mês</span>
+          <h2 className={`text-4xl font-bold ${summary.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {Number(summary.balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </h2>
         </div>
 
+        <SummaryCard title="Entradas" value={summary.income} type="highlight" />
+        <SummaryCard title="Gastos Totais" value={summary.expense} type="danger" />
+      </div>
+
+      {/* --- LISTA RESUMIDA DO MÊS --- */}
+      <div className="space-y-4 pt-2">
+        <h3 className="font-bold text-gray-400 text-sm uppercase tracking-wider ml-1">Movimentações de {currentDate.toLocaleString('pt-BR', { month: 'long' })}</h3>
+
         <div className="space-y-3">
-          {transactions.map(t => (
-            <div key={t.id} className="flex justify-between items-center p-4 bg-[#121212] border border-[#222] rounded-xl hover:border-blue-500/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                  {t.type === 'income' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+          {loading ? (
+             <div className="text-center py-10 text-gray-600 animate-pulse">Carregando mês...</div>
+          ) : transactions.length > 0 ? (
+            transactions.map(t => (
+              <div key={t.id} className="flex justify-between items-center p-4 bg-[#121212] border border-[#222] rounded-2xl">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className={`p-2.5 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                    {t.type === 'income' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-white truncate text-base">{t.name}</p>
+                    <p className="text-xs text-gray-500 capitalize">{new Date(t.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-white">{t.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{t.type === 'income' ? 'Entrada' : t.type === 'fixed' ? 'Fixo' : 'Variável'}</p>
-                </div>
+                <span className={`font-bold whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
+                  {t.type === 'income' ? '+ ' : '- '}
+                  {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
               </div>
-              <span className={`font-bold ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
-                {t.type === 'income' ? '+ ' : '- '}
-                {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </span>
-            </div>
-          ))}
-          {transactions.length === 0 && (
-            <div className="text-center py-10 text-gray-600">
-              Nenhuma movimentação ainda.
+            ))
+          ) : (
+            <div className="text-center py-12 border border-dashed border-[#222] rounded-2xl">
+              <p className="text-gray-500 mb-2">Nada por aqui neste mês.</p>
+              <Link to="/add" className="text-blue-500 font-bold text-sm hover:underline">Adicionar gasto agora</Link>
             </div>
           )}
         </div>
