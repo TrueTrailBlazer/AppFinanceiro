@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { SummaryCard } from '../components/ui/SummaryCard';
-import { SwipeableItem } from '../components/ui/SwipeableItem';
 import { ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
@@ -26,7 +25,9 @@ export default function Home() {
   }, [currentDate]);
 
   const fetchMonthData = async () => {
-    setLoading(true);
+    // Não ativa loading se já tiver dados (para evitar piscar na atualização em tempo real)
+    if (transactions.length === 0) setLoading(true);
+    
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
@@ -43,7 +44,25 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (user) fetchMonthData();
+    if (!user) return;
+
+    fetchMonthData();
+
+    // --- ATUALIZAÇÃO EM TEMPO REAL ---
+    // Isso garante que se você editar e voltar, a tela atualiza sozinha
+    const channel = supabase
+      .channel('transactions-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, 
+        () => {
+          fetchMonthData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, currentDate]);
 
   const summary = useMemo(() => {
@@ -57,17 +76,13 @@ export default function Home() {
     navigate('/add', { state: { transaction } });
   };
 
-  const handleDelete = async (id) => {
-    if (confirm('Excluir esta transação?')) {
-      await supabase.from('transactions').delete().eq('id', id);
-      fetchMonthData();
-    }
-  };
+  // Pega apenas as 3 últimas para exibir na lista
+  const recentTransactions = transactions.slice(0, 3);
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 pb-28 md:pb-0">
+    <div className="space-y-5 animate-in fade-in duration-500 pb-28 md:pb-0">
       
-      {/* SELETOR DE MÊS (Compacto) */}
+      {/* --- SELETOR DE MÊS --- */}
       <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:static md:z-0 md:px-0 md:mb-6">
         <div className="max-w-3xl md:max-w-none mx-auto">
           <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl md:bg-transparent md:border-0 md:shadow-none md:p-0">
@@ -85,7 +100,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CARDS (Layout Otimizado) */}
+      {/* --- CARDS --- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
         {/* Sobra */}
         <div className={`col-span-2 md:col-span-2 p-4 rounded-2xl border flex justify-between items-center shadow-lg
@@ -99,7 +114,7 @@ export default function Home() {
               {Number(summary.balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h2>
           </div>
-          <div className={`text-[9px] px-2 py-0.5 rounded border font-semibold ${summary.balance >= 0 ? 'border-green-500/30 text-green-500' : 'border-red-500/30 text-red-500'}`}>
+          <div className={`text-[9px] px-2 py-0.5 rounded border font-semibold ${summary.balance >= 0 ? 'border-green-500/30 text-green-500 bg-green-500/10' : 'border-red-500/30 text-red-500 bg-red-500/10'}`}>
             {summary.balance >= 0 ? 'Positivo' : 'Negativo'}
           </div>
         </div>
@@ -108,53 +123,51 @@ export default function Home() {
         <SummaryCard title="Saídas" value={summary.expense} type="danger" />
       </div>
 
-      {/* LISTA COMPACTA */}
+      {/* --- LISTA (Apenas as 3 últimas) --- */}
       <div className="space-y-2 pt-1">
         <div className="flex justify-between items-end px-1">
-          <h3 className="font-bold text-gray-500 text-[10px] uppercase tracking-wider">Histórico</h3>
-          <Link to="/extract" className="text-[10px] text-blue-500 hover:text-blue-400">Ver tudo</Link>
+          <h3 className="font-bold text-gray-500 text-[10px] uppercase tracking-wider">Últimos Lançamentos</h3>
+          <Link to="/extract" className="text-[10px] text-blue-500 hover:text-blue-400 bg-blue-500/10 px-2 py-1 rounded">Ver Extrato Completo</Link>
         </div>
 
         <div className="space-y-2">
-          {loading ? (
+          {loading && transactions.length === 0 ? (
              <div className="text-center py-6 text-xs text-gray-600 animate-pulse">Carregando...</div>
-          ) : transactions.length > 0 ? (
-            transactions.map(t => {
+          ) : recentTransactions.length > 0 ? (
+            recentTransactions.map(t => {
               const catData = getCategory(t.category);
               const CategoryIcon = catData.icon;
 
               return (
-                <SwipeableItem 
+                <div 
                   key={t.id}
-                  onEdit={() => handleEdit(t)}
-                  onDelete={() => handleDelete(t.id)}
+                  onClick={() => handleEdit(t)}
+                  className="flex justify-between items-center p-3 bg-[#121212] border border-[#222] rounded-xl active:bg-[#1a1a1a] transition-colors cursor-pointer"
                 >
-                  <div className="flex justify-between items-center p-3">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className={`p-2 rounded-full shrink-0 ${catData.bg}`}>
-                        <CategoryIcon size={16} className={catData.color} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-white truncate text-sm leading-tight">{t.name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <p className="text-[10px] text-gray-500 capitalize">{catData.label}</p>
-                          <span className="text-[8px] text-gray-700">•</span>
-                          <p className="text-[10px] text-gray-500 capitalize">{new Date(t.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}</p>
-                        </div>
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`p-2.5 rounded-full shrink-0 ${catData.bg}`}>
+                      <CategoryIcon size={18} className={catData.color} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-white truncate text-sm leading-tight">{t.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-[10px] text-gray-500 capitalize">{catData.label}</p>
+                        <span className="text-[8px] text-gray-700">•</span>
+                        <p className="text-[10px] text-gray-500 capitalize">{new Date(t.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}</p>
                       </div>
                     </div>
-                    <span className={`font-bold text-sm whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
-                      {t.type === 'income' ? '+ ' : '- '}
-                      {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
                   </div>
-                </SwipeableItem>
+                  <span className={`font-bold text-sm whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
+                    {t.type === 'income' ? '+ ' : '- '}
+                    {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
               );
             })
           ) : (
             <div className="text-center py-8 border border-dashed border-[#222] rounded-xl">
-              <p className="text-gray-500 text-xs mb-2">Vazio por aqui.</p>
-              <Link to="/add" className="text-blue-500 font-bold text-xs bg-blue-500/10 px-3 py-1 rounded">Adicionar</Link>
+              <p className="text-gray-500 text-xs mb-2">Sem movimentações este mês.</p>
+              <Link to="/add" className="text-blue-500 font-bold text-xs hover:underline">Adicionar</Link>
             </div>
           )}
         </div>
