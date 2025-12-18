@@ -19,57 +19,56 @@ export function AppLayout() {
           </h1>
           <nav className="space-y-4">
             <Link to="/" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/')}`}>
-              <Home size={22} /> Visão Mensal
+              <Home size={20} /> Visão Mensal
             </Link>
             <Link to="/extract" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/extract')}`}>
-              <Layers size={22} /> Extrato
+              <Layers size={20} /> Extrato
             </Link>
             <Link to="/analysis" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/analysis')}`}>
-              <BarChart3 size={22} /> Análise
+              <BarChart3 size={20} /> Análise
             </Link>
             <Link to="/settings" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/settings')}`}>
-              <User size={22} /> Perfil
+              <User size={20} /> Perfil
             </Link>
           </nav>
         </div>
       </aside>
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
-      <main className="flex-1 overflow-y-auto pb-24 md:pb-8 relative scroll-smooth bg-[#050505]">
-        {/* Aumentei para max-w-5xl no PC para usar melhor a tela */}
-        <div className="max-w-3xl md:max-w-5xl mx-auto p-4 md:p-8">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-[#050505]">
+        <div className="max-w-3xl md:max-w-5xl mx-auto p-3 md:p-8">
            <Outlet />
         </div>
       </main>
 
-      {/* --- MENU MOBILE (Compacto) --- */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-[#222] px-4 pb-4 pt-2 flex justify-between items-end z-50">
+      {/* --- MENU MOBILE (Mais fino e compacto) --- */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-[#222] px-4 pb-3 pt-2 flex justify-between items-end z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
         
-        <Link to="/" className={`flex flex-col items-center gap-1 w-14 active:scale-95 transition-transform ${isActive('/')}`}>
-          <Home size={20} />
-          <span className="text-[10px] font-medium">Mês</span>
+        <Link to="/" className={`flex flex-col items-center gap-0.5 w-12 active:scale-95 transition-transform ${isActive('/')}`}>
+          <Home size={18} />
+          <span className="text-[9px] font-medium">Mês</span>
         </Link>
         
-        <Link to="/extract" className={`flex flex-col items-center gap-1 w-14 active:scale-95 transition-transform ${isActive('/extract')}`}>
-          <Layers size={20} />
-          <span className="text-[10px] font-medium">Extrato</span>
+        <Link to="/extract" className={`flex flex-col items-center gap-0.5 w-12 active:scale-95 transition-transform ${isActive('/extract')}`}>
+          <Layers size={18} />
+          <span className="text-[9px] font-medium">Extrato</span>
         </Link>
 
-        {/* Botão Flutuante Central */}
-        <Link to="/add" className="relative -top-5">
-          <div className="bg-blue-600 rounded-full p-3.5 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-4 border-[#050505] active:scale-90 transition-transform">
-            <Plus size={24} color="white" />
+        {/* Botão Central Menor */}
+        <Link to="/add" className="relative -top-4">
+          <div className="bg-blue-600 rounded-full p-3 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[3px] border-[#050505] active:scale-90 transition-transform">
+            <Plus size={22} color="white" />
           </div>
         </Link>
 
-        <Link to="/analysis" className={`flex flex-col items-center gap-1 w-14 active:scale-95 transition-transform ${isActive('/analysis')}`}>
-          <BarChart3 size={20} />
-          <span className="text-[10px] font-medium">Análise</span>
+        <Link to="/analysis" className={`flex flex-col items-center gap-0.5 w-12 active:scale-95 transition-transform ${isActive('/analysis')}`}>
+          <BarChart3 size={18} />
+          <span className="text-[9px] font-medium">Análise</span>
         </Link>
         
-        <Link to="/settings" className={`flex flex-col items-center gap-1 w-14 active:scale-95 transition-transform ${isActive('/settings')}`}>
-          <User size={20} />
-          <span className="text-[10px] font-medium">Perfil</span>
+        <Link to="/settings" className={`flex flex-col items-center gap-0.5 w-12 active:scale-95 transition-transform ${isActive('/settings')}`}>
+          <User size={18} />
+          <span className="text-[9px] font-medium">Perfil</span>
         </Link>
 
       </nav>

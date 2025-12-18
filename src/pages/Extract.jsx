@@ -1,30 +1,49 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../services/supabase.js';
+import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Trash2 } from 'lucide-react';
+import { SwipeableItem } from '../components/ui/SwipeableItem';
+import { Filter, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getCategory } from '../utils/constants';
 
 export default function Extract() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
-  const [filter, setFilter] = useState('all'); // all, income, expense
+  const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   const fetchTransactions = async () => {
-    const { data } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (data) setTransactions(data);
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50); // Limite para performance
+      
+      if (error) throw error;
+      if (data) setTransactions(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (user) fetchTransactions();
   }, [user]);
 
+  const handleEdit = (transaction) => {
+    navigate('/add', { state: { transaction } });
+  };
+
   const handleDelete = async (id) => {
-    if (confirm('Excluir este item?')) {
-      await supabase.from('transactions').delete().eq('id', id);
-      fetchTransactions(); // Recarrega
+    if (confirm('Excluir transação?')) {
+      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      if (!error) fetchTransactions();
     }
   };
 
@@ -36,17 +55,22 @@ export default function Extract() {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <h1 className="text-2xl font-bold">Extrato Completo</h1>
+    <div className="space-y-4 animate-in fade-in duration-500 pb-20">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-white">Extrato</h1>
+        <span className="text-[10px] text-gray-500 bg-[#121212] px-2 py-1 rounded-full border border-[#222]">
+          {filteredData.length} itens
+        </span>
+      </div>
 
-      {/* Filtros */}
+      {/* Filtros Compactos */}
       <div className="flex p-1 bg-[#121212] rounded-xl border border-[#222]">
         {['all', 'income', 'expense'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-              filter === f ? 'bg-[#222] text-white' : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              filter === f ? 'bg-[#222] text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'
             }`}
           >
             {f === 'all' ? 'Tudo' : f === 'income' ? 'Entradas' : 'Saídas'}
@@ -54,31 +78,50 @@ export default function Extract() {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {filteredData.map(t => (
-          <div key={t.id} className="group flex justify-between items-center p-4 bg-[#121212] border border-[#222] rounded-xl">
-            <div>
-              <p className="font-medium text-white">{t.name}</p>
-              <div className="flex gap-2 text-xs text-gray-500 mt-1">
-                <span className="capitalize">{t.type === 'income' ? 'Entrada' : t.type}</span>
-                <span>•</span>
-                <span>{new Date(t.created_at).toLocaleDateString('pt-BR')}</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <span className={`font-bold ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
-                {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </span>
-              <button onClick={() => handleDelete(t.id)} className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
-                <Trash2 size={18} />
-              </button>
-            </div>
-          </div>
-        ))}
-        {filteredData.length === 0 && (
-          <div className="py-20 text-center text-gray-500">
-            Nenhuma transação encontrada neste filtro.
+      {/* Lista */}
+      <div className="space-y-2">
+        {loading ? (
+          <div className="text-center py-10 text-xs text-gray-500">Carregando...</div>
+        ) : filteredData.length > 0 ? (
+          filteredData.map(t => {
+            const catData = getCategory(t.category);
+            const CategoryIcon = catData.icon;
+
+            return (
+              <SwipeableItem 
+                key={t.id}
+                onEdit={() => handleEdit(t)}
+                onDelete={() => handleDelete(t.id)}
+              >
+                <div className="flex justify-between items-center p-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full shrink-0 ${catData.bg}`}>
+                      <CategoryIcon size={16} className={catData.color} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white text-sm">{t.name}</p>
+                      <div className="flex gap-2 text-[10px] text-gray-500">
+                        <span className="capitalize">{catData.label}</span>
+                        <span>•</span>
+                        <span>{new Date(t.created_at).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <span className={`font-bold text-sm ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
+                      {t.type === 'income' ? '+ ' : '- '}
+                      {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                </div>
+              </SwipeableItem>
+            );
+          })
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-gray-500 gap-2 border-2 border-dashed border-[#222] rounded-xl">
+            <Search size={24} className="opacity-20" />
+            <p className="text-xs">Nada encontrado.</p>
           </div>
         )}
       </div>
