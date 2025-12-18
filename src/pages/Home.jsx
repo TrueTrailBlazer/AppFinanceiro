@@ -53,9 +53,9 @@ export default function Home() {
   }, [transactions]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-32">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-40">
       
-      {/* --- CARDS (Agora Maiores) --- */}
+      {/* --- CARDS (Maiores) --- */}
       <div className="grid grid-cols-2 gap-4">
         {/* Card de Sobra (Destaque) */}
         <div className={`col-span-2 p-5 rounded-2xl border flex justify-between items-center min-h-[100px] shadow-lg
@@ -115,8 +115,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* --- SELETOR DE MÊS (Fixo na parte inferior - Zona do Dedão) --- */}
-      <div className="fixed bottom-[85px] left-0 right-0 px-4 z-40 md:absolute md:bottom-auto md:top-0">
+      {/* --- SELETOR DE MÊS (Mais alto para não colar no menu) --- */}
+      {/* Ajustei bottom-[85px] para bottom-[110px] */}
+      <div className="fixed bottom-[110px] left-0 right-0 px-4 z-40 md:absolute md:bottom-auto md:top-0">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-2 px-3 rounded-2xl border border-[#333] shadow-2xl shadow-black">
             <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-[#333] rounded-xl text-gray-300 active:scale-90 transition-all"><ChevronLeft size={22} /></button>
