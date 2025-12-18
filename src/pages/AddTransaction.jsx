@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase.js';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Check, DollarSign, Trash2, Calendar } from 'lucide-react';
-import { CATEGORIES } from '../utils/constants.jsx';
+import { ArrowLeft, Check, DollarSign, Trash2, Calendar, Tag, Type } from 'lucide-react';
+import { CATEGORIES } from '../utils/constants';
 
 export default function AddTransaction() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Se veio dados pela navegação, é EDICÃO
   const editingTransaction = location.state?.transaction;
 
   const [loading, setLoading] = useState(false);
@@ -18,16 +16,14 @@ export default function AddTransaction() {
   const [name, setName] = useState('');
   const [type, setType] = useState('variable'); 
   const [category, setCategory] = useState('others');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Carregar dados se for edição
   useEffect(() => {
     if (editingTransaction) {
       setAmount(editingTransaction.amount.toString());
       setName(editingTransaction.name);
       setType(editingTransaction.type);
       setCategory(editingTransaction.category || 'others');
-      // Ajuste seguro da data
       if(editingTransaction.created_at) {
         setDate(new Date(editingTransaction.created_at).toISOString().split('T')[0]);
       }
@@ -39,93 +35,69 @@ export default function AddTransaction() {
     if (!amount || !name) return;
     setLoading(true);
 
+    const now = new Date();
+    const selectedDate = new Date(date);
+    selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
     const transactionData = {
       user_id: user.id,
       name,
       amount: parseFloat(amount),
       type,
       category,
-      created_at: new Date(date).toISOString() // Usa a data escolhida
+      created_at: selectedDate.toISOString()
     };
 
     try {
       if (editingTransaction) {
-        // --- ATUALIZAR ---
-        const { error } = await supabase
-          .from('transactions')
-          .update(transactionData)
-          .eq('id', editingTransaction.id);
+        const { error } = await supabase.from('transactions').update(transactionData).eq('id', editingTransaction.id);
         if (error) throw error;
       } else {
-        // --- CRIAR ---
-        const { error } = await supabase
-          .from('transactions')
-          .insert([transactionData]);
+        const { error } = await supabase.from('transactions').insert([transactionData]);
         if (error) throw error;
       }
       navigate(-1);
     } catch (error) {
-      alert('Erro ao salvar: ' + error.message);
+      alert('Erro: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (confirm('Tem certeza que deseja excluir esta transação?')) {
+    if (confirm('Apagar transação?')) {
       setLoading(true);
       await supabase.from('transactions').delete().eq('id', editingTransaction.id);
       navigate(-1);
     }
   };
 
-  const TypeButton = ({ value, label, color }) => (
-    <button
-      type="button"
-      onClick={() => {
-        setType(value);
-        // Sugere categoria padrão ao mudar tipo
-        if (value === 'income') setCategory('salary');
-        else if (category === 'salary' || category === 'investment') setCategory('food');
-      }}
-      className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all ${
-        type === value 
-          ? `bg-${color}-500/10 border-${color}-500 text-${color}-500 shadow-[0_0_15px_rgba(0,0,0,0.2)]` 
-          : 'bg-[#121212] border-[#222] text-gray-500 hover:bg-[#1a1a1a]'
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div className="min-h-screen bg-[#050505] pb-10">
-      <div className="max-w-lg mx-auto p-4 flex flex-col min-h-screen">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-white/5 transition-colors">
-              <ArrowLeft className="text-white" />
-            </button>
-            <h1 className="text-lg font-bold text-white">
-              {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
-            </h1>
-          </div>
-          {editingTransaction && (
-            <button onClick={handleDelete} className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors">
-              <Trash2 size={20} />
-            </button>
-          )}
-        </div>
+    <div className="min-h-screen bg-[#050505] flex flex-col">
+      
+      {/* Header Compacto */}
+      <div className="px-4 py-4 flex items-center justify-between bg-[#050505] sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+          <ArrowLeft size={22} />
+        </button>
+        <span className="font-bold text-white text-sm">
+          {editingTransaction ? 'Editar' : 'Nova Transação'}
+        </span>
+        {editingTransaction ? (
+          <button onClick={handleDelete} className="p-2 -mr-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors">
+            <Trash2 size={20} />
+          </button>
+        ) : <div className="w-8" />} 
+      </div>
 
-        <form onSubmit={handleSave} className="flex-1 flex flex-col gap-6">
+      <div className="flex-1 px-4 pb-8 overflow-y-auto">
+        <form onSubmit={handleSave} className="flex flex-col gap-5 max-w-md mx-auto">
           
-          {/* Valor */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Valor (R$)</label>
-            <div className="relative group">
-              <DollarSign className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${amount ? 'text-blue-500' : 'text-gray-600'}`} size={24} />
+          {/* Valor (Destaque, mas menor) */}
+          <div className="relative bg-[#121212] rounded-2xl p-4 border border-[#222] group focus-within:border-blue-500/50 transition-colors">
+            <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1 block">Valor</label>
+            <div className="flex items-center">
+              <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
               <input 
                 type="number" 
                 inputMode="decimal"
@@ -133,40 +105,61 @@ export default function AddTransaction() {
                 autoFocus={!editingTransaction}
                 value={amount} 
                 onChange={e => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-[#121212] border border-[#222] text-4xl font-bold text-white placeholder-gray-700 rounded-2xl py-6 pl-12 pr-4 focus:border-blue-500 focus:outline-none transition-all" 
+                placeholder="0,00"
+                className="w-full bg-transparent text-3xl font-bold text-white placeholder-gray-700 outline-none" 
               />
             </div>
           </div>
 
-          {/* Tipo e Data */}
-          <div className="flex gap-3">
-             <div className="flex-1 space-y-2">
-                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Tipo</label>
-                <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222]">
-                  <button type="button" onClick={() => setType('variable')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type !== 'income' ? 'bg-[#222] text-white' : 'text-gray-500'}`}>Saída</button>
-                  <button type="button" onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${type === 'income' ? 'bg-[#222] text-green-400' : 'text-gray-500'}`}>Entrada</button>
-                </div>
-             </div>
-             <div className="w-1/3 space-y-2">
-                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Data</label>
-                <div className="relative">
-                  <input 
-                    type="date" 
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    className="w-full bg-[#121212] border border-[#222] text-white text-sm font-medium rounded-xl py-2.5 px-3 focus:border-blue-500 focus:outline-none [&::-webkit-calendar-picker-indicator]:invert"
-                  />
-                </div>
-             </div>
+          {/* Nome e Data */}
+          <div className="grid grid-cols-1 gap-3">
+            <div className="bg-[#121212] rounded-xl px-3 py-2.5 border border-[#222] flex items-center gap-3 focus-within:border-blue-500/50">
+              <Type size={18} className="text-gray-500" />
+              <div className="flex-1">
+                <label className="block text-[9px] font-bold text-gray-500 uppercase">Descrição</label>
+                <input 
+                  type="text" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Ex: Mercado"
+                  className="w-full bg-transparent text-sm text-white placeholder-gray-600 outline-none font-medium" 
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+               {/* Data */}
+               <div className="flex-1 bg-[#121212] rounded-xl px-3 py-2.5 border border-[#222] flex items-center gap-3">
+                 <Calendar size={18} className="text-gray-500" />
+                 <div className="flex-1">
+                   <label className="block text-[9px] font-bold text-gray-500 uppercase">Data</label>
+                   <input 
+                     type="date" 
+                     value={date}
+                     onChange={e => setDate(e.target.value)}
+                     className="w-full bg-transparent text-xs text-white outline-none font-medium [&::-webkit-calendar-picker-indicator]:invert opacity-90"
+                   />
+                 </div>
+               </div>
+               
+               {/* Toggle Tipo */}
+               <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222] w-36">
+                  <button type="button" onClick={() => { setType('variable'); if(['salary','investment'].includes(category)) setCategory('food'); }} 
+                    className={`flex-1 rounded-lg text-[10px] font-bold transition-all ${type !== 'income' ? 'bg-[#222] text-white shadow-sm' : 'text-gray-500'}`}>Saída</button>
+                  <button type="button" onClick={() => { setType('income'); setCategory('salary'); }} 
+                    className={`flex-1 rounded-lg text-[10px] font-bold transition-all ${type === 'income' ? 'bg-[#222] text-green-400 shadow-sm' : 'text-gray-500'}`}>Entrada</button>
+               </div>
+            </div>
           </div>
 
-          {/* Categorias (Grid) */}
+          {/* Categorias (Grid Otimizada) */}
           <div className="space-y-2">
-            <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Categoria</label>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Tag size={14} className="text-gray-500" />
+              <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Categoria</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
               {Object.entries(CATEGORIES).filter(([key]) => {
-                 // Filtro simples: Se for Entrada, mostra só categorias de receita + outros
                  if (type === 'income') return ['salary', 'investment', 'extra', 'others'].includes(key);
                  return !['salary', 'investment', 'extra'].includes(key);
               }).map(([key, cat]) => (
@@ -174,16 +167,14 @@ export default function AddTransaction() {
                   key={key}
                   type="button"
                   onClick={() => setCategory(key)}
-                  className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl border transition-all ${
                     category === key 
-                      ? `bg-[#1a1a1a] border-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.15)]` 
-                      : 'bg-[#121212] border-[#222] hover:border-gray-700 opacity-60 hover:opacity-100'
+                      ? `bg-[#1a1a1a] border-blue-500/40 shadow-[0_0_10px_rgba(59,130,246,0.1)]` 
+                      : 'bg-[#121212] border-[#222] opacity-60'
                   }`}
                 >
-                  <div className={`p-2 rounded-full ${category === key ? cat.bg : 'bg-[#1a1a1a]'}`}>
-                    <cat.icon size={20} className={category === key ? cat.color : 'text-gray-400'} />
-                  </div>
-                  <span className={`text-[10px] font-medium truncate w-full text-center ${category === key ? 'text-white' : 'text-gray-500'}`}>
+                  <cat.icon size={18} className={`mb-1.5 ${category === key ? cat.color : 'text-gray-400'}`} />
+                  <span className={`text-[9px] font-medium truncate w-full text-center leading-none ${category === key ? 'text-white' : 'text-gray-500'}`}>
                     {cat.label}
                   </span>
                 </button>
@@ -191,28 +182,16 @@ export default function AddTransaction() {
             </div>
           </div>
 
-          {/* Descrição */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Nome / Descrição</label>
-            <input 
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)}
-              placeholder="Ex: Mercado, Uber..."
-              className="w-full bg-[#121212] border border-[#222] text-base text-white p-4 rounded-2xl focus:border-blue-500 outline-none transition-all" 
-            />
-          </div>
-
-          <div className="flex-1" />
-
           {/* Botão Salvar */}
-          <button 
-            type="submit" 
-            disabled={loading || !amount || !name}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-lg font-bold py-4 rounded-2xl shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all mb-4"
-          >
-            {loading ? 'Salvando...' : <><Check /> {editingTransaction ? 'Atualizar' : 'Confirmar'}</>}
-          </button>
+          <div className="mt-auto pt-4">
+            <button 
+              type="submit" 
+              disabled={loading || !amount || !name}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              {loading ? '...' : <><Check size={18} /> Salvar</>}
+            </button>
+          </div>
 
         </form>
       </div>

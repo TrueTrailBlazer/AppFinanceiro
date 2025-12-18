@@ -60,46 +60,46 @@ export default function Home() {
   const handleDelete = async (id) => {
     if (confirm('Excluir esta transação?')) {
       await supabase.from('transactions').delete().eq('id', id);
-      fetchMonthData(); // Recarrega a lista
+      fetchMonthData();
     }
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-500 pb-32 md:pb-0">
+    <div className="space-y-4 animate-in fade-in duration-500 pb-28 md:pb-0">
       
-      {/* --- SELETOR DE MÊS --- */}
+      {/* SELETOR DE MÊS (Compacto) */}
       <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:static md:z-0 md:px-0 md:mb-6">
         <div className="max-w-3xl md:max-w-none mx-auto">
-          <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-2 px-3 rounded-2xl border border-[#333] shadow-2xl shadow-black md:bg-transparent md:border-0 md:shadow-none md:p-0 md:backdrop-blur-none">
-            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-[#333] rounded-xl text-gray-300 active:scale-90 transition-all md:hover:bg-[#1a1a1a]">
-              <ChevronLeft size={20} />
+          <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl md:bg-transparent md:border-0 md:shadow-none md:p-0">
+            <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300 md:hover:bg-[#1a1a1a]">
+              <ChevronLeft size={18} />
             </button>
             <div className="flex items-center gap-2">
               <Calendar size={14} className="text-blue-500 md:w-5 md:h-5" />
               <span className="font-bold text-sm capitalize text-white md:text-xl">{monthTitle}</span>
             </div>
-            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-[#333] rounded-xl text-gray-300 active:scale-90 transition-all md:hover:bg-[#1a1a1a]">
-              <ChevronRight size={20} />
+            <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300 md:hover:bg-[#1a1a1a]">
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- CARDS --- */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Card de Sobra */}
-        <div className={`col-span-2 md:col-span-2 p-5 rounded-2xl border flex justify-between items-center min-h-[100px] shadow-lg
+      {/* CARDS (Layout Otimizado) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+        {/* Sobra */}
+        <div className={`col-span-2 md:col-span-2 p-4 rounded-2xl border flex justify-between items-center shadow-lg
           ${summary.balance >= 0 
-            ? 'bg-gradient-to-br from-green-900/20 to-black border-green-500/30 shadow-green-900/10' 
-            : 'bg-gradient-to-br from-red-900/20 to-black border-red-500/30 shadow-red-900/10'
+            ? 'bg-gradient-to-r from-green-900/20 to-[#0a0a0a] border-green-500/20' 
+            : 'bg-gradient-to-r from-red-900/20 to-[#0a0a0a] border-red-500/20'
           }`}>
-          <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Sobra</p>
-            <h2 className={`text-3xl font-bold tracking-tight ${summary.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sobra</p>
+            <h2 className={`text-2xl font-bold tracking-tight ${summary.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {Number(summary.balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h2>
           </div>
-          <div className={`text-[10px] px-2 py-1 rounded-full font-bold border ${summary.balance >= 0 ? 'border-green-500/30 text-green-500 bg-green-500/10' : 'border-red-500/30 text-red-500 bg-red-500/10'}`}>
+          <div className={`text-[9px] px-2 py-0.5 rounded border font-semibold ${summary.balance >= 0 ? 'border-green-500/30 text-green-500' : 'border-red-500/30 text-red-500'}`}>
             {summary.balance >= 0 ? 'Positivo' : 'Negativo'}
           </div>
         </div>
@@ -108,16 +108,16 @@ export default function Home() {
         <SummaryCard title="Saídas" value={summary.expense} type="danger" />
       </div>
 
-      {/* --- LISTA --- */}
-      <div className="space-y-2 pt-2">
+      {/* LISTA COMPACTA */}
+      <div className="space-y-2 pt-1">
         <div className="flex justify-between items-end px-1">
-          <h3 className="font-bold text-gray-400 text-xs uppercase tracking-wider">Histórico</h3>
-          <Link to="/extract" className="text-[10px] text-blue-500 hover:text-blue-400 font-medium">Ver tudo</Link>
+          <h3 className="font-bold text-gray-500 text-[10px] uppercase tracking-wider">Histórico</h3>
+          <Link to="/extract" className="text-[10px] text-blue-500 hover:text-blue-400">Ver tudo</Link>
         </div>
 
         <div className="space-y-2">
           {loading ? (
-             <div className="text-center py-8 text-xs text-gray-600 animate-pulse">Carregando...</div>
+             <div className="text-center py-6 text-xs text-gray-600 animate-pulse">Carregando...</div>
           ) : transactions.length > 0 ? (
             transactions.map(t => {
               const catData = getCategory(t.category);
@@ -131,19 +131,19 @@ export default function Home() {
                 >
                   <div className="flex justify-between items-center p-3">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className={`p-2.5 rounded-full shrink-0 ${catData.bg}`}>
-                        <CategoryIcon size={18} className={catData.color} />
+                      <div className={`p-2 rounded-full shrink-0 ${catData.bg}`}>
+                        <CategoryIcon size={16} className={catData.color} />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-white truncate text-sm">{t.name}</p>
-                        <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-white truncate text-sm leading-tight">{t.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
                           <p className="text-[10px] text-gray-500 capitalize">{catData.label}</p>
-                          <span className="text-[8px] text-gray-600">•</span>
-                          <p className="text-[10px] text-gray-600 capitalize">{new Date(t.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}</p>
+                          <span className="text-[8px] text-gray-700">•</span>
+                          <p className="text-[10px] text-gray-500 capitalize">{new Date(t.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}</p>
                         </div>
                       </div>
                     </div>
-                    <span className={`font-bold text-sm whitespace-nowrap ml-3 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
+                    <span className={`font-bold text-sm whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
                       {t.type === 'income' ? '+ ' : '- '}
                       {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
@@ -152,9 +152,9 @@ export default function Home() {
               );
             })
           ) : (
-            <div className="text-center py-8 border border-dashed border-[#222] rounded-2xl">
-              <p className="text-gray-500 text-xs mb-3">Sem movimentações.</p>
-              <Link to="/add" className="text-blue-500 font-bold text-xs hover:underline bg-blue-500/10 px-3 py-1.5 rounded-lg">Adicionar</Link>
+            <div className="text-center py-8 border border-dashed border-[#222] rounded-xl">
+              <p className="text-gray-500 text-xs mb-2">Vazio por aqui.</p>
+              <Link to="/add" className="text-blue-500 font-bold text-xs bg-blue-500/10 px-3 py-1 rounded">Adicionar</Link>
             </div>
           )}
         </div>
