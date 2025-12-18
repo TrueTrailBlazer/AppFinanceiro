@@ -24,8 +24,11 @@ export default function AddTransaction() {
       setName(editingTransaction.name);
       setType(editingTransaction.type);
       setCategory(editingTransaction.category || 'others');
+      
+      // Converte data UTC do banco para YYYY-MM-DD local para o input
       if(editingTransaction.created_at) {
-        setDate(new Date(editingTransaction.created_at).toISOString().split('T')[0]);
+        const dbDate = new Date(editingTransaction.created_at);
+        setDate(dbDate.toISOString().split('T')[0]);
       }
     }
   }, [editingTransaction]);
@@ -35,8 +38,10 @@ export default function AddTransaction() {
     if (!amount || !name) return;
     setLoading(true);
 
+    // Preserva a hora atual ao salvar para manter a ordem correta na lista
     const now = new Date();
     const selectedDate = new Date(date);
+    // Adiciona o horário atual à data selecionada (para não ficar tudo 00:00)
     selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
     const transactionData = {
@@ -50,32 +55,47 @@ export default function AddTransaction() {
 
     try {
       if (editingTransaction) {
-        const { error } = await supabase.from('transactions').update(transactionData).eq('id', editingTransaction.id);
+        // --- ATUALIZAÇÃO ---
+        const { error } = await supabase
+          .from('transactions')
+          .update(transactionData)
+          .eq('id', editingTransaction.id); // Garante que atualiza pelo ID certo
+        
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('transactions').insert([transactionData]);
+        // --- CRIAÇÃO ---
+        const { error } = await supabase
+          .from('transactions')
+          .insert([transactionData]);
+        
         if (error) throw error;
       }
       navigate(-1);
     } catch (error) {
-      alert('Erro: ' + error.message);
+      alert('Erro ao salvar: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (confirm('Apagar transação?')) {
+    if (confirm('Tem certeza que deseja apagar?')) {
       setLoading(true);
-      await supabase.from('transactions').delete().eq('id', editingTransaction.id);
-      navigate(-1);
+      try {
+        const { error } = await supabase.from('transactions').delete().eq('id', editingTransaction.id);
+        if (error) throw error;
+        navigate(-1);
+      } catch (error) {
+        alert('Erro ao apagar: ' + error.message);
+        setLoading(false);
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col">
       
-      {/* Header Compacto */}
+      {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between bg-[#050505] sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
           <ArrowLeft size={22} />
@@ -93,8 +113,8 @@ export default function AddTransaction() {
       <div className="flex-1 px-4 pb-8 overflow-y-auto">
         <form onSubmit={handleSave} className="flex flex-col gap-5 max-w-md mx-auto">
           
-          {/* Valor (Destaque, mas menor) */}
-          <div className="relative bg-[#121212] rounded-2xl p-4 border border-[#222] group focus-within:border-blue-500/50 transition-colors">
+          {/* Valor */}
+          <div className="relative bg-[#121212] rounded-2xl p-4 border border-[#222] focus-within:border-blue-500/50 transition-colors">
             <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1 block">Valor</label>
             <div className="flex items-center">
               <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
@@ -113,7 +133,7 @@ export default function AddTransaction() {
 
           {/* Nome e Data */}
           <div className="grid grid-cols-1 gap-3">
-            <div className="bg-[#121212] rounded-xl px-3 py-2.5 border border-[#222] flex items-center gap-3 focus-within:border-blue-500/50">
+            <div className="bg-[#121212] rounded-xl px-3 py-2.5 border border-[#222] flex items-center gap-3">
               <Type size={18} className="text-gray-500" />
               <div className="flex-1">
                 <label className="block text-[9px] font-bold text-gray-500 uppercase">Descrição</label>
@@ -128,7 +148,6 @@ export default function AddTransaction() {
             </div>
 
             <div className="flex gap-3">
-               {/* Data */}
                <div className="flex-1 bg-[#121212] rounded-xl px-3 py-2.5 border border-[#222] flex items-center gap-3">
                  <Calendar size={18} className="text-gray-500" />
                  <div className="flex-1">
@@ -142,7 +161,6 @@ export default function AddTransaction() {
                  </div>
                </div>
                
-               {/* Toggle Tipo */}
                <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222] w-36">
                   <button type="button" onClick={() => { setType('variable'); if(['salary','investment'].includes(category)) setCategory('food'); }} 
                     className={`flex-1 rounded-lg text-[10px] font-bold transition-all ${type !== 'income' ? 'bg-[#222] text-white shadow-sm' : 'text-gray-500'}`}>Saída</button>
@@ -152,7 +170,7 @@ export default function AddTransaction() {
             </div>
           </div>
 
-          {/* Categorias (Grid Otimizada) */}
+          {/* Categorias */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1">
               <Tag size={14} className="text-gray-500" />
@@ -182,7 +200,6 @@ export default function AddTransaction() {
             </div>
           </div>
 
-          {/* Botão Salvar */}
           <div className="mt-auto pt-4">
             <button 
               type="submit" 

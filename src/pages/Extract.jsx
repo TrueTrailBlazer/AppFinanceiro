@@ -29,9 +29,8 @@ export default function Extract() {
     if (!user) return;
     fetchTransactions();
 
-    // Atualização em Tempo Real no Extrato também
     const channel = supabase
-      .channel('extract-changes')
+      .channel('extract-realtime')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, 
         () => fetchTransactions()

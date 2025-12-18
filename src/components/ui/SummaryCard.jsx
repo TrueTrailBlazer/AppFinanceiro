@@ -13,10 +13,10 @@ export function SummaryCard({ title, value, type = 'neutral', onClick }) {
   return (
     <div 
       onClick={onClick}
-      className={`p-3 rounded-xl border transition-all relative overflow-hidden flex flex-col justify-between min-h-[80px] ${colors[type]} ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
+      className={`p-4 rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between h-28 ${colors[type]} ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
     >
-      <p className="text-[10px] uppercase tracking-wider font-semibold opacity-70 truncate">{title}</p>
-      <h3 className="text-lg font-bold truncate">{formatMoney(value)}</h3>
+      <p className="text-[10px] uppercase tracking-wider font-bold opacity-70 truncate">{title}</p>
+      <h3 className="text-xl font-bold truncate">{formatMoney(value)}</h3>
     </div>
   );
 }
