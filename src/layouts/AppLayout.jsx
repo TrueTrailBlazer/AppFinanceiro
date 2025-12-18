@@ -12,7 +12,7 @@ export function AppLayout() {
     <div className="flex flex-col h-screen bg-[#050505] text-white md:flex-row overflow-hidden">
       
       {/* --- SIDEBAR (PC) --- */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#121212] border-r border-[#222] p-6 justify-between">
+      <aside className="hidden md:flex flex-col w-64 bg-[#121212] border-r border-[#222] p-6 justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-10">
             Fluxo
@@ -35,8 +35,9 @@ export function AppLayout() {
       </aside>
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
-      <main className="flex-1 overflow-y-auto pb-24 md:pb-8 relative scroll-smooth">
-        <div className="max-w-3xl mx-auto p-4 md:p-8">
+      <main className="flex-1 overflow-y-auto pb-24 md:pb-8 relative scroll-smooth bg-[#050505]">
+        {/* Aumentei para max-w-5xl no PC para usar melhor a tela */}
+        <div className="max-w-3xl md:max-w-5xl mx-auto p-4 md:p-8">
            <Outlet />
         </div>
       </main>
@@ -54,7 +55,7 @@ export function AppLayout() {
           <span className="text-[10px] font-medium">Extrato</span>
         </Link>
 
-        {/* Botão Flutuante Central (Mais compacto) */}
+        {/* Botão Flutuante Central */}
         <Link to="/add" className="relative -top-5">
           <div className="bg-blue-600 rounded-full p-3.5 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-4 border-[#050505] active:scale-90 transition-transform">
             <Plus size={24} color="white" />
