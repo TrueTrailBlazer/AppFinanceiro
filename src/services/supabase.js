@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Faltam as chaves do Supabase no arquivo .env");
+  console.error("ERRO: Chaves do Supabase não encontradas.");
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
