@@ -1,0 +1,17 @@
+name: Prevent Supabase Pause
+
+on:
+  schedule:
+    # Roda às 00:00 UTC todas as Segundas e Quintas
+    - cron: '0 0 * * 1,4'
+  workflow_dispatch: # Permite rodar manualmente para testar
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Transactions Table
+        run: |
+          curl -f -X GET '${{ secrets.SUPABASE_URL }}/rest/v1/transactions?select=id&limit=1' \
+          -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"
