@@ -14,9 +14,15 @@ export function AppLayout() {
       {/* --- SIDEBAR (PC) --- */}
       <aside className="hidden md:flex flex-col w-64 bg-[#121212] border-r border-[#222] p-6 justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-10">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-8">
             Fluxo
           </h1>
+
+          {/* NOVO BOTÃO DE ADICIONAR (PC) */}
+          <Link to="/add" className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 active:scale-95 mb-6">
+            <Plus size={18} /> Nova Transação
+          </Link>
+
           <nav className="space-y-4">
             <Link to="/" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/')}`}>
               <Home size={20} /> Visão Mensal
@@ -34,9 +40,8 @@ export function AppLayout() {
         </div>
       </aside>
 
-      {/* --- CONTEÚDO PRINCIPAL (Alterado) --- */}
+      {/* --- CONTEÚDO PRINCIPAL --- */}
       <main className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-[#050505]">
-        {/* Aumentei o max-w para 1600px no desktop para usar mais espaço da tela */}
         <div className="w-full md:max-w-[1600px] mx-auto p-3 md:p-8">
            <Outlet />
         </div>
@@ -55,7 +60,7 @@ export function AppLayout() {
           <span className="text-[9px] font-medium">Extrato</span>
         </Link>
 
-        {/* Botão Central Menor */}
+        {/* Botão Central Menor (Mobile) */}
         <Link to="/add" className="relative -top-4">
           <div className="bg-blue-600 rounded-full p-3 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[3px] border-[#050505] active:scale-90 transition-transform">
             <Plus size={22} color="white" />
