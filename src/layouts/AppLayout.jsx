@@ -34,14 +34,15 @@ export function AppLayout() {
         </div>
       </aside>
 
-      {/* --- CONTEÚDO PRINCIPAL --- */}
+      {/* --- CONTEÚDO PRINCIPAL (Alterado) --- */}
       <main className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-[#050505]">
-        <div className="max-w-3xl md:max-w-5xl mx-auto p-3 md:p-8">
+        {/* Aumentei o max-w para 1600px no desktop para usar mais espaço da tela */}
+        <div className="w-full md:max-w-[1600px] mx-auto p-3 md:p-8">
            <Outlet />
         </div>
       </main>
 
-      {/* --- MENU MOBILE (Mais fino e compacto) --- */}
+      {/* --- MENU MOBILE --- */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-[#222] px-4 pb-3 pt-2 flex justify-between items-end z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
         
         <Link to="/" className={`flex flex-col items-center gap-0.5 w-12 active:scale-95 transition-transform ${isActive('/')}`}>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Check, DollarSign, Trash2, Calendar, Tag, Type } from 'lucide-react';
+import { ArrowLeft, Check, Trash2, Calendar, Tag, Type, CheckCircle2, XCircle } from 'lucide-react';
 import { CATEGORIES } from '../utils/constants';
 
 export default function AddTransaction() {
@@ -17,6 +17,7 @@ export default function AddTransaction() {
   const [type, setType] = useState('variable'); 
   const [category, setCategory] = useState('others');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isPaid, setIsPaid] = useState(true); // Novo estado
 
   useEffect(() => {
     if (editingTransaction) {
@@ -24,8 +25,8 @@ export default function AddTransaction() {
       setName(editingTransaction.name);
       setType(editingTransaction.type);
       setCategory(editingTransaction.category || 'others');
+      setIsPaid(editingTransaction.is_paid !== undefined ? editingTransaction.is_paid : true);
       
-      // Converte data UTC do banco para YYYY-MM-DD local para o input
       if(editingTransaction.created_at) {
         const dbDate = new Date(editingTransaction.created_at);
         setDate(dbDate.toISOString().split('T')[0]);
@@ -38,10 +39,8 @@ export default function AddTransaction() {
     if (!amount || !name) return;
     setLoading(true);
 
-    // Preserva a hora atual ao salvar para manter a ordem correta na lista
     const now = new Date();
     const selectedDate = new Date(date);
-    // Adiciona o horário atual à data selecionada (para não ficar tudo 00:00)
     selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
     const transactionData = {
@@ -50,24 +49,21 @@ export default function AddTransaction() {
       amount: parseFloat(amount),
       type,
       category,
+      is_paid: isPaid, // Salva o status
       created_at: selectedDate.toISOString()
     };
 
     try {
       if (editingTransaction) {
-        // --- ATUALIZAÇÃO ---
         const { error } = await supabase
           .from('transactions')
           .update(transactionData)
-          .eq('id', editingTransaction.id); // Garante que atualiza pelo ID certo
-        
+          .eq('id', editingTransaction.id);
         if (error) throw error;
       } else {
-        // --- CRIAÇÃO ---
         const { error } = await supabase
           .from('transactions')
           .insert([transactionData]);
-        
         if (error) throw error;
       }
       navigate(-1);
@@ -119,16 +115,30 @@ export default function AddTransaction() {
             <div className="flex items-center">
               <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
               <input 
-                type="number" 
-                inputMode="decimal"
-                step="0.01"
-                autoFocus={!editingTransaction}
-                value={amount} 
-                onChange={e => setAmount(e.target.value)}
+                type="number" inputMode="decimal" step="0.01" autoFocus={!editingTransaction}
+                value={amount} onChange={e => setAmount(e.target.value)}
                 placeholder="0,00"
                 className="w-full bg-transparent text-3xl font-bold text-white placeholder-gray-700 outline-none" 
               />
             </div>
+          </div>
+
+          {/* Status de Pagamento (Novo) */}
+          <div className="flex gap-3">
+             <button
+               type="button"
+               onClick={() => setIsPaid(true)}
+               className={`flex-1 p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-[#121212] border-[#222] text-gray-500'}`}
+             >
+               <CheckCircle2 size={18} /> <span className="text-xs font-bold">Pago / Recebido</span>
+             </button>
+             <button
+               type="button"
+               onClick={() => setIsPaid(false)}
+               className={`flex-1 p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-[#121212] border-[#222] text-gray-500'}`}
+             >
+               <XCircle size={18} /> <span className="text-xs font-bold">Pendente</span>
+             </button>
           </div>
 
           {/* Nome e Data */}
@@ -138,10 +148,7 @@ export default function AddTransaction() {
               <div className="flex-1">
                 <label className="block text-[9px] font-bold text-gray-500 uppercase">Descrição</label>
                 <input 
-                  type="text" 
-                  value={name} 
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Ex: Mercado"
+                  type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Mercado"
                   className="w-full bg-transparent text-sm text-white placeholder-gray-600 outline-none font-medium" 
                 />
               </div>
@@ -153,9 +160,7 @@ export default function AddTransaction() {
                  <div className="flex-1">
                    <label className="block text-[9px] font-bold text-gray-500 uppercase">Data</label>
                    <input 
-                     type="date" 
-                     value={date}
-                     onChange={e => setDate(e.target.value)}
+                     type="date" value={date} onChange={e => setDate(e.target.value)}
                      className="w-full bg-transparent text-xs text-white outline-none font-medium [&::-webkit-calendar-picker-indicator]:invert opacity-90"
                    />
                  </div>
@@ -170,7 +175,7 @@ export default function AddTransaction() {
             </div>
           </div>
 
-          {/* Categorias */}
+          {/* Categorias (Mantido igual) */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-1">
               <Tag size={14} className="text-gray-500" />
@@ -182,9 +187,7 @@ export default function AddTransaction() {
                  return !['salary', 'investment', 'extra'].includes(key);
               }).map(([key, cat]) => (
                 <button
-                  key={key}
-                  type="button"
-                  onClick={() => setCategory(key)}
+                  key={key} type="button" onClick={() => setCategory(key)}
                   className={`flex flex-col items-center justify-center py-3 px-1 rounded-xl border transition-all ${
                     category === key 
                       ? `bg-[#1a1a1a] border-blue-500/40 shadow-[0_0_10px_rgba(59,130,246,0.1)]` 
@@ -202,8 +205,7 @@ export default function AddTransaction() {
 
           <div className="mt-auto pt-4">
             <button 
-              type="submit" 
-              disabled={loading || !amount || !name}
+              type="submit" disabled={loading || !amount || !name}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
             >
               {loading ? '...' : <><Check size={18} /> Salvar</>}
