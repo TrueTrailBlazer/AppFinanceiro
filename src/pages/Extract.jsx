@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
 
@@ -13,7 +13,9 @@ export default function Extract() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('month'); 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [typeFilter, setTypeFilter] = useState('all');
+  
+  // Filtro único que engloba tudo
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'income', 'expense', 'pending', 'paid'
 
   // --- Lógica de Data ---
   const changeMonth = (direction) => {
@@ -67,8 +69,6 @@ export default function Extract() {
   const togglePaid = async (e, t) => {
     e.stopPropagation(); 
     const newStatus = !t.is_paid;
-    
-    // Atualização otimista
     setTransactions(prev => prev.map(item => item.id === t.id ? {...item, is_paid: newStatus} : item));
 
     const { error } = await supabase
@@ -83,76 +83,87 @@ export default function Extract() {
     navigate('/add', { state: { transaction } });
   };
 
-  const filteredList = transactions.filter(t => {
-    if (typeFilter === 'income') return t.type === 'income';
-    if (typeFilter === 'expense') return t.type !== 'income';
-    return true;
-  });
+  // --- Lógica de Filtragem ---
+  const filteredList = useMemo(() => {
+    return transactions.filter(t => {
+      if (activeFilter === 'income') return t.type === 'income';
+      if (activeFilter === 'expense') return t.type !== 'income';
+      if (activeFilter === 'pending') return !t.is_paid;
+      if (activeFilter === 'paid') return t.is_paid;
+      return true; // 'all'
+    });
+  }, [transactions, activeFilter]);
 
-  // --- NOVO: Cálculo do Resumo Dinâmico ---
+  // --- Resumo Dinâmico (Sempre baseado na lista filtrada ou geral do mês?) ---
+  // Decisão: O resumo deve mostrar o panorama do mês, independente do filtro de lista, 
+  // para o usuário não perder a noção do saldo enquanto filtra "pendentes".
   const summary = useMemo(() => {
-    // Totais Gerais do período visualizado
-    const totalIncome = filteredList.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const totalExpense = filteredList.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
+    // Usamos 'transactions' (bruto do mês) em vez de 'filteredList' para os cards de topo
+    const baseList = transactions; 
+    
+    const totalIncome = baseList.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+    const totalExpense = baseList.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
     const balance = totalIncome - totalExpense;
 
-    // Totais Pendentes (O que falta pagar/receber)
-    const pendingIncome = filteredList.filter(t => t.type === 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
-    const pendingExpense = filteredList.filter(t => t.type !== 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
+    const pendingIncome = baseList.filter(t => t.type === 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
+    const pendingExpense = baseList.filter(t => t.type !== 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
 
-    return { totalIncome, totalExpense, balance, pendingIncome, pendingExpense };
-  }, [filteredList]);
+    return { balance, pendingIncome, pendingExpense };
+  }, [transactions]);
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 pb-24">
+    <div className="animate-in fade-in duration-500 pb-32 md:pb-0">
       
-      {/* --- CABEÇALHO --- */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between sticky top-0 z-20 bg-[#050505] py-2">
-        <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222] self-start">
-            <button onClick={() => setViewMode('month')} className={`px-4 py-2 rounded-lg text-xs font-bold flex gap-2 ${viewMode === 'month' ? 'bg-[#222] text-white' : 'text-gray-500'}`}><Calendar size={14} /> Mês</button>
-            <button onClick={() => setViewMode('all')} className={`px-4 py-2 rounded-lg text-xs font-bold flex gap-2 ${viewMode === 'all' ? 'bg-[#222] text-white' : 'text-gray-500'}`}><Filter size={14} /> Tudo</button>
-        </div>
-
-        {viewMode === 'month' && (
-             <div className="flex items-center justify-between bg-[#1a1a1a] py-1.5 px-2 rounded-xl border border-[#333] w-full md:w-auto md:min-w-[250px]">
-                <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-[#333] rounded-lg text-gray-300"><ChevronLeft size={18} /></button>
-                <span className="font-bold text-sm capitalize text-white">{monthTitle}</span>
-                <button onClick={() => changeMonth(1)} className="p-2 hover:bg-[#333] rounded-lg text-gray-300"><ChevronRight size={18} /></button>
-             </div>
-        )}
-      </div>
-
-      {/* --- NOVO PAINEL DE RESUMO --- */}
-      {filteredList.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 md:gap-4">
-            {/* Balanço */}
-            <div className={`p-3 rounded-xl border flex flex-col justify-center items-center text-center ${summary.balance >= 0 ? 'bg-green-900/10 border-green-900/30' : 'bg-red-900/10 border-red-900/30'}`}>
+      {/* --- ÁREA FIXA SUPERIOR (Resumo + Filtros) --- */}
+      <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222] px-1 -mx-1 md:px-0 md:mx-0">
+        
+        {/* Cards de Resumo */}
+        <div className="grid grid-cols-3 gap-2">
+            <div className={`p-2.5 rounded-xl border flex flex-col justify-center items-center text-center ${summary.balance >= 0 ? 'bg-green-900/10 border-green-900/30' : 'bg-red-900/10 border-red-900/30'}`}>
                 <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5">Sobra Prevista</p>
-                <span className={`text-sm md:text-lg font-bold ${summary.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <span className={`text-xs md:text-sm font-bold ${summary.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
             </div>
-
-            {/* A Pagar (Falta) */}
-            <div className="p-3 rounded-xl border border-red-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
+            <div className="p-2.5 rounded-xl border border-red-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
                 <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5 flex items-center gap-1"><TrendingDown size={10} /> Falta Pagar</p>
-                <span className={`text-sm md:text-lg font-bold ${summary.pendingExpense > 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                <span className={`text-xs md:text-sm font-bold ${summary.pendingExpense > 0 ? 'text-red-400' : 'text-gray-500'}`}>
                     {summary.pendingExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
             </div>
-
-            {/* A Receber (Falta) */}
-            <div className="p-3 rounded-xl border border-blue-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
+            <div className="p-2.5 rounded-xl border border-blue-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
                 <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5 flex items-center gap-1"><TrendingUp size={10} /> Falta Receber</p>
-                <span className={`text-sm md:text-lg font-bold ${summary.pendingIncome > 0 ? 'text-blue-400' : 'text-gray-500'}`}>
+                <span className={`text-xs md:text-sm font-bold ${summary.pendingIncome > 0 ? 'text-blue-400' : 'text-gray-500'}`}>
                     {summary.pendingIncome.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
             </div>
         </div>
-      )}
 
-      {/* --- LISTA --- */}
-      <div className="space-y-3">
+        {/* Barra de Filtros */}
+        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            {[
+              { id: 'all', label: 'Todos' },
+              { id: 'income', label: 'Entradas' },
+              { id: 'expense', label: 'Saídas' },
+              { id: 'pending', label: 'Pendentes' }, // Novo
+              { id: 'paid', label: 'Pagos' }        // Novo
+            ].map(filter => (
+                <button
+                    key={filter.id}
+                    onClick={() => setActiveFilter(filter.id)}
+                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors
+                    ${activeFilter === filter.id 
+                        ? 'bg-blue-600/10 border-blue-600 text-blue-500' 
+                        : 'bg-[#121212] border-[#222] text-gray-500 hover:border-gray-600'}`}
+                >
+                    {filter.label}
+                </button>
+            ))}
+        </div>
+      </div>
+
+      {/* --- LISTA (Com padding top para não esconder atrás do fixo) --- */}
+      <div className="space-y-3 pt-2">
         {loading ? (
            <div className="text-center py-12 text-xs text-gray-500 animate-pulse">Carregando...</div>
         ) : filteredList.length > 0 ? (
@@ -167,7 +178,7 @@ export default function Extract() {
                   className={`relative group flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden
                     ${t.is_paid 
                         ? 'bg-[#121212] border-[#222] hover:border-[#333]' 
-                        : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`} // Mudei a cor da borda/sombra para Red
+                        : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
                 >
                   <div className="flex items-center gap-4 mb-3 md:mb-0">
                     <div className={`p-3 rounded-full shrink-0 ${t.is_paid ? catData.bg : 'bg-red-500/10'}`}>
@@ -195,7 +206,7 @@ export default function Extract() {
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] md:text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95
                         ${t.is_paid 
                             ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20' 
-                            : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`} // Cores atualizadas para Red
+                            : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
                      >
                         {t.is_paid ? (
                             <>PAGO <CheckCircle2 size={14} /></>
@@ -210,10 +221,27 @@ export default function Extract() {
         ) : (
             <div className="py-20 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
                 <Search size={24} className="opacity-20" />
-                <p className="text-sm font-medium">Nada encontrado.</p>
+                <p className="text-sm font-medium">Nada encontrado com este filtro.</p>
             </div>
         )}
       </div>
+
+      {/* --- NAVEGAÇÃO DE DATA (Rodapé Fixo) --- */}
+      {viewMode === 'month' && (
+        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:static md:z-0 md:px-0 md:mt-6 md:mb-0">
+            <div className="max-w-3xl md:max-w-none mx-auto">
+            <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl md:bg-transparent md:border-0 md:shadow-none md:p-0">
+                <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronLeft size={18} /></button>
+                <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-blue-500" />
+                <span className="font-bold text-sm capitalize text-white md:text-xl">{monthTitle}</span>
+                </div>
+                <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronRight size={18} /></button>
+            </div>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }
