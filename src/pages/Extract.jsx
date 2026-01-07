@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
 
@@ -14,7 +14,8 @@ export default function Extract() {
   const [viewMode, setViewMode] = useState('month'); 
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  const [activeFilter, setActiveFilter] = useState('all'); 
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false); // Controle do menu mobile
 
   // --- Lógica de Data ---
   const changeMonth = (direction) => {
@@ -82,7 +83,17 @@ export default function Extract() {
     navigate('/add', { state: { transaction } });
   };
 
-  // --- Filtros ---
+  // --- Listas e Filtros ---
+  const filterOptions = [
+    { id: 'all', label: 'Todos' },
+    { id: 'income', label: 'Entradas' },
+    { id: 'expense', label: 'Saídas' },
+    { id: 'pending', label: 'Pendentes' },
+    { id: 'paid', label: 'Concluídos' }
+  ];
+
+  const getActiveLabel = () => filterOptions.find(f => f.id === activeFilter)?.label;
+
   const filteredList = useMemo(() => {
     return transactions.filter(t => {
       if (activeFilter === 'income') return t.type === 'income';
@@ -133,18 +144,42 @@ export default function Extract() {
             </div>
         </div>
 
-        {/* Barra de Filtros + Navegação Desktop */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        {/* --- BARRA DE FERRAMENTAS --- */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 relative">
             
-            {/* Filtros */}
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                {[
-                { id: 'all', label: 'Todos' },
-                { id: 'income', label: 'Entradas' },
-                { id: 'expense', label: 'Saídas' },
-                { id: 'pending', label: 'Pendentes' },
-                { id: 'paid', label: 'Pagos' }
-                ].map(filter => (
+            {/* 1. FILTROS MOBILE (Botão Dropdown) */}
+            <div className="md:hidden relative z-50">
+                <button 
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className="w-full flex items-center justify-between bg-[#121212] border border-[#222] p-3 rounded-xl active:bg-[#1a1a1a] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter size={16} className="text-blue-500" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Filtro: <span className="text-blue-500">{getActiveLabel()}</span></span>
+                  </div>
+                  {isFilterOpen ? <ChevronUp size={16} className="text-gray-500"/> : <ChevronDown size={16} className="text-gray-500"/>}
+                </button>
+
+                {/* Dropdown Menu */}
+                {isFilterOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
+                    {filterOptions.map(option => (
+                      <button
+                        key={option.id}
+                        onClick={() => { setActiveFilter(option.id); setIsFilterOpen(false); }}
+                        className={`text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors
+                          ${activeFilter === option.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+            </div>
+
+            {/* 2. FILTROS PC (Lista Horizontal) */}
+            <div className="hidden md:flex gap-2 pb-1">
+                {filterOptions.map(filter => (
                     <button
                         key={filter.id}
                         onClick={() => setActiveFilter(filter.id)}
@@ -158,7 +193,7 @@ export default function Extract() {
                 ))}
             </div>
 
-            {/* --- NAVEGAÇÃO DESKTOP (Só aparece no PC 'md:flex') --- */}
+            {/* 3. NAVEGAÇÃO DESKTOP (Só aparece no PC) */}
             {viewMode === 'month' && (
                 <div className="hidden md:flex items-center gap-3 bg-[#121212] p-1 rounded-lg border border-[#222]">
                     <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronLeft size={16} /></button>
@@ -169,7 +204,7 @@ export default function Extract() {
         </div>
       </div>
 
-      {/* --- LISTA --- */}
+      {/* --- LISTA DE TRANSAÇÕES --- */}
       <div className="space-y-3 pt-2">
         {loading ? (
            <div className="text-center py-12 text-xs text-gray-500 animate-pulse">Carregando...</div>
@@ -177,6 +212,7 @@ export default function Extract() {
             filteredList.map(t => {
               const catData = getCategory(t.category);
               const CategoryIcon = catData.icon;
+              const isIncome = t.type === 'income'; // Verifica se é entrada
               
               return (
                 <div 
@@ -185,14 +221,17 @@ export default function Extract() {
                   className={`relative group flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden
                     ${t.is_paid 
                         ? 'bg-[#121212] border-[#222] hover:border-[#333]' 
-                        : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
+                        : isIncome 
+                          ? 'bg-[#1a1a1a] border-yellow-500/30 shadow-[inset_3px_0_0_0_#eab308]' // Amarelo para Entrada Pendente
+                          : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'   // Vermelho para Saída Pendente
+                    }`}
                 >
                   <div className="flex items-center gap-4 mb-3 md:mb-0">
-                    <div className={`p-3 rounded-full shrink-0 ${t.is_paid ? catData.bg : 'bg-red-500/10'}`}>
-                      <CategoryIcon size={20} className={t.is_paid ? catData.color : 'text-red-500'} />
+                    <div className={`p-3 rounded-full shrink-0 ${t.is_paid ? catData.bg : (isIncome ? 'bg-yellow-500/10' : 'bg-red-500/10')}`}>
+                      <CategoryIcon size={20} className={t.is_paid ? catData.color : (isIncome ? 'text-yellow-500' : 'text-red-500')} />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-sm md:text-base ${t.is_paid ? 'text-white' : 'text-red-100'}`}>{t.name}</h3>
+                      <h3 className={`font-bold text-sm md:text-base ${t.is_paid ? 'text-white' : (isIncome ? 'text-yellow-100' : 'text-red-100')}`}>{t.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                          <span className="text-[10px] md:text-xs text-gray-500 bg-[#222] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
                          <span className="text-[10px] md:text-xs text-gray-500">
@@ -203,20 +242,23 @@ export default function Extract() {
                   </div>
 
                   <div className="flex items-center justify-between md:gap-8">
-                     <span className={`text-base md:text-lg font-bold ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
-                        {t.type === 'income' ? '+ ' : '- '}
+                     <span className={`text-base md:text-lg font-bold ${isIncome ? 'text-green-400' : 'text-white'}`}>
+                        {isIncome ? '+ ' : '- '}
                         {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                      </span>
 
+                     {/* Botão de Status com Lógica Ajustada */}
                      <button
                         onClick={(e) => togglePaid(e, t)}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] md:text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95
                         ${t.is_paid 
                             ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20' 
-                            : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
+                            : isIncome 
+                                ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/20' 
+                                : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
                      >
                         {t.is_paid ? (
-                            <>PAGO <CheckCircle2 size={14} /></>
+                            <>{isIncome ? 'RECEBIDO' : 'PAGO'} <CheckCircle2 size={14} /></>
                         ) : (
                             <>PENDENTE <XCircle size={14} /></>
                         )}
@@ -233,7 +275,7 @@ export default function Extract() {
         )}
       </div>
 
-      {/* --- NAVEGAÇÃO MOBILE (Rodapé Fixo - Só aparece no mobile 'md:hidden') --- */}
+      {/* --- NAVEGAÇÃO MOBILE (Rodapé Fixo) --- */}
       {viewMode === 'month' && (
         <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:hidden">
             <div className="max-w-3xl mx-auto">
