@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
 
@@ -14,8 +14,7 @@ export default function Extract() {
   const [viewMode, setViewMode] = useState('month'); 
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  // Filtro único que engloba tudo
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'income', 'expense', 'pending', 'paid'
+  const [activeFilter, setActiveFilter] = useState('all'); 
 
   // --- Lógica de Data ---
   const changeMonth = (direction) => {
@@ -83,24 +82,19 @@ export default function Extract() {
     navigate('/add', { state: { transaction } });
   };
 
-  // --- Lógica de Filtragem ---
+  // --- Filtros ---
   const filteredList = useMemo(() => {
     return transactions.filter(t => {
       if (activeFilter === 'income') return t.type === 'income';
       if (activeFilter === 'expense') return t.type !== 'income';
       if (activeFilter === 'pending') return !t.is_paid;
       if (activeFilter === 'paid') return t.is_paid;
-      return true; // 'all'
+      return true; 
     });
   }, [transactions, activeFilter]);
 
-  // --- Resumo Dinâmico (Sempre baseado na lista filtrada ou geral do mês?) ---
-  // Decisão: O resumo deve mostrar o panorama do mês, independente do filtro de lista, 
-  // para o usuário não perder a noção do saldo enquanto filtra "pendentes".
   const summary = useMemo(() => {
-    // Usamos 'transactions' (bruto do mês) em vez de 'filteredList' para os cards de topo
     const baseList = transactions; 
-    
     const totalIncome = baseList.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
     const totalExpense = baseList.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
     const balance = totalIncome - totalExpense;
@@ -114,7 +108,7 @@ export default function Extract() {
   return (
     <div className="animate-in fade-in duration-500 pb-32 md:pb-0">
       
-      {/* --- ÁREA FIXA SUPERIOR (Resumo + Filtros) --- */}
+      {/* --- ÁREA FIXA SUPERIOR --- */}
       <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222] px-1 -mx-1 md:px-0 md:mx-0">
         
         {/* Cards de Resumo */}
@@ -139,30 +133,43 @@ export default function Extract() {
             </div>
         </div>
 
-        {/* Barra de Filtros */}
-        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-            {[
-              { id: 'all', label: 'Todos' },
-              { id: 'income', label: 'Entradas' },
-              { id: 'expense', label: 'Saídas' },
-              { id: 'pending', label: 'Pendentes' }, // Novo
-              { id: 'paid', label: 'Pagos' }        // Novo
-            ].map(filter => (
-                <button
-                    key={filter.id}
-                    onClick={() => setActiveFilter(filter.id)}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors
-                    ${activeFilter === filter.id 
-                        ? 'bg-blue-600/10 border-blue-600 text-blue-500' 
-                        : 'bg-[#121212] border-[#222] text-gray-500 hover:border-gray-600'}`}
-                >
-                    {filter.label}
-                </button>
-            ))}
+        {/* Barra de Filtros + Navegação Desktop */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            
+            {/* Filtros */}
+            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                {[
+                { id: 'all', label: 'Todos' },
+                { id: 'income', label: 'Entradas' },
+                { id: 'expense', label: 'Saídas' },
+                { id: 'pending', label: 'Pendentes' },
+                { id: 'paid', label: 'Pagos' }
+                ].map(filter => (
+                    <button
+                        key={filter.id}
+                        onClick={() => setActiveFilter(filter.id)}
+                        className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors
+                        ${activeFilter === filter.id 
+                            ? 'bg-blue-600/10 border-blue-600 text-blue-500' 
+                            : 'bg-[#121212] border-[#222] text-gray-500 hover:border-gray-600'}`}
+                    >
+                        {filter.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* --- NAVEGAÇÃO DESKTOP (Só aparece no PC 'md:flex') --- */}
+            {viewMode === 'month' && (
+                <div className="hidden md:flex items-center gap-3 bg-[#121212] p-1 rounded-lg border border-[#222]">
+                    <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronLeft size={16} /></button>
+                    <span className="text-xs font-bold text-white min-w-[100px] text-center capitalize">{monthTitle}</span>
+                    <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronRight size={16} /></button>
+                </div>
+            )}
         </div>
       </div>
 
-      {/* --- LISTA (Com padding top para não esconder atrás do fixo) --- */}
+      {/* --- LISTA --- */}
       <div className="space-y-3 pt-2">
         {loading ? (
            <div className="text-center py-12 text-xs text-gray-500 animate-pulse">Carregando...</div>
@@ -226,15 +233,15 @@ export default function Extract() {
         )}
       </div>
 
-      {/* --- NAVEGAÇÃO DE DATA (Rodapé Fixo) --- */}
+      {/* --- NAVEGAÇÃO MOBILE (Rodapé Fixo - Só aparece no mobile 'md:hidden') --- */}
       {viewMode === 'month' && (
-        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:static md:z-0 md:px-0 md:mt-6 md:mb-0">
-            <div className="max-w-3xl md:max-w-none mx-auto">
-            <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl md:bg-transparent md:border-0 md:shadow-none md:p-0">
+        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:hidden">
+            <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl">
                 <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronLeft size={18} /></button>
                 <div className="flex items-center gap-2">
                 <Calendar size={14} className="text-blue-500" />
-                <span className="font-bold text-sm capitalize text-white md:text-xl">{monthTitle}</span>
+                <span className="font-bold text-sm capitalize text-white">{monthTitle}</span>
                 </div>
                 <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronRight size={18} /></button>
             </div>
