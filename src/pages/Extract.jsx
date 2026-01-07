@@ -15,7 +15,7 @@ export default function Extract() {
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const [activeFilter, setActiveFilter] = useState('all');
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // Controle do menu mobile
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // --- Lógica de Data ---
   const changeMonth = (direction) => {
@@ -68,6 +68,9 @@ export default function Extract() {
   // --- Ações ---
   const togglePaid = async (e, t) => {
     e.stopPropagation(); 
+    // Segurança extra: não permite alterar se for entrada
+    if (t.type === 'income') return;
+
     const newStatus = !t.is_paid;
     setTransactions(prev => prev.map(item => item.id === t.id ? {...item, is_paid: newStatus} : item));
 
@@ -83,22 +86,20 @@ export default function Extract() {
     navigate('/add', { state: { transaction } });
   };
 
-  // --- Listas e Filtros ---
+  // --- Filtros ---
   const filterOptions = [
     { id: 'all', label: 'Todos' },
     { id: 'income', label: 'Entradas' },
     { id: 'expense', label: 'Saídas' },
     { id: 'pending', label: 'Pendentes' },
-    { id: 'paid', label: 'Concluídos' }
+    { id: 'paid', label: 'Pagos' }
   ];
-
-  const getActiveLabel = () => filterOptions.find(f => f.id === activeFilter)?.label;
 
   const filteredList = useMemo(() => {
     return transactions.filter(t => {
       if (activeFilter === 'income') return t.type === 'income';
       if (activeFilter === 'expense') return t.type !== 'income';
-      if (activeFilter === 'pending') return !t.is_paid;
+      if (activeFilter === 'pending') return !t.is_paid && t.type !== 'income'; // Pendente só faz sentido para despesa
       if (activeFilter === 'paid') return t.is_paid;
       return true; 
     });
@@ -110,10 +111,11 @@ export default function Extract() {
     const totalExpense = baseList.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
     const balance = totalIncome - totalExpense;
 
-    const pendingIncome = baseList.filter(t => t.type === 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
+    // Apenas despesas contam como "Falta Pagar"
     const pendingExpense = baseList.filter(t => t.type !== 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
+    // Entradas futuras (se existissem) seriam aqui, mas por agora removi "Falta Receber" para simplificar
 
-    return { balance, pendingIncome, pendingExpense };
+    return { balance, pendingExpense };
   }, [transactions]);
 
   return (
@@ -123,7 +125,7 @@ export default function Extract() {
       <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222] px-1 -mx-1 md:px-0 md:mx-0">
         
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
             <div className={`p-2.5 rounded-xl border flex flex-col justify-center items-center text-center ${summary.balance >= 0 ? 'bg-green-900/10 border-green-900/30' : 'bg-red-900/10 border-red-900/30'}`}>
                 <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5">Sobra Prevista</p>
                 <span className={`text-xs md:text-sm font-bold ${summary.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -136,38 +138,29 @@ export default function Extract() {
                     {summary.pendingExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
             </div>
-            <div className="p-2.5 rounded-xl border border-blue-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
-                <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5 flex items-center gap-1"><TrendingUp size={10} /> Falta Receber</p>
-                <span className={`text-xs md:text-sm font-bold ${summary.pendingIncome > 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                    {summary.pendingIncome.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </span>
-            </div>
         </div>
 
         {/* --- BARRA DE FERRAMENTAS --- */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 relative">
+        <div className="flex flex-row items-center justify-between gap-2 relative">
             
-            {/* 1. FILTROS MOBILE (Botão Dropdown) */}
+            {/* 1. FILTRO ICON (Mobile) */}
             <div className="md:hidden relative z-50">
                 <button 
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="w-full flex items-center justify-between bg-[#121212] border border-[#222] p-3 rounded-xl active:bg-[#1a1a1a] transition-colors"
+                  className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center
+                    ${activeFilter !== 'all' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400'}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Filter size={16} className="text-blue-500" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Filtro: <span className="text-blue-500">{getActiveLabel()}</span></span>
-                  </div>
-                  {isFilterOpen ? <ChevronUp size={16} className="text-gray-500"/> : <ChevronDown size={16} className="text-gray-500"/>}
+                  <Filter size={18} />
                 </button>
 
                 {/* Dropdown Menu */}
                 {isFilterOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
                     {filterOptions.map(option => (
                       <button
                         key={option.id}
                         onClick={() => { setActiveFilter(option.id); setIsFilterOpen(false); }}
-                        className={`text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors
+                        className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors
                           ${activeFilter === option.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
                       >
                         {option.label}
@@ -177,7 +170,7 @@ export default function Extract() {
                 )}
             </div>
 
-            {/* 2. FILTROS PC (Lista Horizontal) */}
+            {/* 2. FILTROS PC */}
             <div className="hidden md:flex gap-2 pb-1">
                 {filterOptions.map(filter => (
                     <button
@@ -193,11 +186,11 @@ export default function Extract() {
                 ))}
             </div>
 
-            {/* 3. NAVEGAÇÃO DESKTOP (Só aparece no PC) */}
+            {/* 3. NAVEGAÇÃO DE DATA (Mobile e PC - unificados na mesma linha para economizar espaço no mobile) */}
             {viewMode === 'month' && (
-                <div className="hidden md:flex items-center gap-3 bg-[#121212] p-1 rounded-lg border border-[#222]">
+                <div className="flex-1 md:flex-none flex items-center justify-end md:justify-start gap-2 bg-[#121212] p-1 rounded-lg border border-[#222] ml-auto">
                     <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronLeft size={16} /></button>
-                    <span className="text-xs font-bold text-white min-w-[100px] text-center capitalize">{monthTitle}</span>
+                    <span className="text-xs font-bold text-white min-w-[80px] md:min-w-[100px] text-center capitalize truncate">{monthTitle}</span>
                     <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronRight size={16} /></button>
                 </div>
             )}
@@ -212,26 +205,25 @@ export default function Extract() {
             filteredList.map(t => {
               const catData = getCategory(t.category);
               const CategoryIcon = catData.icon;
-              const isIncome = t.type === 'income'; // Verifica se é entrada
+              const isIncome = t.type === 'income';
               
               return (
                 <div 
                   key={t.id}
                   onClick={() => handleEdit(t)}
                   className={`relative group flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden
-                    ${t.is_paid 
-                        ? 'bg-[#121212] border-[#222] hover:border-[#333]' 
-                        : isIncome 
-                          ? 'bg-[#1a1a1a] border-yellow-500/30 shadow-[inset_3px_0_0_0_#eab308]' // Amarelo para Entrada Pendente
-                          : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'   // Vermelho para Saída Pendente
-                    }`}
+                    ${isIncome
+                        ? 'bg-[#1a1a1a] border-green-500/10 shadow-[inset_3px_0_0_0_#22c55e]' 
+                        : t.is_paid 
+                            ? 'bg-[#121212] border-[#222] hover:border-[#333]' 
+                            : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
                 >
                   <div className="flex items-center gap-4 mb-3 md:mb-0">
-                    <div className={`p-3 rounded-full shrink-0 ${t.is_paid ? catData.bg : (isIncome ? 'bg-yellow-500/10' : 'bg-red-500/10')}`}>
-                      <CategoryIcon size={20} className={t.is_paid ? catData.color : (isIncome ? 'text-yellow-500' : 'text-red-500')} />
+                    <div className={`p-3 rounded-full shrink-0 ${isIncome ? 'bg-green-500/10' : (t.is_paid ? catData.bg : 'bg-red-500/10')}`}>
+                      <CategoryIcon size={20} className={isIncome ? 'text-green-500' : (t.is_paid ? catData.color : 'text-red-500')} />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-sm md:text-base ${t.is_paid ? 'text-white' : (isIncome ? 'text-yellow-100' : 'text-red-100')}`}>{t.name}</h3>
+                      <h3 className={`font-bold text-sm md:text-base ${isIncome ? 'text-white' : (t.is_paid ? 'text-white' : 'text-red-100')}`}>{t.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                          <span className="text-[10px] md:text-xs text-gray-500 bg-[#222] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
                          <span className="text-[10px] md:text-xs text-gray-500">
@@ -247,22 +239,25 @@ export default function Extract() {
                         {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                      </span>
 
-                     {/* Botão de Status com Lógica Ajustada */}
-                     <button
-                        onClick={(e) => togglePaid(e, t)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] md:text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95
-                        ${t.is_paid 
-                            ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20' 
-                            : isIncome 
-                                ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/20' 
+                     {/* Botão de Status: SÓ APARECE SE NÃO FOR ENTRADA */}
+                     {!isIncome && (
+                         <button
+                            onClick={(e) => togglePaid(e, t)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] md:text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95
+                            ${t.is_paid 
+                                ? 'bg-[#222] border-[#333] text-gray-500 hover:text-white' 
                                 : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
-                     >
-                        {t.is_paid ? (
-                            <>{isIncome ? 'RECEBIDO' : 'PAGO'} <CheckCircle2 size={14} /></>
-                        ) : (
-                            <>PENDENTE <XCircle size={14} /></>
-                        )}
-                     </button>
+                         >
+                            {t.is_paid ? (
+                                <>PAGO <CheckCircle2 size={14} /></>
+                            ) : (
+                                <>PENDENTE <XCircle size={14} /></>
+                            )}
+                         </button>
+                     )}
+                     
+                     {/* Se for entrada, mostra apenas um ícone discreto ou nada */}
+                     {isIncome && <div className="px-3 py-1.5"><CheckCircle2 size={18} className="text-green-500/30" /></div>}
                   </div>
                 </div>
               );
@@ -275,22 +270,7 @@ export default function Extract() {
         )}
       </div>
 
-      {/* --- NAVEGAÇÃO MOBILE (Rodapé Fixo) --- */}
-      {viewMode === 'month' && (
-        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:hidden">
-            <div className="max-w-3xl mx-auto">
-            <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl">
-                <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronLeft size={18} /></button>
-                <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-blue-500" />
-                <span className="font-bold text-sm capitalize text-white">{monthTitle}</span>
-                </div>
-                <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronRight size={18} /></button>
-            </div>
-            </div>
-        </div>
-      )}
-
+      {/* Removemos a barra fixa inferior antiga já que a navegação subiu */}
     </div>
   );
 }
