@@ -68,8 +68,7 @@ export default function Extract() {
   // --- Ações ---
   const togglePaid = async (e, t) => {
     e.stopPropagation(); 
-    // Segurança extra: não permite alterar se for entrada
-    if (t.type === 'income') return;
+    if (t.type === 'income') return; // Segurança: Entradas não mudam
 
     const newStatus = !t.is_paid;
     setTransactions(prev => prev.map(item => item.id === t.id ? {...item, is_paid: newStatus} : item));
@@ -95,11 +94,13 @@ export default function Extract() {
     { id: 'paid', label: 'Pagos' }
   ];
 
+  const getActiveLabel = () => filterOptions.find(f => f.id === activeFilter)?.label;
+
   const filteredList = useMemo(() => {
     return transactions.filter(t => {
       if (activeFilter === 'income') return t.type === 'income';
       if (activeFilter === 'expense') return t.type !== 'income';
-      if (activeFilter === 'pending') return !t.is_paid && t.type !== 'income'; // Pendente só faz sentido para despesa
+      if (activeFilter === 'pending') return !t.is_paid && t.type !== 'income'; 
       if (activeFilter === 'paid') return t.is_paid;
       return true; 
     });
@@ -110,10 +111,7 @@ export default function Extract() {
     const totalIncome = baseList.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
     const totalExpense = baseList.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
     const balance = totalIncome - totalExpense;
-
-    // Apenas despesas contam como "Falta Pagar"
     const pendingExpense = baseList.filter(t => t.type !== 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
-    // Entradas futuras (se existissem) seriam aqui, mas por agora removi "Falta Receber" para simplificar
 
     return { balance, pendingExpense };
   }, [transactions]);
@@ -186,11 +184,11 @@ export default function Extract() {
                 ))}
             </div>
 
-            {/* 3. NAVEGAÇÃO DE DATA (Mobile e PC - unificados na mesma linha para economizar espaço no mobile) */}
+            {/* 3. NAVEGAÇÃO DESKTOP (Apenas no PC - md:flex) */}
             {viewMode === 'month' && (
-                <div className="flex-1 md:flex-none flex items-center justify-end md:justify-start gap-2 bg-[#121212] p-1 rounded-lg border border-[#222] ml-auto">
+                <div className="hidden md:flex items-center gap-3 bg-[#121212] p-1 rounded-lg border border-[#222] ml-auto">
                     <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronLeft size={16} /></button>
-                    <span className="text-xs font-bold text-white min-w-[80px] md:min-w-[100px] text-center capitalize truncate">{monthTitle}</span>
+                    <span className="text-xs font-bold text-white min-w-[100px] text-center capitalize">{monthTitle}</span>
                     <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronRight size={16} /></button>
                 </div>
             )}
@@ -239,13 +237,13 @@ export default function Extract() {
                         {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                      </span>
 
-                     {/* Botão de Status: SÓ APARECE SE NÃO FOR ENTRADA */}
+                     {/* Botão de Status: SÓ PARA DESPESAS */}
                      {!isIncome && (
                          <button
                             onClick={(e) => togglePaid(e, t)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] md:text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95
                             ${t.is_paid 
-                                ? 'bg-[#222] border-[#333] text-gray-500 hover:text-white' 
+                                ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20'  // <-- CORRIGIDO PARA VERDE
                                 : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
                          >
                             {t.is_paid ? (
@@ -256,7 +254,7 @@ export default function Extract() {
                          </button>
                      )}
                      
-                     {/* Se for entrada, mostra apenas um ícone discreto ou nada */}
+                     {/* Ícone estático para entrada */}
                      {isIncome && <div className="px-3 py-1.5"><CheckCircle2 size={18} className="text-green-500/30" /></div>}
                   </div>
                 </div>
@@ -270,7 +268,22 @@ export default function Extract() {
         )}
       </div>
 
-      {/* Removemos a barra fixa inferior antiga já que a navegação subiu */}
+      {/* --- NAVEGAÇÃO MOBILE (Fixa em Baixo - md:hidden) --- */}
+      {viewMode === 'month' && (
+        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:hidden">
+            <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl">
+                <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronLeft size={18} /></button>
+                <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-blue-500" />
+                <span className="font-bold text-sm capitalize text-white">{monthTitle}</span>
+                </div>
+                <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronRight size={18} /></button>
+            </div>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }
