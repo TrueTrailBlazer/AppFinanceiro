@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { ArrowLeft, Lock, Check, X, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { ArrowLeft, Lock, Check, X, Eye, EyeOff, ShieldCheck, KeyRound } from 'lucide-react';
 
 export function SecuritySettings({ onBack }) {
+  const { user } = useAuth();
+  
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(null);
@@ -15,7 +20,7 @@ export function SecuritySettings({ onBack }) {
     { label: "Letra maiúscula", test: (p) => /[A-Z]/.test(p) },
     { label: "Letra minúscula", test: (p) => /[a-z]/.test(p) },
     { label: "Número", test: (p) => /[0-9]/.test(p) },
-    { label: "Caractere especial (@#$%)", test: (p) => /[^A-Za-z0-9]/.test(p) },
+    { label: "Caractere especial", test: (p) => /[^A-Za-z0-9]/.test(p) },
   ];
 
   const isPasswordValid = validations.every(v => v.test(password));
@@ -25,23 +30,39 @@ export function SecuritySettings({ onBack }) {
     setMessage(null);
 
     if (!isPasswordValid) return;
-
     if (password !== confirmPassword) {
-      setMessage({ type: 'error', text: 'As senhas não conferem.' });
+      setMessage({ type: 'error', text: 'As novas senhas não conferem.' });
       return;
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: password });
 
-    if (error) {
-      setMessage({ type: 'error', text: 'Erro: ' + error.message });
-    } else {
-      setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
-      setPassword('');
-      setConfirmPassword('');
+    try {
+        // 1. Validar Senha Antiga (Tentando login)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: currentPassword
+        });
+
+        if (signInError) {
+            throw new Error('A senha atual está incorreta.');
+        }
+
+        // 2. Atualizar para Nova Senha
+        const { error: updateError } = await supabase.auth.updateUser({ password: password });
+
+        if (updateError) throw updateError;
+
+        setMessage({ type: 'success', text: 'Senha atualizada com sucesso!' });
+        setCurrentPassword('');
+        setPassword('');
+        setConfirmPassword('');
+        
+    } catch (error) {
+        setMessage({ type: 'error', text: error.message });
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -52,24 +73,43 @@ export function SecuritySettings({ onBack }) {
         <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors">
             <ArrowLeft size={22} />
         </button>
-        <h1 className="text-lg font-bold text-white">Segurança</h1>
+        <h1 className="text-lg font-bold text-white">Alterar Senha</h1>
       </div>
 
       <div className="space-y-6">
         
-        {/* Intro */}
-        <div className="bg-blue-900/10 border border-blue-900/20 p-4 rounded-2xl flex gap-3 items-start">
-            <ShieldCheck size={24} className="text-blue-500 shrink-0 mt-0.5" />
+        {/* Intro Card */}
+        <div className="bg-[#121212] border border-[#222] p-5 rounded-2xl flex gap-4 items-center">
+            <div className="p-3 bg-blue-900/10 text-blue-500 rounded-full">
+                <ShieldCheck size={24} />
+            </div>
             <div>
-                <h3 className="text-sm font-bold text-white">Proteja sua conta</h3>
-                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                    Use uma senha forte e única. A senha deve cumprir todos os requisitos abaixo.
+                <h3 className="text-sm font-bold text-white">Segurança Forte</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                    Preencha os campos abaixo para atualizar sua credencial.
                 </p>
             </div>
         </div>
 
         <form onSubmit={handleUpdatePassword} className="space-y-5">
             
+            {/* Campo Senha Atual */}
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Senha Atual</label>
+                <div className="relative">
+                    <KeyRound size={16} className="absolute left-3 top-3.5 text-gray-500" />
+                    <input 
+                        type={showPassword ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Digite sua senha atual"
+                        className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-600"
+                    />
+                </div>
+            </div>
+
+            <div className="border-t border-[#222] my-2"></div>
+
             {/* Campo Nova Senha */}
             <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nova Senha</label>
@@ -80,7 +120,7 @@ export function SecuritySettings({ onBack }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Nova senha forte"
-                        className="w-full bg-[#121212] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-700"
+                        className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-600"
                     />
                     <button 
                         type="button"
@@ -93,13 +133,13 @@ export function SecuritySettings({ onBack }) {
             </div>
 
             {/* Checklist de Validação */}
-            <div className="grid grid-cols-1 gap-2 pl-1">
+            <div className="grid grid-cols-1 gap-2 pl-1 bg-[#121212] p-3 rounded-xl border border-[#222]">
                 {validations.map((v, i) => {
                     const isValid = v.test(password);
                     return (
-                        <div key={i} className={`flex items-center gap-2 text-xs transition-colors ${isValid ? 'text-green-500' : 'text-gray-600'}`}>
-                            {isValid ? <Check size={14} /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-700" />}
-                            <span className={isValid ? 'font-medium' : ''}>{v.label}</span>
+                        <div key={i} className={`flex items-center gap-2 text-[11px] transition-colors ${isValid ? 'text-green-500 font-medium' : 'text-gray-600'}`}>
+                            {isValid ? <CheckCircle2 size={12} /> : <div className="w-3 h-3 rounded-full border border-gray-700" />}
+                            <span>{v.label}</span>
                         </div>
                     )
                 })}
@@ -107,7 +147,7 @@ export function SecuritySettings({ onBack }) {
 
             {/* Campo Confirmar */}
             <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Confirmar Senha</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Confirmar Nova Senha</label>
                 <div className="relative">
                     <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
                     <input 
@@ -115,7 +155,7 @@ export function SecuritySettings({ onBack }) {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Repita a nova senha"
-                        className={`w-full bg-[#121212] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none transition-all placeholder-gray-700
+                        className={`w-full bg-[#1a1a1a] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none transition-all placeholder-gray-600
                             ${confirmPassword && password !== confirmPassword ? 'border-red-500/50 focus:border-red-500' : 'focus:border-blue-500'}
                         `}
                     />
@@ -134,10 +174,10 @@ export function SecuritySettings({ onBack }) {
 
             <button 
                 type="submit" 
-                disabled={loading || !isPasswordValid || password !== confirmPassword}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all mt-4"
+                disabled={loading || !isPasswordValid || password !== confirmPassword || !currentPassword}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
             >
-                {loading ? 'Salvando...' : 'Atualizar Senha'}
+                {loading ? 'Validando...' : 'Salvar Alterações'}
             </button>
         </form>
       </div>
