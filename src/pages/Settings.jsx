@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Zap, LogOut, ChevronRight, Shield, Wallet, Bell } from 'lucide-react';
+import { User, Zap, LogOut, ChevronRight, Shield, Wallet } from 'lucide-react';
 import { RecurringExpenses } from '../components/settings/RecurringExpenses';
+import { SecuritySettings } from '../components/settings/SecuritySettings';
 
 export default function Settings() {
   const { user, signOut } = useAuth();
-  const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'recurring'
+  const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'recurring' | 'security'
 
-  // Função para logout
   const handleLogout = async () => {
     await signOut();
-    window.location.href = '/login';
+    window.location.href = '/login'; // Força refresh para limpar estados
   };
 
-  // Componente de Item de Menu (Reutilizável)
   const MenuItem = ({ icon: Icon, label, subLabel, onClick, color = "text-white", danger = false }) => (
     <button 
       onClick={onClick} 
@@ -32,16 +31,19 @@ export default function Settings() {
     </button>
   );
 
-  // --- RENDERIZAÇÃO DA SUB-TELA ---
+  // --- ROTEAMENTO INTERNO ---
   if (currentView === 'recurring') {
     return <RecurringExpenses onBack={() => setCurrentView('menu')} />;
   }
+  if (currentView === 'security') {
+    return <SecuritySettings onBack={() => setCurrentView('menu')} />;
+  }
 
-  // --- RENDERIZAÇÃO DO MENU PRINCIPAL ---
+  // --- MENU PRINCIPAL ---
   return (
     <div className="animate-in fade-in slide-in-from-left-4 duration-300 pb-24 max-w-lg mx-auto space-y-6">
       
-      {/* Cabeçalho de Perfil "Hero" */}
+      {/* Hero Profile */}
       <div className="flex flex-col items-center justify-center py-8">
         <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[2px] shadow-2xl shadow-blue-900/20 mb-4">
             <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center text-3xl font-bold text-white uppercase">
@@ -50,12 +52,8 @@ export default function Settings() {
         </div>
         <h2 className="text-lg font-bold text-white">{user?.email?.split('@')[0]}</h2>
         <p className="text-xs text-gray-500 font-medium">{user?.email}</p>
-        <div className="mt-3 px-3 py-1 rounded-full bg-[#1a1a1a] border border-[#222] text-[10px] text-gray-400 font-mono">
-            ID: {user?.id?.slice(0,8)}...
-        </div>
       </div>
 
-      {/* Grupo 1: Gestão Financeira */}
       <div className="space-y-1">
         <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Gestão</h3>
         <div className="flex flex-col shadow-sm">
@@ -68,33 +66,25 @@ export default function Settings() {
             <MenuItem 
                 icon={Wallet} 
                 label="Metas Financeiras" 
-                subLabel="Em breve"
+                subLabel="Planeje seu futuro (Em breve)"
                 onClick={() => alert('Em desenvolvimento')}
             />
         </div>
       </div>
 
-      {/* Grupo 2: Preferências (Placeholders para futuro) */}
       <div className="space-y-1">
-        <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">App</h3>
+        <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Conta</h3>
         <div className="flex flex-col shadow-sm">
-            <MenuItem 
-                icon={Bell} 
-                label="Notificações" 
-                subLabel="Lembretes de vencimento"
-                onClick={() => {}}
-            />
             <MenuItem 
                 icon={Shield} 
                 label="Segurança" 
                 subLabel="Alterar senha e privacidade"
-                onClick={() => {}}
+                onClick={() => setCurrentView('security')}
             />
         </div>
       </div>
 
-      {/* Botão de Sair */}
-      <div className="pt-4">
+      <div className="pt-4 px-1">
         <MenuItem 
             icon={LogOut} 
             label="Sair da Conta" 
@@ -103,7 +93,7 @@ export default function Settings() {
         />
       </div>
 
-      <p className="text-center text-[10px] text-gray-700 pt-6">Versão 1.0.2 • Fluxo</p>
+      <p className="text-center text-[10px] text-gray-700 pt-6">Versão 1.0.3 • Fluxo</p>
     </div>
   );
 }
