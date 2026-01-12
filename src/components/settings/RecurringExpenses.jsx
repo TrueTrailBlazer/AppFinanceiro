@@ -12,12 +12,12 @@ export function RecurringExpenses({ onBack }) {
   const [recurring, setRecurring] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Modal em vez de form inline
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Form States
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
-  const [newCategory, setNewCategory] = useState('bills');
+  const [newCategory, setNewCategory] = useState('bills'); // Valor padrão
   const [newDay, setNewDay] = useState('5');
 
   useEffect(() => {
@@ -49,9 +49,9 @@ export function RecurringExpenses({ onBack }) {
     if (!error) {
       setNewName('');
       setNewAmount('');
-      setNewCategory('bills');
+      setNewCategory('bills'); // Reseta para o padrão
       setNewDay('5');
-      setIsModalOpen(false); // Fecha o modal
+      setIsModalOpen(false);
       fetchRecurring();
     }
   };
@@ -64,8 +64,6 @@ export function RecurringExpenses({ onBack }) {
 
   const generateMonthExpenses = async () => {
     if (recurring.length === 0) return;
-    
-    // Confirmação estilizada (nativa do browser por enquanto)
     if (!confirm(`Gerar ${recurring.length} contas para este mês?`)) return;
 
     setIsGenerating(true);
@@ -74,7 +72,6 @@ export function RecurringExpenses({ onBack }) {
     const currentYear = today.getFullYear();
 
     const transactionsToCreate = recurring.map(item => {
-      // Cria data com dia fixo, meio-dia para evitar fuso horário
       const date = new Date(currentYear, currentMonth, item.day, 12, 0, 0);
       return {
         user_id: user.id,
@@ -99,16 +96,14 @@ export function RecurringExpenses({ onBack }) {
   return (
     <div className="space-y-6 animate-in slide-in-from-right-8 duration-300 pb-24 relative min-h-screen">
       
-      {/* --- HEADER --- */}
+      {/* Header Fixo */}
       <div className="flex items-center justify-between py-2 sticky top-0 bg-[#050505] z-10 border-b border-[#222]">
         <div className="flex items-center gap-3">
             <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors">
                 <ArrowLeft size={22} />
             </button>
-            <h1 className="text-lg font-bold text-white">Fixos</h1>
+            <h1 className="text-lg font-bold text-white">Despesas Fixas</h1>
         </div>
-        
-        {/* Botão de Adicionar (Header) */}
         <button 
             onClick={() => setIsModalOpen(true)}
             className="bg-[#1a1a1a] border border-[#222] text-blue-500 hover:text-white hover:bg-blue-600 hover:border-blue-600 p-2 rounded-xl transition-all active:scale-95"
@@ -117,11 +112,10 @@ export function RecurringExpenses({ onBack }) {
         </button>
       </div>
 
-      {/* --- CARD RESUMO --- */}
-      {recurring.length > 0 ? (
-        <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-2xl">
+      {/* Card Resumo */}
+      {recurring.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-lg">
             <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-white"/></div>
-            
             <div className="relative z-10">
                 <p className="text-[10px] uppercase font-bold text-blue-200 mb-1 flex items-center gap-1">
                     <Coins size={12}/> Total Mensal Recorrente
@@ -129,7 +123,6 @@ export function RecurringExpenses({ onBack }) {
                 <h2 className="text-3xl font-bold text-white mb-4">
                     {totalFixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </h2>
-                
                 <button 
                     onClick={generateMonthExpenses}
                     disabled={isGenerating}
@@ -139,22 +132,20 @@ export function RecurringExpenses({ onBack }) {
                 </button>
             </div>
         </div>
-      ) : (
-        <div className="bg-[#121212] border border-[#222] rounded-2xl p-6 text-center">
-             <div className="w-12 h-12 bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-3 text-gray-500">
-                <Zap size={24}/>
-             </div>
-             <h3 className="text-sm font-bold text-white mb-1">Sem gastos fixos</h3>
-             <p className="text-xs text-gray-500 mb-4">Cadastre aluguel, internet e assinaturas para lançar tudo com um clique.</p>
-             <button onClick={() => setIsModalOpen(true)} className="text-blue-500 text-xs font-bold hover:underline">
-                Começar agora
-             </button>
-        </div>
       )}
 
-      {/* --- LISTA DE FIXOS --- */}
+      {/* Lista */}
       <div className="space-y-3">
         {loading ? <p className="text-xs text-center text-gray-500 py-4">Carregando...</p> : 
+            recurring.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
+                    <Zap size={32} className="opacity-20"/>
+                    <p className="text-xs font-medium">Nenhuma conta fixa ainda.</p>
+                    <button onClick={() => setIsModalOpen(true)} className="text-blue-500 text-xs font-bold hover:underline">
+                        Adicionar a primeira
+                    </button>
+                </div>
+            ) :
             recurring.map(item => {
             const CatData = getCategory(item.category);
             const CatIcon = CatData.icon;
@@ -182,7 +173,7 @@ export function RecurringExpenses({ onBack }) {
             })}
       </div>
 
-      {/* --- MODAL DE ADICIONAR (Tela Cheia / Overlay) --- */}
+      {/* --- MODAL DE ADICIONAR (Full Screen Overlay) --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#050505] animate-in slide-in-from-bottom-10 duration-200 flex flex-col">
             
@@ -196,9 +187,8 @@ export function RecurringExpenses({ onBack }) {
 
             {/* Conteúdo Scrollável */}
             <div className="flex-1 overflow-y-auto p-5">
-                <form onSubmit={handleAddRecurring} className="space-y-6 max-w-md mx-auto">
+                <form onSubmit={handleAddRecurring} className="space-y-6 max-w-md mx-auto pb-10">
                     
-                    {/* Inputs Básicos */}
                     <div className="space-y-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nome da Conta</label>
@@ -220,32 +210,36 @@ export function RecurringExpenses({ onBack }) {
                         </div>
                     </div>
 
-                    {/* Grid de Categorias */}
+                    {/* SELEÇÃO DE CATEGORIA (Grid Rígido) */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 block">Categoria</label>
                         <div className="grid grid-cols-3 gap-2">
                             {Object.entries(CATEGORIES)
-                                .filter(([k]) => !['salary', 'investment', 'extra'].includes(k))
-                                .map(([key, cat]) => (
-                                <button 
-                                    key={key} 
-                                    type="button" 
-                                    onClick={() => setNewCategory(key)}
-                                    className={`relative p-3 rounded-xl border transition-all flex flex-col items-center gap-2
-                                    ${newCategory === key 
-                                        ? 'bg-blue-600/10 border-blue-500' 
-                                        : 'bg-[#1a1a1a] border-[#222] opacity-60 hover:opacity-100'}`}
-                                >
-                                    {/* Check Visual */}
-                                    {newCategory === key && (
-                                        <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-0.5">
-                                            <Check size={8} className="text-white"/>
-                                        </div>
-                                    )}
-                                    <cat.icon size={20} className={newCategory === key ? 'text-blue-400' : 'text-gray-400'} />
-                                    <span className={`text-[10px] ${newCategory === key ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
-                                </button>
-                            ))}
+                                .filter(([k]) => !['salary', 'investment', 'extra'].includes(k)) // Apenas despesas
+                                .map(([key, cat]) => {
+                                    const isSelected = newCategory === key;
+                                    return (
+                                        <button 
+                                            key={key} 
+                                            type="button" 
+                                            onClick={() => setNewCategory(key)} // Clica e define APENAS esta
+                                            className={`relative p-3 rounded-xl border transition-all flex flex-col items-center gap-2
+                                            ${isSelected 
+                                                ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.2)]' 
+                                                : 'bg-[#1a1a1a] border-[#222] opacity-60 hover:opacity-100 hover:border-[#333]'}`}
+                                        >
+                                            {/* Indicador de Seleção */}
+                                            {isSelected && (
+                                                <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-0.5 animate-in zoom-in duration-200">
+                                                    <Check size={8} className="text-white"/>
+                                                </div>
+                                            )}
+                                            
+                                            <cat.icon size={20} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
+                                            <span className={`text-[10px] ${isSelected ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
+                                        </button>
+                                    );
+                                })}
                         </div>
                     </div>
                 </form>
