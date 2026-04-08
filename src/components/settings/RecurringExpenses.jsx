@@ -177,18 +177,18 @@ export function RecurringExpenses({ onBack }) {
 
       {/* --- MODAL DE ADICIONAR (Full Screen Overlay) --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#050505] animate-in slide-in-from-bottom-10 duration-200 flex flex-col">
+        <div className="fixed inset-0 z-50 bg-[#050505] animate-in slide-in-from-bottom-10 duration-200 flex flex-col h-[100dvh]">
             
             {/* Header Modal */}
-            <div className="px-4 py-4 border-b border-[#222] flex items-center justify-between bg-[#121212]">
+            <div className="px-4 py-4 border-b border-[#222] flex items-center justify-between bg-[#121212] shrink-0">
                 <h2 className="text-lg font-bold text-white">Nova Despesa Fixa</h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 bg-[#222] rounded-full text-gray-400 hover:text-white">
+                <button onClick={() => setIsModalOpen(false)} className="p-2 bg-[#222] rounded-full text-gray-400 hover:text-white transition-colors">
                     <X size={20} />
                 </button>
             </div>
 
             {/* Conteúdo Scrollável */}
-            <div className="flex-1 overflow-y-auto p-5 pb-20">
+            <div className="flex-1 overflow-y-auto p-5 pb-8">
                 <form id="recurring-form" onSubmit={handleAddRecurring} className="space-y-6 max-w-md mx-auto">
                     
                     <div className="space-y-4">
@@ -212,31 +212,29 @@ export function RecurringExpenses({ onBack }) {
                         </div>
                     </div>
 
-                    {/* SELEÇÃO DE CATEGORIA (Grid Rígido Otimizado) */}
+                    {/* SELEÇÃO DE CATEGORIA */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 block">Categoria</label>
                         <div className="grid grid-cols-4 md:grid-cols-5 gap-1.5">
                             {Object.entries(CATEGORIES)
-                                .filter(([k]) => !['salary', 'investment', 'extra'].includes(k)) // Apenas despesas
+                                .filter(([k]) => !['salary', 'investment', 'extra'].includes(k))
                                 .map(([key, cat]) => {
                                     const isSelected = newCategory === key;
                                     return (
                                         <button 
                                             key={key} 
                                             type="button" 
-                                            onClick={() => setNewCategory(key)} // Clica e define APENAS esta
+                                            onClick={() => setNewCategory(key)}
                                             className={`relative p-2 rounded-xl border transition-all flex flex-col items-center gap-1.5
                                             ${isSelected 
                                                 ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.3)]' 
                                                 : 'bg-[#1a1a1a] border-[#222] opacity-60 hover:opacity-100 hover:border-[#333]'}`}
                                         >
-                                            {/* Indicador de Seleção */}
                                             {isSelected && (
                                                 <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-0.5 animate-in zoom-in duration-200">
                                                     <Check size={6} className="text-white"/>
                                                 </div>
                                             )}
-                                            
                                             <cat.icon size={16} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
                                             <span className={`text-[8px] truncate max-w-full px-1 ${isSelected ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
                                         </button>
@@ -247,8 +245,8 @@ export function RecurringExpenses({ onBack }) {
                 </form>
             </div>
 
-            {/* Footer Fixo (Botão Ancorado na Parte Inferior) */}
-            <div className="p-4 border-t border-[#222] bg-[#050505] mt-auto sticky bottom-0">
+            {/* Footer Fixo */}
+            <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#050505] shrink-0">
                 <button 
                     type="submit"
                     form="recurring-form"
