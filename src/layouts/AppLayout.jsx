@@ -9,10 +9,10 @@ export function AppLayout() {
     : "text-gray-500 hover:text-gray-300";
 
   return (
-    <div className="flex flex-col h-screen bg-[#050505] text-white md:flex-row overflow-hidden">
+    <div className="flex flex-col h-screen bg-background text-white md:flex-row overflow-hidden">
       
       {/* --- SIDEBAR (PC) --- */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#121212] border-r border-[#222] p-6 justify-between shrink-0">
+      <aside className="hidden md:flex flex-col w-64 bg-card border-r border-[#222] p-6 justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-8">
             Fluxo
@@ -41,14 +41,14 @@ export function AppLayout() {
       </aside>
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-[#050505]">
-        <div className="w-full md:max-w-[1600px] mx-auto p-3 md:p-8">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-background">
+        <div className="w-full md:max-w-4xl mx-auto p-3 md:p-8">
            <Outlet />
         </div>
       </main>
 
       {/* --- MENU MOBILE --- */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-[#222] px-4 pb-3 pt-2 flex justify-between items-end z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-[#222] px-4 pb-3 pt-2 flex justify-between items-end z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
         
         <Link to="/" className={`flex flex-col items-center gap-0.5 w-12 active:scale-95 transition-transform ${isActive('/')}`}>
           <Home size={18} />
@@ -62,7 +62,7 @@ export function AppLayout() {
 
         {/* Botão Central Menor (Mobile) */}
         <Link to="/add" className="relative -top-4">
-          <div className="bg-blue-600 rounded-full p-3 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[3px] border-[#050505] active:scale-90 transition-transform">
+          <div className="bg-blue-600 rounded-full p-3 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[3px] border-background active:scale-90 transition-transform">
             <Plus size={22} color="white" />
           </div>
         </Link>
