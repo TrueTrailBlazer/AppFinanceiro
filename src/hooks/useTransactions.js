@@ -1,24 +1,13 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useDate } from '../contexts/DateContext';
 
 export function useTransactions() {
   const { user } = useAuth();
+  const { currentDate, changeMonth, monthTitle } = useDate();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  const changeMonth = useCallback((direction) => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + direction);
-      return newDate;
-    });
-  }, []);
-
-  const monthTitle = useMemo(() => {
-    return currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  }, [currentDate]);
 
   const fetchMonthData = useCallback(async () => {
     if (!user) return;

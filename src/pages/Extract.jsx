@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useDate } from '../contexts/DateContext';
 import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
@@ -12,21 +13,10 @@ export default function Extract() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('month'); 
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const { currentDate, changeMonth, monthTitle } = useDate();
   
   const [activeFilter, setActiveFilter] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // --- Lógica de Data ---
-  const changeMonth = (direction) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + direction);
-    setCurrentDate(newDate);
-  };
-
-  const monthTitle = useMemo(() => {
-    return currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  }, [currentDate]);
 
   // --- Busca ---
   const fetchTransactions = async () => {

@@ -94,10 +94,10 @@ export function RecurringExpenses({ onBack }) {
   const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + Number(item.amount), 0), [recurring]);
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-right-8 duration-300 pb-24 relative min-h-screen">
+    <div className="animate-in slide-in-from-right-8 duration-300 pb-24 h-screen max-h-screen flex flex-col relative overflow-hidden">
       
       {/* Header Fixo */}
-      <div className="flex items-center justify-between py-2 sticky top-0 bg-[#050505] z-10 border-b border-[#222]">
+      <div className="flex items-center justify-between py-4 bg-[#050505] z-10 border-b border-[#222]">
         <div className="flex items-center gap-3">
             <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors">
                 <ArrowLeft size={22} />
@@ -112,65 +112,67 @@ export function RecurringExpenses({ onBack }) {
         </button>
       </div>
 
-      {/* Card Resumo */}
-      {recurring.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-lg">
-            <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-white"/></div>
-            <div className="relative z-10">
-                <p className="text-[10px] uppercase font-bold text-blue-200 mb-1 flex items-center gap-1">
-                    <Coins size={12}/> Total Mensal Recorrente
-                </p>
-                <h2 className="text-3xl font-bold text-white mb-4">
-                    {totalFixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </h2>
-                <button 
-                    onClick={generateMonthExpenses}
-                    disabled={isGenerating}
-                    className="w-full bg-white text-blue-900 text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
-                >
-                    {isGenerating ? 'Processando...' : <><CheckCircle2 size={16}/> Lançar Contas do Mês</>}
-                </button>
-            </div>
-        </div>
-      )}
-
-      {/* Lista */}
-      <div className="space-y-3">
-        {loading ? <p className="text-xs text-center text-gray-500 py-4">Carregando...</p> : 
-            recurring.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
-                    <Zap size={32} className="opacity-20"/>
-                    <p className="text-xs font-medium">Nenhuma conta fixa ainda.</p>
-                    <button onClick={() => setIsModalOpen(true)} className="text-blue-500 text-xs font-bold hover:underline">
-                        Adicionar a primeira
+      <div className="flex-1 overflow-y-auto space-y-4 py-4 pr-1">
+          {/* Card Resumo */}
+          {recurring.length > 0 && (
+            <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-lg">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-white"/></div>
+                <div className="relative z-10">
+                    <p className="text-[10px] uppercase font-bold text-blue-200 mb-1 flex items-center gap-1">
+                        <Coins size={12}/> Total Mensal Recorrente
+                    </p>
+                    <h2 className="text-3xl font-bold text-white mb-4">
+                        {totalFixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </h2>
+                    <button 
+                        onClick={generateMonthExpenses}
+                        disabled={isGenerating}
+                        className="w-full bg-white text-blue-900 text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+                    >
+                        {isGenerating ? 'Processando...' : <><CheckCircle2 size={16}/> Lançar Contas do Mês</>}
                     </button>
                 </div>
-            ) :
-            recurring.map(item => {
-            const CatData = getCategory(item.category);
-            const CatIcon = CatData.icon;
-            return (
-                <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-[#121212] border border-[#222] hover:border-[#333] transition-all group">
-                    <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl bg-[#1a1a1a] text-gray-400 border border-[#222]`}>
-                            <CatIcon size={20} />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-white mb-0.5">{item.name}</p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] bg-[#222] text-gray-400 px-2 py-0.5 rounded font-medium border border-[#333]">Dia {item.day}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <span className="text-sm font-bold text-white">R$ {item.amount}</span>
-                        <button onClick={() => handleDelete(item.id)} className="text-gray-600 hover:text-red-500 transition-colors">
-                            <Trash2 size={16}/>
+            </div>
+          )}
+
+          {/* Lista */}
+          <div className="space-y-3 pb-8">
+            {loading ? <p className="text-xs text-center text-gray-500 py-4">Carregando...</p> : 
+                recurring.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
+                        <Zap size={32} className="opacity-20"/>
+                        <p className="text-xs font-medium">Nenhuma conta fixa ainda.</p>
+                        <button onClick={() => setIsModalOpen(true)} className="text-blue-500 text-xs font-bold hover:underline">
+                            Adicionar a primeira
                         </button>
                     </div>
-                </div>
-            )
-            })}
+                ) :
+                recurring.map(item => {
+                const CatData = getCategory(item.category);
+                const CatIcon = CatData.icon;
+                return (
+                    <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-[#121212] border border-[#222] hover:border-[#333] transition-all group">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl bg-[#1a1a1a] text-gray-400 border border-[#222]`}>
+                                <CatIcon size={20} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white mb-0.5">{item.name}</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] bg-[#222] text-gray-400 px-2 py-0.5 rounded font-medium border border-[#333]">Dia {item.day}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                            <span className="text-sm font-bold text-white">R$ {item.amount}</span>
+                            <button onClick={() => handleDelete(item.id)} className="text-gray-600 hover:text-red-500 transition-colors">
+                                <Trash2 size={16}/>
+                            </button>
+                        </div>
+                    </div>
+                )
+                })}
+          </div>
       </div>
 
       {/* --- MODAL DE ADICIONAR (Full Screen Overlay) --- */}
@@ -186,8 +188,8 @@ export function RecurringExpenses({ onBack }) {
             </div>
 
             {/* Conteúdo Scrollável */}
-            <div className="flex-1 overflow-y-auto p-5">
-                <form onSubmit={handleAddRecurring} className="space-y-6 max-w-md mx-auto pb-10">
+            <div className="flex-1 overflow-y-auto p-5 pb-20">
+                <form id="recurring-form" onSubmit={handleAddRecurring} className="space-y-6 max-w-md mx-auto">
                     
                     <div className="space-y-4">
                         <div className="space-y-1.5">
@@ -210,10 +212,10 @@ export function RecurringExpenses({ onBack }) {
                         </div>
                     </div>
 
-                    {/* SELEÇÃO DE CATEGORIA (Grid Rígido) */}
+                    {/* SELEÇÃO DE CATEGORIA (Grid Rígido Otimizado) */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 block">Categoria</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-4 md:grid-cols-5 gap-1.5">
                             {Object.entries(CATEGORIES)
                                 .filter(([k]) => !['salary', 'investment', 'extra'].includes(k)) // Apenas despesas
                                 .map(([key, cat]) => {
@@ -223,20 +225,20 @@ export function RecurringExpenses({ onBack }) {
                                             key={key} 
                                             type="button" 
                                             onClick={() => setNewCategory(key)} // Clica e define APENAS esta
-                                            className={`relative p-3 rounded-xl border transition-all flex flex-col items-center gap-2
+                                            className={`relative p-2 rounded-xl border transition-all flex flex-col items-center gap-1.5
                                             ${isSelected 
-                                                ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.2)]' 
+                                                ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.3)]' 
                                                 : 'bg-[#1a1a1a] border-[#222] opacity-60 hover:opacity-100 hover:border-[#333]'}`}
                                         >
                                             {/* Indicador de Seleção */}
                                             {isSelected && (
-                                                <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-0.5 animate-in zoom-in duration-200">
-                                                    <Check size={8} className="text-white"/>
+                                                <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-0.5 animate-in zoom-in duration-200">
+                                                    <Check size={6} className="text-white"/>
                                                 </div>
                                             )}
                                             
-                                            <cat.icon size={20} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
-                                            <span className={`text-[10px] ${isSelected ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
+                                            <cat.icon size={16} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
+                                            <span className={`text-[8px] truncate max-w-full px-1 ${isSelected ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
                                         </button>
                                     );
                                 })}
@@ -245,10 +247,11 @@ export function RecurringExpenses({ onBack }) {
                 </form>
             </div>
 
-            {/* Footer Fixo */}
-            <div className="p-4 border-t border-[#222] bg-[#050505]">
+            {/* Footer Fixo (Botão Ancorado na Parte Inferior) */}
+            <div className="p-4 border-t border-[#222] bg-[#050505] mt-auto sticky bottom-0">
                 <button 
-                    onClick={handleAddRecurring}
+                    type="submit"
+                    form="recurring-form"
                     disabled={!newName || !newAmount}
                     className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
                 >

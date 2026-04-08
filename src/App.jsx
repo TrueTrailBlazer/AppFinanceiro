@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { AppLayout } from './layouts/AppLayout.jsx';
+import { DateProvider } from './contexts/DateContext.jsx';
 import { PrivateRoute } from './components/router/PrivateRoute.jsx';
 import { PublicRoute } from './components/router/PublicRoute.jsx';
 
@@ -16,9 +17,10 @@ import Analysis from './pages/Analysis.jsx';
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Rota Pública (Login) */}
+      <DateProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Rota Pública (Login) */}
           <Route path="/login" element={
             <PublicRoute>
               <Login />
@@ -36,8 +38,9 @@ export default function App() {
 
           {/* Qualquer rota desconhecida manda pro Login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </DateProvider>
     </AuthProvider>
   );
 }

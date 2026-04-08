@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
-import { useAuth } from '../contexts/AuthContext'; // Importação corrigida
+import { useAuth } from '../contexts/AuthContext';
 import { TrendingUp, TrendingDown, Wallet, Award } from 'lucide-react';
 import { getCategory } from '../utils/constants';
 
@@ -53,7 +53,6 @@ export default function Analysis() {
         const d = new Date(t.created_at);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
         
-        // Só processa se estiver dentro do range gerado (ou se quiser histórico total, muda a lógica)
         if (months[key]) {
             const val = Number(t.amount);
             if (t.type === 'income') months[key].income += val;
@@ -63,22 +62,13 @@ export default function Analysis() {
 
     const monthList = Object.values(months);
 
-    // 2. Por Categoria (Geral)
-    const categories = {};
-    let totalExpense = 0;
-    
-    transactions.forEach(t => {
-        if(t.type !== 'income') {
-            const cat = t.category || 'others';
-            if(!categories[cat]) categories[cat] = 0;
-            categories[cat] += Number(t.amount);
-            totalExpense += Number(t.amount);
-        }
-    });
+    // 2. Top Maiores Gastos (Transações Individuais)
+    const topExpensesList = transactions
+        .filter(t => t.type !== 'income')
+        .sort((a, b) => Number(b.amount) - Number(a.amount))
+        .slice(0, 5);
 
-    const categoryList = Object.entries(categories)
-        .map(([key, value]) => ({ key, value, percent: totalExpense > 0 ? (value/totalExpense)*100 : 0 }))
-        .sort((a, b) => b.value - a.value);
+    const maxTopExpenseValue = Math.max(...topExpensesList.map(t => Number(t.amount)), 1);
 
     // 3. KPIs
     const totalSaved = transactions.reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
@@ -94,7 +84,7 @@ export default function Analysis() {
     });
     const avgSavingsRate = validMonths > 0 ? (savingsRateSum / validMonths) * 100 : 0;
 
-    return { monthList, categoryList, totalSaved, avgSavingsRate };
+    return { monthList, topExpensesList, maxTopExpenseValue, totalSaved, avgSavingsRate };
   }, [transactions, period]);
 
   // Se não houver dados
@@ -114,7 +104,7 @@ export default function Analysis() {
         <h1 className="text-xl font-bold text-white">Análise</h1>
         <select 
             value={period} onChange={e => setPeriod(Number(e.target.value))}
-            className="bg-[#121212] border border-[#222] text-xs text-gray-400 rounded-lg px-2 py-1 outline-none"
+            className="bg-[#121212] border border-[#222] text-xs text-gray-400 rounded-lg px-2 py-1 outline-none cursor-pointer"
         >
             <option value={3}>3 Meses</option>
             <option value={6}>6 Meses</option>
@@ -137,8 +127,8 @@ export default function Analysis() {
                 </div>
                 <div className="bg-[#121212] p-4 rounded-2xl border border-[#222] relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-3 opacity-10"><Award size={40} className="text-yellow-500"/></div>
-                    <p className="text-[10px] uppercase font-bold text-gray-500">Taxa de Poupança</p>
-                    <h3 className={`text-lg font-bold mt-1 ${data.avgSavingsRate > 0 ? 'text-green-400' : 'text-gray-400'}`}>
+                    <p className="text-[10px] uppercase font-bold text-gray-400">Taxa de Poupança (Média)</p>
+                    <h3 className={`text-lg font-bold mt-1 ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {data.avgSavingsRate.toFixed(1)}%
                     </h3>
                 </div>
@@ -146,9 +136,15 @@ export default function Analysis() {
 
             {/* --- GRÁFICO --- */}
             <div className="bg-[#121212] p-5 rounded-2xl border border-[#222]">
-                <h3 className="text-sm font-bold text-gray-300 mb-6 flex items-center gap-2">
-                    <TrendingUp size={16} className="text-blue-500"/> Fluxo de Caixa
-                </h3>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2">
+                        <TrendingUp size={16} className="text-blue-500"/> Receitas vs. Despesas
+                    </h3>
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 uppercase">
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-600"></div> Receitas</div>
+                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-600"></div> Despesas</div>
+                    </div>
+                </div>
                 
                 <div className="flex items-end justify-between gap-2 h-40 pt-2 border-b border-[#222] pb-1">
                     {data.monthList.map((m, i) => (
@@ -156,12 +152,12 @@ export default function Analysis() {
                             <div className="flex gap-1 items-end justify-center w-full h-full relative">
                                 {/* Barra Receita */}
                                 <div 
-                                    className="w-1.5 md:w-3 bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-500 min-h-[4px]"
+                                    className="w-2 md:w-4 bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-500 min-h-[4px]"
                                     style={{ height: `${(m.income / maxChartValue) * 100}%` }}
                                 ></div>
                                 {/* Barra Despesa */}
                                 <div 
-                                    className="w-1.5 md:w-3 bg-red-600 rounded-t-sm transition-all group-hover:bg-red-500 min-h-[4px]"
+                                    className="w-2 md:w-4 bg-red-600 rounded-t-sm transition-all group-hover:bg-red-500 min-h-[4px]"
                                     style={{ height: `${(m.expense / maxChartValue) * 100}%` }}
                                 ></div>
                             </div>
@@ -179,27 +175,33 @@ export default function Analysis() {
             {/* --- RANKING --- */}
             <div className="space-y-3">
                 <h3 className="text-sm font-bold text-gray-300 px-1">Maiores Gastos</h3>
-                {data.categoryList.map(cat => {
-                    const catInfo = getCategory(cat.key);
+                {data.topExpensesList.map(item => {
+                    const catInfo = getCategory(item.category);
                     const Icon = catInfo.icon;
+                    const amount = Number(item.amount);
+                    const percent = (amount / data.maxTopExpenseValue) * 100;
+                    
                     return (
-                        <div key={cat.key} className="bg-[#121212] p-3 rounded-xl border border-[#222] flex items-center gap-3 relative overflow-hidden">
+                        <div key={item.id} className="bg-[#121212] p-3 rounded-xl border border-[#222] flex items-center gap-3 relative overflow-hidden">
                             <div 
                                 className="absolute left-0 top-0 bottom-0 bg-red-900/10 pointer-events-none transition-all duration-1000" 
-                                style={{ width: `${cat.percent}%` }}
+                                style={{ width: `${percent}%` }}
                             />
                             <div className={`p-2 rounded-lg shrink-0 ${catInfo.bg} z-10`}>
                                 <Icon size={16} className={catInfo.color} />
                             </div>
                             <div className="flex-1 z-10">
                                 <div className="flex justify-between items-center mb-0.5">
-                                    <span className="text-xs font-bold text-gray-200 capitalize">{catInfo.label}</span>
+                                    <span className="text-xs font-bold text-gray-200">{item.name}</span>
                                     <span className="text-xs font-bold text-white">
-                                        {cat.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        {amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </span>
                                 </div>
-                                <div className="w-full bg-[#222] h-1 rounded-full overflow-hidden">
-                                    <div className="bg-red-500 h-full rounded-full" style={{ width: `${cat.percent}%` }}></div>
+                                <div className="flex justify-between items-center">
+                                     <span className="text-[10px] text-gray-500">
+                                        {new Date(item.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}
+                                     </span>
+                                     <span className="text-[9px] bg-[#222] text-gray-500 px-1.5 py-0.5 rounded capitalize">{catInfo.label}</span>
                                 </div>
                             </div>
                         </div>
