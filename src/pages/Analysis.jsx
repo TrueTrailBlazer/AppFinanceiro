@@ -134,79 +134,86 @@ export default function Analysis() {
                 </div>
             </div>
 
-            {/* --- GRÁFICO --- */}
-            <div className="bg-[#121212] p-5 rounded-2xl border border-[#222]">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2">
-                        <TrendingUp size={16} className="text-blue-500"/> Receitas vs. Despesas
-                    </h3>
-                    <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 uppercase">
-                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-600"></div> Receitas</div>
-                        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-600"></div> Despesas</div>
+            {/* --- Desktop Grid para Gráfico + Ranking --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {/* --- GRÁFICO --- */}
+                <div className="bg-[#121212] p-5 rounded-2xl border border-[#222] h-fit shadow-lg">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2">
+                            <TrendingUp size={16} className="text-blue-500"/> Receitas vs. Despesas
+                        </h3>
+                        <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 uppercase">
+                            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-600"></div> Receitas</div>
+                            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-600"></div> Despesas</div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-end justify-between gap-2 h-48 pt-2 border-b border-[#222] pb-1">
+                        {data.monthList.map((m, i) => (
+                            <div key={i} className="flex flex-col items-center gap-2 flex-1 group h-full justify-end">
+                                <div className="flex gap-1 items-end justify-center w-full h-full relative">
+                                    {/* Barra Receita */}
+                                    <div 
+                                        className="w-2 md:w-5 bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-500 min-h-[4px]"
+                                        style={{ height: `${(m.income / maxChartValue) * 100}%` }}
+                                    ></div>
+                                    {/* Barra Despesa */}
+                                    <div 
+                                        className="w-2 md:w-5 bg-red-600 rounded-t-sm transition-all group-hover:bg-red-500 min-h-[4px]"
+                                        style={{ height: `${(m.expense / maxChartValue) * 100}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Legenda Meses */}
+                    <div className="flex justify-between mt-3 px-1">
+                         {data.monthList.map((m, i) => (
+                             <span key={i} className="text-[9px] md:text-[10px] uppercase font-bold text-gray-500 w-full text-center">{m.label}</span>
+                         ))}
                     </div>
                 </div>
-                
-                <div className="flex items-end justify-between gap-2 h-40 pt-2 border-b border-[#222] pb-1">
-                    {data.monthList.map((m, i) => (
-                        <div key={i} className="flex flex-col items-center gap-2 flex-1 group h-full justify-end">
-                            <div className="flex gap-1 items-end justify-center w-full h-full relative">
-                                {/* Barra Receita */}
-                                <div 
-                                    className="w-2 md:w-4 bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-500 min-h-[4px]"
-                                    style={{ height: `${(m.income / maxChartValue) * 100}%` }}
-                                ></div>
-                                {/* Barra Despesa */}
-                                <div 
-                                    className="w-2 md:w-4 bg-red-600 rounded-t-sm transition-all group-hover:bg-red-500 min-h-[4px]"
-                                    style={{ height: `${(m.expense / maxChartValue) * 100}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {/* Legenda Meses */}
-                <div className="flex justify-between mt-2 px-1">
-                     {data.monthList.map((m, i) => (
-                         <span key={i} className="text-[9px] uppercase font-bold text-gray-500 w-full text-center">{m.label}</span>
-                     ))}
-                </div>
-            </div>
 
-            {/* --- RANKING --- */}
-            <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-300 px-1">Maiores Gastos</h3>
-                {data.topExpensesList.map(item => {
-                    const catInfo = getCategory(item.category);
-                    const Icon = catInfo.icon;
-                    const amount = Number(item.amount);
-                    const percent = (amount / data.maxTopExpenseValue) * 100;
-                    
-                    return (
-                        <div key={item.id} className="bg-[#121212] p-3 rounded-xl border border-[#222] flex items-center gap-3 relative overflow-hidden">
-                            <div 
-                                className="absolute left-0 top-0 bottom-0 bg-red-900/10 pointer-events-none transition-all duration-1000" 
-                                style={{ width: `${percent}%` }}
-                            />
-                            <div className={`p-2 rounded-lg shrink-0 ${catInfo.bg} z-10`}>
-                                <Icon size={16} className={catInfo.color} />
-                            </div>
-                            <div className="flex-1 z-10">
-                                <div className="flex justify-between items-center mb-0.5">
-                                    <span className="text-xs font-bold text-gray-200">{item.name}</span>
-                                    <span className="text-xs font-bold text-white">
-                                        {amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                    </span>
+                {/* --- RANKING --- */}
+                <div className="space-y-3 p-4 bg-[#121212]/30 md:bg-transparent rounded-2xl">
+                    <h3 className="text-sm font-bold text-gray-300 px-1 flex items-center gap-2">
+                        <TrendingDown size={18} className="text-red-500" />
+                        Maiores Gastos
+                    </h3>
+                    {data.topExpensesList.map(item => {
+                        const catInfo = getCategory(item.category);
+                        const Icon = catInfo.icon;
+                        const amount = Number(item.amount);
+                        const percent = (amount / data.maxTopExpenseValue) * 100;
+                        
+                        return (
+                            <div key={item.id} className="bg-[#121212] p-3 rounded-xl border border-[#222] flex items-center gap-3 relative overflow-hidden transition-colors hover:border-[#333]">
+                                <div 
+                                    className="absolute left-0 top-0 bottom-0 bg-red-900/10 pointer-events-none transition-all duration-1000" 
+                                    style={{ width: `${percent}%` }}
+                                />
+                                <div className={`p-2.5 rounded-lg shrink-0 ${catInfo.bg} z-10 border border-[#222]`}>
+                                    <Icon size={16} className={catInfo.color} />
                                 </div>
-                                <div className="flex justify-between items-center">
-                                     <span className="text-[10px] text-gray-500">
-                                        {new Date(item.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}
-                                     </span>
-                                     <span className="text-[9px] bg-[#222] text-gray-500 px-1.5 py-0.5 rounded capitalize">{catInfo.label}</span>
+                                <div className="flex-1 z-10">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-bold text-gray-200 truncate pr-2">{item.name}</span>
+                                        <span className="text-sm font-bold text-white shrink-0">
+                                            {amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                         <span className="text-[10px] text-gray-500 font-medium">
+                                            {new Date(item.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}
+                                         </span>
+                                         <span className="text-[9px] bg-[#222] text-gray-400 px-1.5 py-0.5 rounded capitalize font-medium">{catInfo.label}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )
-                })}
+                        )
+                    })}
+                </div>
             </div>
         </>
       )}

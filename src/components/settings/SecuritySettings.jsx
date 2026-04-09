@@ -64,32 +64,29 @@ export function SecuritySettings({ onBack }) {
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-right-8 duration-300 pb-24">
+    <div className="fixed inset-0 z-[60] bg-[#050505] animate-in slide-in-from-right-4 duration-300 flex flex-col md:relative md:inset-auto md:z-auto md:overflow-visible">
       
-      {/* Header */}
-      <div className="flex items-center gap-3 py-2">
-        <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft size={22} />
-        </button>
+      {/* Header Minimalista S/ Botão */}
+      <div className="py-5 px-1 bg-[#121212] border-b border-[#222] shrink-0 text-center">
         <h1 className="text-lg font-bold text-white">Alterar Senha</h1>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-2 space-y-6">
         
         {/* Intro */}
         <div className="bg-[#121212] border border-[#222] p-5 rounded-2xl flex gap-4 items-center">
-            <div className="p-3 bg-blue-900/10 text-blue-500 rounded-full">
+            <div className="p-3 bg-blue-900/10 text-blue-500 rounded-full shrink-0">
                 <ShieldCheck size={24} />
             </div>
             <div>
                 <h3 className="text-sm font-bold text-white">Segurança Forte</h3>
                 <p className="text-xs text-gray-400 mt-0.5">
-                    Preencha os dados abaixo para atualizar sua credencial.
+                    Preencha os dados abaixo para atualizar sua credencial de acesso.
                 </p>
             </div>
         </div>
 
-        <form onSubmit={handleUpdatePassword} className="space-y-5">
+        <form id="security-form" onSubmit={handleUpdatePassword} className="space-y-5 pb-8">
             
             {/* Senha Atual */}
             <div className="space-y-1.5">
@@ -162,20 +159,32 @@ export function SecuritySettings({ onBack }) {
 
             {/* Feedback Final */}
             {message && (
-                <div className={`p-3 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 ${message.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                    {message.type === 'success' ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>}
+                <div className={`p-4 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 ${message.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                    {message.type === 'success' ? <ShieldCheck size={18}/> : <AlertCircle size={18}/>}
                     {message.text}
                 </div>
             )}
-
-            <button 
-                type="submit" 
-                disabled={loading || !isPasswordValid || password !== confirmPassword || !currentPassword}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
-            >
-                {loading ? 'Validando...' : 'Salvar Alterações'}
-            </button>
         </form>
+      </div>
+
+      {/* FOOTER LISTA - Thumb Zone */}
+      <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-10 sticky bottom-0">
+          <button 
+              type="button" 
+              onClick={onBack} 
+              className="px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center flex-1 md:flex-none"
+          >
+              Voltar
+          </button>
+          
+          <button 
+              type="submit" 
+              form="security-form"
+              disabled={loading || !isPasswordValid || password !== confirmPassword || !currentPassword}
+              className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+          >
+              {loading ? 'Validando...' : 'Salvar Senha'}
+          </button>
       </div>
     </div>
   );

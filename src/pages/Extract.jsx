@@ -5,6 +5,7 @@ import { useDate } from '../contexts/DateContext';
 import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
+import { MonthSelector } from '../components/dashboard/MonthSelector';
 
 export default function Extract() {
   const { user } = useAuth();
@@ -186,9 +187,9 @@ export default function Extract() {
       </div>
 
       {/* --- LISTA DE TRANSAÇÕES --- */}
-      <div className="space-y-3 pt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
         {loading ? (
-           <div className="text-center py-12 text-xs text-gray-500 animate-pulse">Carregando...</div>
+           <div className="text-center md:col-span-2 py-12 text-xs text-gray-500 animate-pulse">Carregando...</div>
         ) : filteredList.length > 0 ? (
             filteredList.map(t => {
               const catData = getCategory(t.category);
@@ -199,30 +200,30 @@ export default function Extract() {
                 <div 
                   key={t.id}
                   onClick={() => handleEdit(t)}
-                  className={`relative group flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden
+                  className={`relative group flex flex-col justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden
                     ${isIncome
                         ? 'bg-[#1a1a1a] border-green-500/10 shadow-[inset_3px_0_0_0_#22c55e]' 
                         : t.is_paid 
                             ? 'bg-[#121212] border-[#222] hover:border-[#333]' 
                             : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
                 >
-                  <div className="flex items-center gap-4 mb-3 md:mb-0">
+                  <div className="flex items-center gap-4 mb-4">
                     <div className={`p-3 rounded-full shrink-0 ${isIncome ? 'bg-green-500/10' : (t.is_paid ? catData.bg : 'bg-red-500/10')}`}>
                       <CategoryIcon size={20} className={isIncome ? 'text-green-500' : (t.is_paid ? catData.color : 'text-red-500')} />
                     </div>
-                    <div>
-                      <h3 className={`font-bold text-sm md:text-base ${isIncome ? 'text-white' : (t.is_paid ? 'text-white' : 'text-red-100')}`}>{t.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                         <span className="text-[10px] md:text-xs text-gray-500 bg-[#222] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
-                         <span className="text-[10px] md:text-xs text-gray-500">
-                            {new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                    <div className="flex-1">
+                      <h3 className={`font-bold text-sm ${isIncome ? 'text-white' : (t.is_paid ? 'text-white' : 'text-red-100')} line-clamp-1`}>{t.name}</h3>
+                      <div className="flex items-center gap-2 mt-1 truncate">
+                         <span className="text-[10px] text-gray-500 bg-[#222] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
+                         <span className="text-[10px] text-gray-500">
+                            {new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                          </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between md:gap-8">
-                     <span className={`text-base md:text-lg font-bold ${isIncome ? 'text-green-400' : 'text-white'}`}>
+                  <div className="flex items-center justify-between border-t border-[#222] pt-3 mt-auto">
+                     <span className={`text-base font-bold ${isIncome ? 'text-green-400' : 'text-white'}`}>
                         {isIncome ? '+ ' : '- '}
                         {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                      </span>
@@ -231,9 +232,9 @@ export default function Extract() {
                      {!isIncome && (
                          <button
                             onClick={(e) => togglePaid(e, t)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] md:text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider transition-all hover:scale-105 active:scale-95
                             ${t.is_paid 
-                                ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20'  // <-- CORRIGIDO PARA VERDE
+                                ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20' 
                                 : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
                          >
                             {t.is_paid ? (
@@ -251,7 +252,7 @@ export default function Extract() {
               );
             })
         ) : (
-            <div className="py-20 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
+            <div className="py-20 md:col-span-2 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
                 <Search size={24} className="opacity-20" />
                 <p className="text-sm font-medium">Nada encontrado com este filtro.</p>
             </div>
@@ -260,18 +261,7 @@ export default function Extract() {
 
       {/* --- NAVEGAÇÃO MOBILE (Fixa em Baixo - md:hidden) --- */}
       {viewMode === 'month' && (
-        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 md:hidden">
-            <div className="max-w-3xl mx-auto">
-            <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl">
-                <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronLeft size={18} /></button>
-                <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-blue-500" />
-                <span className="font-bold text-sm capitalize text-white">{monthTitle}</span>
-                </div>
-                <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300"><ChevronRight size={18} /></button>
-            </div>
-            </div>
-        </div>
+          <MonthSelector monthTitle={monthTitle} changeMonth={changeMonth} />
       )}
 
     </div>

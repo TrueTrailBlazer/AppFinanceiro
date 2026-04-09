@@ -94,25 +94,22 @@ export function RecurringExpenses({ onBack }) {
   const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + Number(item.amount), 0), [recurring]);
 
   return (
-    <div className="animate-in slide-in-from-right-8 duration-300 pb-24 h-screen max-h-screen flex flex-col relative overflow-hidden">
+    <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
       
-      {/* Header Fixo */}
-      <div className="flex items-center justify-between py-4 bg-[#050505] z-10 border-b border-[#222]">
-        <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors">
-                <ArrowLeft size={22} />
-            </button>
-            <h1 className="text-lg font-bold text-white">Despesas Fixas</h1>
+      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] md:flex-initial md:h-auto md:max-h-[85vh] md:w-full md:rounded-3xl md:border md:border-[#222] md:shadow-2xl overflow-hidden relative">
+        
+        {/* Header Minimalista S/ Botão */}
+        <div className="flex items-center justify-between py-5 px-5 bg-[#121212] border-b border-[#222] shrink-0">
+          <h1 className="text-lg font-bold text-white">Despesas Fixas</h1>
+          <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 bg-blue-600/10 text-blue-500 hover:text-white hover:bg-blue-600 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
+          >
+              <Plus size={16} /> Nova
+          </button>
         </div>
-        <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-[#1a1a1a] border border-[#222] text-blue-500 hover:text-white hover:bg-blue-600 hover:border-blue-600 p-2 rounded-xl transition-all active:scale-95"
-        >
-            <Plus size={20} />
-        </button>
-      </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4 py-4 pr-1">
+      <div className="flex-1 overflow-y-auto space-y-4 py-4 px-2">
           {/* Card Resumo */}
           {recurring.length > 0 && (
             <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-lg">
@@ -142,9 +139,6 @@ export function RecurringExpenses({ onBack }) {
                     <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
                         <Zap size={32} className="opacity-20"/>
                         <p className="text-xs font-medium">Nenhuma conta fixa ainda.</p>
-                        <button onClick={() => setIsModalOpen(true)} className="text-blue-500 text-xs font-bold hover:underline">
-                            Adicionar a primeira
-                        </button>
                     </div>
                 ) :
                 recurring.map(item => {
@@ -165,8 +159,8 @@ export function RecurringExpenses({ onBack }) {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                             <span className="text-sm font-bold text-white">R$ {item.amount}</span>
-                            <button onClick={() => handleDelete(item.id)} className="text-gray-600 hover:text-red-500 transition-colors">
-                                <Trash2 size={16}/>
+                            <button onClick={() => handleDelete(item.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1">
+                                <Trash2 size={18}/>
                             </button>
                         </div>
                     </div>
@@ -175,90 +169,94 @@ export function RecurringExpenses({ onBack }) {
           </div>
       </div>
 
-      {/* --- MODAL DE ADICIONAR (Full Screen Overlay) --- */}
+      </div>
+
+      {/* FOOTER LISTA - Thumb Zone */}
+      <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 sticky bottom-0 z-10 md:hidden shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+         <button onClick={onBack} className="w-full px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center">
+             Voltar
+         </button>
+      </div>
+
+      {/* --- MODAL DE ADICIONAR --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#050505] animate-in slide-in-from-bottom-10 duration-200 flex flex-col h-[100dvh]">
+        <div className="fixed inset-0 z-[100] bg-[#050505]/90 flex flex-col justify-end md:justify-center md:items-center">
             
-            {/* Header Modal */}
-            <div className="px-4 py-4 border-b border-[#222] flex items-center justify-between bg-[#121212] shrink-0">
-                <h2 className="text-lg font-bold text-white">Nova Despesa Fixa</h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 bg-[#222] rounded-full text-gray-400 hover:text-white transition-colors">
-                    <X size={20} />
-                </button>
-            </div>
+            {/* Modal Box Container */}
+            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] animate-in slide-in-from-bottom-10 duration-200 md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl md:border md:border-[#222] md:shadow-2xl overflow-hidden relative">
+                
+                {/* Header Modal */}
+                <div className="px-5 py-5 border-b border-[#222] text-center bg-[#121212] shrink-0">
+                    <h2 className="text-lg font-bold text-white">Nova Despesa Fixa</h2>
+                </div>
 
-            {/* Conteúdo Scrollável */}
-            <div className="flex-1 overflow-y-auto p-5 pb-8">
-                <form id="recurring-form" onSubmit={handleAddRecurring} className="space-y-6 max-w-md mx-auto">
-                    
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nome da Conta</label>
-                            <input type="text" placeholder="Ex: Netflix" value={newName} onChange={e => setNewName(e.target.value)} autoFocus
-                                className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all"/>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
+                {/* Conteúdo Scrollável */}
+                <div className="flex-1 overflow-y-auto p-5 pb-8">
+                    <form id="recurring-form" onSubmit={handleAddRecurring} className="space-y-6">
+                        
+                        <div className="space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Valor (R$)</label>
-                                <input type="number" placeholder="0.00" value={newAmount} onChange={e => setNewAmount(e.target.value)}
+                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nome da Conta</label>
+                                <input type="text" placeholder="Ex: Netflix" value={newName} onChange={e => setNewName(e.target.value)} autoFocus
                                     className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all"/>
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Dia Vencimento</label>
-                                <input type="number" placeholder="5" max="31" value={newDay} onChange={e => setNewDay(e.target.value)}
-                                    className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 text-center transition-all"/>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Valor (R$)</label>
+                                    <input type="number" placeholder="0.00" value={newAmount} onChange={e => setNewAmount(e.target.value)}
+                                        className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all"/>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Dia Vencimento</label>
+                                    <input type="number" placeholder="5" max="31" value={newDay} onChange={e => setNewDay(e.target.value)}
+                                        className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 text-center transition-all"/>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* SELEÇÃO DE CATEGORIA */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 block">Categoria</label>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-1.5">
-                            {Object.entries(CATEGORIES)
-                                .filter(([k]) => !['salary', 'investment', 'extra'].includes(k))
-                                .map(([key, cat]) => {
-                                    const isSelected = newCategory === key;
-                                    return (
-                                        <button 
-                                            key={key} 
-                                            type="button" 
-                                            onClick={() => setNewCategory(key)}
-                                            className={`relative p-2 rounded-xl border transition-all flex flex-col items-center gap-1.5
-                                            ${isSelected 
-                                                ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.3)]' 
-                                                : 'bg-[#1a1a1a] border-[#222] opacity-60 hover:opacity-100 hover:border-[#333]'}`}
-                                        >
-                                            {isSelected && (
-                                                <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-0.5 animate-in zoom-in duration-200">
-                                                    <Check size={6} className="text-white"/>
-                                                </div>
-                                            )}
-                                            <cat.icon size={16} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
-                                            <span className={`text-[8px] truncate max-w-full px-1 ${isSelected ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
-                                        </button>
-                                    );
-                                })}
+                        {/* SELEÇÃO DE CATEGORIA */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 block">Categoria</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {Object.entries(CATEGORIES)
+                                    .filter(([k]) => !['salary', 'investment', 'extra'].includes(k))
+                                    .map(([key, cat]) => {
+                                        const isSelected = newCategory === key;
+                                        return (
+                                            <button 
+                                                key={key} type="button" onClick={() => setNewCategory(key)}
+                                                className={`relative p-2.5 rounded-xl border transition-all flex flex-col items-center gap-1.5
+                                                ${isSelected 
+                                                    ? 'bg-[#1a1a1a] border-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.3)]' 
+                                                    : 'bg-[#121212] border-[#222] opacity-60 hover:opacity-100 hover:border-[#333]'}`}
+                                            >
+                                                <cat.icon size={18} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
+                                                <span className={`text-[8px] uppercase tracking-wide truncate max-w-full px-1 ${isSelected ? 'text-white font-bold' : 'text-gray-500'}`}>{cat.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                            </div>
                         </div>
-                    </div>
-                </form>
-            </div>
+                    </form>
+                </div>
 
-            {/* Footer Fixo */}
-            <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#050505] shrink-0">
-                <button 
-                    type="submit"
-                    form="recurring-form"
-                    disabled={!newName || !newAmount}
-                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
-                >
-                    Salvar Despesa
-                </button>
+                {/* Footer Modal Thumb Zone */}
+                <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center">
+                        Cancelar
+                    </button>
+                    
+                    <button 
+                        type="submit" form="recurring-form" disabled={!newName || !newAmount}
+                        className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+                    >
+                        Salvar
+                    </button>
+                </div>
             </div>
         </div>
       )}
-
     </div>
   );
 }
