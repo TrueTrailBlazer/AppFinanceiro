@@ -4,11 +4,13 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { User, Zap, LogOut, ChevronRight, Shield, Wallet } from 'lucide-react';
 import { RecurringExpenses } from '../components/settings/RecurringExpenses';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
+import { ProfileSettings } from '../components/settings/ProfileSettings';
+import { FinancialGoals } from '../components/settings/FinancialGoals';
 
 export default function Settings() {
   const { user, signOut } = useAuth();
   const { showAlert } = useNotifications();
-  const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'recurring' | 'security'
+  const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'profile' | 'recurring' | 'security' | 'goals'
 
   const handleLogout = async () => {
     await signOut();
@@ -33,12 +35,14 @@ export default function Settings() {
     </button>
   );
 
-  // --- ROTEAMENTO INTERNO ---
-  if (currentView === 'recurring') {
-    return <RecurringExpenses onBack={() => setCurrentView('menu')} />;
+  if (currentView === 'profile') {
+    return <ProfileSettings onBack={() => setCurrentView('menu')} />;
   }
   if (currentView === 'security') {
     return <SecuritySettings onBack={() => setCurrentView('menu')} />;
+  }
+  if (currentView === 'goals') {
+    return <FinancialGoals onBack={() => setCurrentView('menu')} />;
   }
 
   // --- MENU PRINCIPAL ---
@@ -47,13 +51,26 @@ export default function Settings() {
       
       {/* Hero Profile */}
       <div className="flex flex-col items-center justify-center py-8">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[2px] shadow-2xl shadow-blue-900/20 mb-4">
-            <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center text-3xl font-bold text-white uppercase">
-                {user?.email?.[0]}
+        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[2px] shadow-2xl shadow-blue-900/20 mb-4 overflow-hidden">
+            <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center text-3xl font-bold text-white uppercase overflow-hidden">
+                {user?.user_metadata?.avatar_url ? (
+                    <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                    user?.user_metadata?.display_name?.[0] || user?.email?.[0]
+                )}
             </div>
         </div>
-        <h2 className="text-lg font-bold text-white">{user?.email?.split('@')[0]}</h2>
+        <h2 className="text-lg font-bold text-white">
+            {user?.user_metadata?.display_name || user?.email?.split('@')[0]}
+        </h2>
         <p className="text-xs text-gray-500 font-medium">{user?.email}</p>
+        
+        <button 
+            onClick={() => setCurrentView('profile')}
+            className="mt-4 text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
+        >
+            Editar Perfil
+        </button>
       </div>
 
       <div className="space-y-1">
@@ -68,8 +85,8 @@ export default function Settings() {
             <MenuItem 
                 icon={Wallet} 
                 label="Metas Financeiras" 
-                subLabel="Planeje seu futuro (Em breve)"
-                onClick={() => showAlert('Módulo em desenvolvimento', 'info')}
+                subLabel="Planeje seu futuro"
+                onClick={() => setCurrentView('goals')}
             />
         </div>
       </div>
@@ -77,6 +94,12 @@ export default function Settings() {
       <div className="space-y-1">
         <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Conta</h3>
         <div className="flex flex-col shadow-sm">
+            <MenuItem 
+                icon={User} 
+                label="Editar Perfil" 
+                subLabel="Altere seu nome e foto"
+                onClick={() => setCurrentView('profile')}
+            />
             <MenuItem 
                 icon={Shield} 
                 label="Segurança" 
