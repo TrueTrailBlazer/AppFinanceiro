@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { Plus, Trash2, Zap, CheckCircle2, ArrowLeft, Calendar, Coins, X, Check } from 'lucide-react';
 import { getCategory, CATEGORIES } from '../../utils/constants';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 export function RecurringExpenses({ onBack }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useNotifications();
   
   const [recurring, setRecurring] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,7 @@ export function RecurringExpenses({ onBack }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Form States
+  const [editingExpense, setEditingExpense] = useState(null);
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newCategory, setNewCategory] = useState('bills'); // Valor padrão
@@ -34,37 +37,68 @@ export function RecurringExpenses({ onBack }) {
     setLoading(false);
   };
 
-  const handleAddRecurring = async (e) => {
+  const handleSaveRecurring = async (e) => {
     e.preventDefault();
     if (!newName || !newAmount) return;
 
-    const { error } = await supabase.from('recurring_expenses').insert([{
+    const expenseData = {
       user_id: user.id,
       name: newName,
       amount: parseFloat(newAmount),
       category: newCategory,
       day: parseInt(newDay)
-    }]);
+    };
+
+    let error;
+    if (editingExpense) {
+      const { error: err } = await supabase
+        .from('recurring_expenses')
+        .update(expenseData)
+        .eq('id', editingExpense.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase
+        .from('recurring_expenses')
+        .insert([expenseData]);
+      error = err;
+    }
 
     if (!error) {
-      setNewName('');
-      setNewAmount('');
-      setNewCategory('bills'); // Reseta para o padrão
-      setNewDay('5');
+      resetForm();
       setIsModalOpen(false);
       fetchRecurring();
     }
   };
 
+  const resetForm = () => {
+    setEditingExpense(null);
+    setNewName('');
+    setNewAmount('');
+    setNewCategory('bills');
+    setNewDay('5');
+  };
+
+  const handleEdit = (item) => {
+    setEditingExpense(item);
+    setNewName(item.name);
+    setNewAmount(item.amount.toString());
+    setNewCategory(item.category);
+    setNewDay(item.day.toString());
+    setIsModalOpen(true);
+  };
+
   const handleDelete = async (id) => {
-    if(!confirm("Remover esta despesa fixa?")) return;
+    const confirmed = await showConfirm("Remover esta despesa fixa?", "Excluir Despesa");
+    if(!confirmed) return;
     await supabase.from('recurring_expenses').delete().eq('id', id);
     setRecurring(prev => prev.filter(item => item.id !== id));
+    showAlert('Despesa removida', 'success');
   };
 
   const generateMonthExpenses = async () => {
     if (recurring.length === 0) return;
-    if (!confirm(`Gerar ${recurring.length} contas para este mês?`)) return;
+    const confirmed = await showConfirm(`Gerar ${recurring.length} contas para este mês?`, "Lançar Mensalidade");
+    if (!confirmed) return;
 
     setIsGenerating(true);
     const today = new Date();
@@ -87,8 +121,11 @@ export function RecurringExpenses({ onBack }) {
     const { error } = await supabase.from('transactions').insert(transactionsToCreate);
     setIsGenerating(false);
     
-    if (error) alert('Erro: ' + error.message);
-    else navigate('/');
+    if (error) showAlert('Erro: ' + error.message, 'error');
+    else {
+      showAlert('Lançamentos gerados com sucesso!', 'success');
+      navigate('/');
+    }
   };
 
   const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + Number(item.amount), 0), [recurring]);
@@ -102,7 +139,7 @@ export function RecurringExpenses({ onBack }) {
         <div className="flex items-center justify-between py-5 px-5 bg-[#121212] border-b border-[#222] shrink-0">
           <h1 className="text-lg font-bold text-white">Despesas Fixas</h1>
           <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => { resetForm(); setIsModalOpen(true); }}
               className="flex items-center gap-1.5 bg-blue-600/10 text-blue-500 hover:text-white hover:bg-blue-600 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
           >
               <Plus size={16} /> Nova
@@ -145,7 +182,11 @@ export function RecurringExpenses({ onBack }) {
                 const CatData = getCategory(item.category);
                 const CatIcon = CatData.icon;
                 return (
-                    <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-[#121212] border border-[#222] hover:border-[#333] transition-all group">
+                    <div 
+                        key={item.id} 
+                        onClick={() => handleEdit(item)}
+                        className="flex items-center justify-between p-4 rounded-2xl bg-[#121212] border border-[#222] hover:border-[#333] transition-all group cursor-pointer active:scale-[0.98]"
+                    >
                         <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-xl bg-[#1a1a1a] text-gray-400 border border-[#222]`}>
                                 <CatIcon size={20} />
@@ -159,7 +200,10 @@ export function RecurringExpenses({ onBack }) {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                             <span className="text-sm font-bold text-white">R$ {item.amount}</span>
-                            <button onClick={() => handleDelete(item.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
+                                className="text-gray-600 hover:text-red-500 transition-colors p-1"
+                            >
                                 <Trash2 size={18}/>
                             </button>
                         </div>
@@ -187,12 +231,14 @@ export function RecurringExpenses({ onBack }) {
                 
                 {/* Header Modal */}
                 <div className="px-5 py-5 border-b border-[#222] text-center bg-[#121212] shrink-0">
-                    <h2 className="text-lg font-bold text-white">Nova Despesa Fixa</h2>
+                    <h2 className="text-lg font-bold text-white">
+                        {editingExpense ? 'Editar Despesa Fixa' : 'Nova Despesa Fixa'}
+                    </h2>
                 </div>
 
                 {/* Conteúdo Scrollável */}
                 <div className="flex-1 overflow-y-auto p-5 pb-8">
-                    <form id="recurring-form" onSubmit={handleAddRecurring} className="space-y-6">
+                    <form id="recurring-form" onSubmit={handleSaveRecurring} className="space-y-6">
                         
                         <div className="space-y-4">
                             <div className="space-y-1.5">
@@ -243,7 +289,7 @@ export function RecurringExpenses({ onBack }) {
 
                 {/* Footer Modal Thumb Zone */}
                 <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center">
+                    <button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1 px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center">
                         Cancelar
                     </button>
                     

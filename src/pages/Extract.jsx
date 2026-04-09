@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useDate } from '../contexts/DateContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
@@ -15,6 +16,7 @@ export default function Extract() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('month'); 
   const { currentDate, changeMonth, monthTitle } = useDate();
+  const { showAlert } = useNotifications();
   
   const [activeFilter, setActiveFilter] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -69,7 +71,7 @@ export default function Extract() {
         .update({ is_paid: newStatus })
         .eq('id', t.id);
     
-    if (error) alert('Erro ao atualizar status');
+    if (error) showAlert('Erro ao atualizar status', 'error');
   };
 
   const handleEdit = (transaction) => {

@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { AppLayout } from './layouts/AppLayout.jsx';
 import { DateProvider } from './contexts/DateContext.jsx';
+import { NotificationProvider } from './contexts/NotificationContext.jsx';
+import { CustomToaster } from './components/ui/CustomToaster.jsx';
+import { CustomConfirm } from './components/ui/CustomConfirm.jsx';
 import { PrivateRoute } from './components/router/PrivateRoute.jsx';
 import { PublicRoute } from './components/router/PublicRoute.jsx';
 
@@ -18,28 +21,32 @@ export default function App() {
   return (
     <AuthProvider>
       <DateProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Rota Pública (Login) */}
-          <Route path="/login" element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } />
-          
-          {/* Rotas Privadas (App) */}
-          <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
-            <Route path="/" element={<Home />} />
-            <Route path="/add" element={<AddTransaction />} />
-            <Route path="/extract" element={<Extract />} />
-            <Route path="/analysis" element={<Analysis />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
+        <NotificationProvider>
+          <BrowserRouter>
+            <CustomToaster />
+            <CustomConfirm />
+            <Routes>
+              {/* Rota Pública (Login) */}
+            <Route path="/login" element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } />
+            
+            {/* Rotas Privadas (App) */}
+            <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
+              <Route path="/" element={<Home />} />
+              <Route path="/add" element={<AddTransaction />} />
+              <Route path="/extract" element={<Extract />} />
+              <Route path="/analysis" element={<Analysis />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
 
-          {/* Qualquer rota desconhecida manda pro Login */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </BrowserRouter>
+            {/* Qualquer rota desconhecida manda pro Login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </NotificationProvider>
       </DateProvider>
     </AuthProvider>
   );

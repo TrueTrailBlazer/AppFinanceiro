@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { User, Zap, LogOut, ChevronRight, Shield, Wallet } from 'lucide-react';
 import { RecurringExpenses } from '../components/settings/RecurringExpenses';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
 
 export default function Settings() {
   const { user, signOut } = useAuth();
+  const { showAlert } = useNotifications();
   const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'recurring' | 'security'
 
   const handleLogout = async () => {
@@ -67,7 +69,7 @@ export default function Settings() {
                 icon={Wallet} 
                 label="Metas Financeiras" 
                 subLabel="Planeje seu futuro (Em breve)"
-                onClick={() => alert('Em desenvolvimento')}
+                onClick={() => showAlert('Módulo em desenvolvimento', 'info')}
             />
         </div>
       </div>

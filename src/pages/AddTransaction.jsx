@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useNotifications } from '../contexts/NotificationContext';
 import { Check, Trash2, Calendar, Tag, Type, CheckCircle2, XCircle } from 'lucide-react';
 import { CATEGORIES } from '../utils/constants';
 
@@ -10,6 +11,7 @@ export default function AddTransaction() {
   const navigate = useNavigate();
   const location = useLocation();
   const editingTransaction = location.state?.transaction;
+  const { showAlert, showConfirm } = useNotifications();
 
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState('');
@@ -68,21 +70,22 @@ export default function AddTransaction() {
       }
       navigate(-1);
     } catch (error) {
-      alert('Erro ao salvar: ' + error.message);
+      showAlert('Erro ao salvar: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (confirm('Tem certeza que deseja apagar?')) {
+    const confirmed = await showConfirm('Tem certeza que deseja apagar?', 'Excluir Lançamento');
+    if (confirmed) {
       setLoading(true);
       try {
         const { error } = await supabase.from('transactions').delete().eq('id', editingTransaction.id);
         if (error) throw error;
         navigate(-1);
       } catch (error) {
-        alert('Erro ao apagar: ' + error.message);
+        showAlert('Erro ao apagar: ' + error.message, 'error');
         setLoading(false);
       }
     }
