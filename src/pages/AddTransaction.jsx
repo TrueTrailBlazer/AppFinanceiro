@@ -201,11 +201,11 @@ export default function AddTransaction() {
         </div>
 
         {/* --- CONTEÚDO SCROLLÁVEL --- */}
-        <div className="flex-1 overflow-y-auto p-5 pb-8">
-          <form id="transaction-form" onSubmit={handleSave} className="flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto p-4 pb-8">
+          <form id="transaction-form" onSubmit={handleSave} className="flex flex-col gap-4">
 
             {/* Valor */}
-            <div className="relative bg-[#1a1a1a] rounded-2xl p-4 border border-[#222] focus-within:border-blue-500/50 transition-colors shadow-inner">
+            <div className="relative bg-[#1a1a1a] rounded-xl p-3 border border-[#222] focus-within:border-blue-500/50 shadow-inner">
               <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1 block">Valor da Transação</label>
               <div className="flex items-center">
                 <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
@@ -223,16 +223,16 @@ export default function AddTransaction() {
               <button
                 type="button"
                 onClick={() => setIsPaid(true)}
-                className={`flex-1 py-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-[#121212] border-[#222] text-gray-500 hover:border-[#333]'}`}
+                className={`flex-1 py-1.5 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
               >
-                <CheckCircle2 size={24} /> <span className="text-[10px] font-bold uppercase tracking-wide">Efetivado</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><CheckCircle2 size={12} /> Efetivado</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsPaid(false)}
-                className={`flex-1 py-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 'bg-[#121212] border-[#222] text-gray-500 hover:border-[#333]'}`}
+                className={`flex-1 py-1.5 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
               >
-                <XCircle size={24} /> <span className="text-[10px] font-bold uppercase tracking-wide">Pendente</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><XCircle size={12} /> Pendente</span>
               </button>
             </div>
 
@@ -325,12 +325,12 @@ export default function AddTransaction() {
             )}
 
             {/* Categorias */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-1 px-1">
-                <Tag size={14} className="text-gray-500" />
-                <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Selecione uma Categoria</span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 mb-1">
+                <Tag size={12} className="text-gray-500" />
+                <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Categoria</span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="gap-2 grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))]">
                 {Object.entries(CATEGORIES).filter(([key]) => {
                   if (type === 'income') return ['salary', 'investment', 'extra', 'others'].includes(key);
                   return !['salary', 'investment', 'extra'].includes(key);
@@ -340,13 +340,13 @@ export default function AddTransaction() {
                       setCategory(key);
                       if (!name) setName(cat.label);
                     }}
-                    className={`relative p-2.5 rounded-xl border transition-all flex flex-col items-center gap-2 ${category === key
-                        ? `bg-[#1a1a1a] border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]`
-                        : 'bg-[#121212] border-[#222] opacity-60 hover:opacity-100 hover:border-[#333]'
+                    className={`relative p-2 rounded-lg border transition-all flex flex-col items-center gap-1 ${category === key
+                        ? `bg-blue-600/10 border-blue-500`
+                        : 'bg-[#1a1a1a] border-[#222] opacity-70'
                       }`}
                   >
-                    <cat.icon size={20} className={category === key ? cat.color : 'text-gray-400'} />
-                    <span className={`text-[9px] font-bold uppercase truncate max-w-full px-1 ${category === key ? 'text-white' : 'text-gray-600'}`}>
+                    <cat.icon size={16} className={category === key ? cat.color : 'text-gray-400'} />
+                    <span className={`text-[8px] font-bold uppercase truncate max-w-full ${category === key ? 'text-white' : 'text-gray-600'}`}>
                       {cat.label}
                     </span>
                   </button>

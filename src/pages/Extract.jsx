@@ -110,7 +110,7 @@ export default function Extract() {
   }, [transactions]);
 
   return (
-    <div className="animate-in fade-in duration-500 pb-32 md:pb-0">
+    <div className="animate-in fade-in duration-500 pb-48 md:pb-0">
 
       {/* --- ÁREA FIXA SUPERIOR --- */}
       <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222] px-1 -mx-1 md:px-0 md:mx-0">
@@ -202,53 +202,45 @@ export default function Extract() {
               <div
                 key={t.id}
                 onClick={() => handleEdit(t)}
-                className={`relative group flex flex-col justify-between p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden
+                className={`group flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer overflow-hidden
                     ${isIncome
                     ? 'bg-[#1a1a1a] border-green-500/10 shadow-[inset_3px_0_0_0_#22c55e]'
                     : t.is_paid
                       ? 'bg-[#121212] border-[#222] hover:border-[#333]'
                       : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`p-3 rounded-full shrink-0 ${isIncome ? 'bg-green-500/10' : (t.is_paid ? catData.bg : 'bg-red-500/10')}`}>
-                    <CategoryIcon size={20} className={isIncome ? 'text-green-500' : (t.is_paid ? catData.color : 'text-red-500')} />
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className={`p-2.5 rounded-full shrink-0 ${isIncome ? 'bg-green-500/10' : (t.is_paid ? catData.bg : 'bg-red-500/10')}`}>
+                    <CategoryIcon size={18} className={isIncome ? 'text-green-500' : (t.is_paid ? catData.color : 'text-red-500')} />
                   </div>
-                  <div className="flex-1">
-                    <h3 className={`font-bold text-sm ${isIncome ? 'text-white' : (t.is_paid ? 'text-white' : 'text-red-100')} line-clamp-1`}>{t.name}</h3>
-                    <div className="flex items-center gap-2 mt-1 truncate">
-                      <span className="text-[10px] text-gray-500 bg-[#222] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
-                      <span className="text-[10px] text-gray-500">
+                  <div className="flex flex-col truncate">
+                    <h3 className={`font-bold text-[13px] ${isIncome ? 'text-white' : (t.is_paid ? 'text-white' : 'text-red-100')} line-clamp-1 leading-tight`}>{t.name}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5 opacity-80">
+                      <span className="text-[9px] text-gray-500 bg-[#2b2b2b] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
+                      <span className="text-[9px] font-medium text-gray-500">
                         {new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-[#222] pt-3 mt-auto">
-                  <span className={`text-base font-bold ${isIncome ? 'text-green-400' : 'text-white'}`}>
+                <div className="flex flex-col items-end shrink-0 ml-2">
+                  <span className={`text-[13px] font-bold ${isIncome ? 'text-green-400' : 'text-white'} leading-tight`}>
                     {isIncome ? '+ ' : '- '}
                     {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
 
-                  {/* Botão de Status: SÓ PARA DESPESAS */}
                   {!isIncome && (
                     <button
                       onClick={(e) => togglePaid(e, t)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider transition-all hover:scale-105 active:scale-95
+                      className={`mt-1 px-1.5 py-0.5 rounded border font-bold text-[8px] uppercase tracking-wider transition-all
                             ${t.is_paid
-                          ? 'bg-green-500/10 border-green-500/50 text-green-500 hover:bg-green-500/20'
-                          : 'bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20'}`}
+                          ? 'bg-green-500/10 border-green-500/50 text-green-500'
+                          : 'bg-red-500/10 border-red-500/40 text-red-500'}`}
                     >
-                      {t.is_paid ? (
-                        <>PAGO <CheckCircle2 size={14} /></>
-                      ) : (
-                        <>PENDENTE <XCircle size={14} /></>
-                      )}
+                      {t.is_paid ? 'PAGO' : 'PENDENTE'}
                     </button>
                   )}
-
-                  {/* Ícone estático para entrada */}
-                  {isIncome && <div className="px-3 py-1.5"><CheckCircle2 size={18} className="text-green-500/30" /></div>}
                 </div>
               </div>
             );
