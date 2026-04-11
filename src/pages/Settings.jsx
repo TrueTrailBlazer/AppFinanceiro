@@ -44,6 +44,9 @@ export default function Settings() {
   if (currentView === 'goals') {
     return <FinancialGoals onBack={() => setCurrentView('menu')} />;
   }
+  if (currentView === 'recurring') {
+    return <RecurringExpenses onBack={() => setCurrentView('menu')} />;
+  }
 
   // --- MENU PRINCIPAL ---
   return (

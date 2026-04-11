@@ -263,7 +263,7 @@ export default function Extract() {
 
       {/* --- NAVEGAÇÃO MOBILE (Fixa em Baixo - md:hidden) --- */}
       {viewMode === 'month' && (
-          <MonthSelector monthTitle={monthTitle} changeMonth={changeMonth} />
+          <MonthSelector monthTitle={monthTitle} changeMonth={changeMonth} hideDesktop={true} />
       )}
 
     </div>
