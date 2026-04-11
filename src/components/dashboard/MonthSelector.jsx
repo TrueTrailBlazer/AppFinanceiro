@@ -1,7 +1,11 @@
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useScrollDirection } from '../../hooks/useScrollDirection';
 
 export function MonthSelector({ monthTitle, changeMonth, hideDesktop = false }) {
+  const scrollDirection = useScrollDirection();
+  const isHidden = scrollDirection === 'down';
+
   const content = (
     <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl md:bg-transparent md:border-0 md:shadow-none md:p-0 pointer-events-auto">
       <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300">
@@ -21,7 +25,7 @@ export function MonthSelector({ monthTitle, changeMonth, hideDesktop = false }) 
     <>
       {/* MOBILE PORTAL */}
       {createPortal(
-        <div className="fixed bottom-[110px] left-0 right-0 px-4 z-40 md:hidden pointer-events-none">
+        <div className={`fixed bottom-[110px] left-0 right-0 px-4 z-40 md:hidden pointer-events-none transition-transform duration-300 ${isHidden ? 'translate-y-[200px] opacity-0' : 'translate-y-0 opacity-100'}`}>
           <div className="max-w-3xl mx-auto">
             {content}
           </div>
