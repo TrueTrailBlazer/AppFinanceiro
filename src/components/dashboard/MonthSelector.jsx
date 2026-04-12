@@ -1,44 +1,36 @@
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { createPortal } from 'react-dom';
-import { useScrollDirection } from '../../hooks/useScrollDirection';
+import { Calendar, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { useDate } from '../../contexts/DateContext';
+import { MonthPickerModal } from './MonthPickerModal';
 
-export function MonthSelector({ monthTitle, changeMonth, hideDesktop = false }) {
-  const scrollDirection = useScrollDirection();
-  const isHidden = scrollDirection === 'down';
+export function MonthSelector() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { currentDate, setCurrentDate } = useDate();
 
-  const content = (
-    <div className="flex items-center justify-between bg-[#1a1a1a]/95 backdrop-blur-md py-1.5 px-3 rounded-xl border border-[#333] shadow-xl md:bg-transparent md:border-0 md:shadow-none md:p-0 pointer-events-auto">
-      <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300">
-        <ChevronLeft size={18} />
-      </button>
-      <div className="flex items-center gap-2">
-        <Calendar size={14} className="text-blue-500" />
-        <span className="font-bold text-sm capitalize text-white md:text-xl">{monthTitle}</span>
-      </div>
-      <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#333] rounded-lg text-gray-300">
-        <ChevronRight size={18} />
-      </button>
-    </div>
-  );
+  const handleSelectDate = (newDate) => {
+    setCurrentDate(newDate);
+  }
+
+  // Formato: "Abr 26"
+  const shortTitle = currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '');
 
   return (
     <>
-      {/* MOBILE PORTAL */}
-      {createPortal(
-        <div className={`fixed bottom-[110px] left-0 right-0 px-4 z-40 md:hidden pointer-events-none transition-transform duration-300 ${isHidden ? 'translate-y-[200px] opacity-0' : 'translate-y-0 opacity-100'}`}>
-          <div className="max-w-3xl mx-auto">
-            {content}
-          </div>
-        </div>,
-        document.body
-      )}
+      <button 
+        onClick={() => setIsModalOpen(true)} 
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#121212] border border-[#222] hover:bg-[#1a1a1a] transition-all active:scale-95 group shadow-sm z-50"
+      >
+        <Calendar size={14} className="text-blue-500 group-hover:text-blue-400 transition-colors" />
+        <span className="font-bold text-xs md:text-sm capitalize text-gray-300 group-hover:text-white transition-colors">{shortTitle}</span>
+        <ChevronDown size={14} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
+      </button>
 
-      {/* DESKTOP */}
-      {!hideDesktop && (
-        <div className="hidden md:block md:mb-6">
-          {content}
-        </div>
-      )}
+      <MonthPickerModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        currentDate={currentDate}
+        onSelectDate={handleSelectDate}
+      />
     </>
   );
 }

@@ -137,14 +137,11 @@ export default function Extract() {
             ))}
           </div>
 
-          {/* 3. NAVEGAÇÃO DESKTOP (Apenas no PC - md:flex) */}
-          {viewMode === 'month' && (
-            <div className="hidden md:flex items-center gap-3 bg-[#121212] p-1 rounded-lg border border-[#222] ml-auto">
-              <button onClick={() => changeMonth(-1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronLeft size={16} /></button>
-              <span className="text-xs font-bold text-white min-w-[100px] text-center capitalize">{monthTitle}</span>
-              <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-[#222] rounded text-gray-400"><ChevronRight size={16} /></button>
-            </div>
-          )}
+          <div className="flex z-50">
+            <MonthSelector />
+          </div>
+
+          {/* NAVEGAÇÃO DESKTOP ANTIGA (Removida, substituída pelo MonthSelector modal unificado) */}
         </div>
       </div>
 
@@ -213,10 +210,7 @@ export default function Extract() {
         )}
       </div>
 
-      {/* --- NAVEGAÇÃO MOBILE (Fixa em Baixo - md:hidden) --- */}
-      {viewMode === 'month' && (
-        <MonthSelector monthTitle={monthTitle} changeMonth={changeMonth} hideDesktop={true} />
-      )}
+      {/* NAVEGAÇÃO MOBILE ANTIGA REMOVIDA */}
 
     </div>
   );

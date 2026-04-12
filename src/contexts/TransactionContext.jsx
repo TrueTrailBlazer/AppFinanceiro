@@ -32,7 +32,8 @@ export function TransactionProvider({ children }) {
       .eq('user_id', user.id)
       .gte('created_at', startOfMonth)
       .lte('created_at', endOfMonth)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false });
 
     if (data) {
       setCache(prev => ({ ...prev, [monthKey]: data }));

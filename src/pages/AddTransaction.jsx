@@ -15,6 +15,7 @@ export default function AddTransaction() {
 
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState('');
+  const [displayAmount, setDisplayAmount] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState('variable');
   const [category, setCategory] = useState('others');
@@ -40,7 +41,14 @@ export default function AddTransaction() {
 
   useEffect(() => {
     if (editingTransaction) {
-      setAmount(Number(editingTransaction.amount).toFixed(2));
+      const initialAmount = Number(editingTransaction.amount).toFixed(2);
+      setAmount(initialAmount);
+      
+      const numValue = parseFloat(initialAmount);
+      setDisplayAmount(
+        new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numValue)
+      );
+
       setName(editingTransaction.name);
       setType(editingTransaction.type);
       setCategory(editingTransaction.category || 'others');
@@ -213,9 +221,23 @@ export default function AddTransaction() {
               <div className="flex items-center">
                 <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
                 <input
-                  type="number" pattern="\d*" inputMode="decimal" step="0.01" autoFocus={!editingTransaction}
-                  value={amount} onChange={e => setAmount(e.target.value)}
-                  placeholder="0.00"
+                  type="text" inputMode="numeric" autoFocus={!editingTransaction}
+                  value={displayAmount} 
+                  onChange={e => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (!val) {
+                      setDisplayAmount('');
+                      setAmount('');
+                      return;
+                    }
+                    const numValue = parseInt(val, 10);
+                    const floatValue = (numValue / 100).toFixed(2);
+                    setAmount(floatValue);
+                    setDisplayAmount(
+                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numValue / 100)
+                    );
+                  }}
+                  placeholder="0,00"
                   className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-800 outline-none"
                 />
               </div>
@@ -245,7 +267,7 @@ export default function AddTransaction() {
             <div className="grid grid-cols-1 gap-3">
               <div className="bg-[#121212] rounded-xl px-4 py-3 border border-[#222] flex items-center gap-3 focus-within:border-gray-500 transition-colors">
                 <Type size={18} className="text-gray-500 shrink-0" />
-                <div className="flex-1">
+                <div className="flex-1 flex flex-col justify-center">
                   <label className="block text-[9px] font-bold text-gray-500 uppercase">Descrição O que foi?</label>
                   <input
                     type="text" enterKeyHint="done" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Conta de Luz"
@@ -255,19 +277,25 @@ export default function AddTransaction() {
               </div>
 
               <div className="flex gap-3">
-                <div className="flex-1 bg-[#121212] rounded-xl px-4 py-3 border border-[#222] flex items-center gap-3">
+                <div className="flex-[1.5] bg-[#121212] rounded-xl px-4 py-3 border border-[#222] flex items-center gap-3 relative overflow-hidden group focus-within:border-gray-500 transition-colors">
                   <Calendar size={18} className="text-gray-500 shrink-0" />
-                  <div className="flex-1 overflow-hidden">
+                  <div className="flex-1 flex flex-col justify-center pointer-events-none">
                     <label className="block text-[9px] font-bold text-gray-500 uppercase">Data</label>
-                    <input
-                      type="date" value={date} onChange={e => setDate(e.target.value)}
-                      className="w-full bg-transparent text-sm text-white outline-none font-medium [&::-webkit-calendar-picker-indicator]:invert opacity-90 mt-0.5"
-                    />
+                    <span className="text-sm font-bold text-white mt-0.5 capitalize truncate">
+                      {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(' de ', ' ')}
+                    </span>
                   </div>
+                   {/* Input invisível absoluto para pegar todo o clique */}
+                  <input
+                    type="date" 
+                    value={date} 
+                    onChange={e => setDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
                 </div>
 
                 {/* Tipo Switch */}
-                <div className="flex bg-[#121212] p-1.5 rounded-xl border border-[#222] w-36 overflow-hidden">
+                <div className="flex-1 bg-[#121212] p-1.5 rounded-xl border border-[#222] overflow-hidden flex">
                   <button type="button" onClick={() => { setType('variable'); setIsInstallment(false); if (['salary', 'investment'].includes(category)) setCategory('food'); }}
                     className={`flex-1 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all flex items-center justify-center ${type !== 'income' ? 'bg-[#222] text-white shadow-sm' : 'text-gray-500 opacity-60'}`}>Saída</button>
                   <button type="button" onClick={() => { setType('income'); setIsInstallment(false); setCategory('salary'); }}
@@ -346,15 +374,19 @@ export default function AddTransaction() {
                   <button
                     key={key} type="button" onClick={() => {
                       setCategory(key);
-                      if (!name) setName(cat.label);
+                      // Regra de auto-fill ajustada: Sobreescreve se vazio ou se for igual a alguma categoria anterior
+                      const isNameACategoryObj = Object.values(CATEGORIES).find(c => c.label === name);
+                      if (!name || isNameACategoryObj) {
+                        setName(cat.label);
+                      }
                     }}
-                    className={`relative p-2 rounded-lg border transition-all flex flex-col items-center gap-1 ${category === key
-                        ? `bg-blue-600/10 border-blue-500`
-                        : 'bg-[#1a1a1a] border-[#222] opacity-70'
+                    className={`relative p-2 rounded-lg border transition-all flex flex-col justify-center items-center gap-1 ${category === key
+                        ? `bg-blue-600/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.1)]`
+                        : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100 hover:border-[#333]'
                       }`}
                   >
                     <cat.icon size={16} className={category === key ? cat.color : 'text-gray-400'} />
-                    <span className={`text-[8px] font-bold uppercase truncate max-w-full ${category === key ? 'text-white' : 'text-gray-600'}`}>
+                    <span className={`text-[8px] font-bold uppercase truncate max-w-full text-center ${category === key ? 'text-white' : 'text-gray-600'}`}>
                       {cat.label}
                     </span>
                   </button>
@@ -366,7 +398,7 @@ export default function AddTransaction() {
         </div>
 
         {/* --- BOTTOM ACTION BAR (THUMB ZONE) --- */}
-        <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex gap-3 z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+        <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex items-center justify-center gap-3 z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
           <button
             type="button"
             onClick={() => navigate(-1)}

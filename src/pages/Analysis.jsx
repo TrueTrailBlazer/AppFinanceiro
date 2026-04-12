@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, TrendingDown, Wallet, Award } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Award, Calendar, ChevronDown } from 'lucide-react';
 import { getCategory } from '../utils/constants';
 
 export default function Analysis() {
@@ -9,6 +9,15 @@ export default function Analysis() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(6);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
+  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+
+  const periodOptions = [
+    { val: 3, label: '3 Meses' },
+    { val: 6, label: '6 Meses' },
+    { val: 12, label: '1 Ano' }
+  ];
+  const activePeriodLabel = periodOptions.find(p => p.val === period)?.label;
 
   useEffect(() => {
     if (!user) return;
@@ -100,16 +109,38 @@ export default function Analysis() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-24">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center px-1">
         <h1 className="text-xl font-bold text-white">Análise</h1>
-        <select 
-            value={period} onChange={e => setPeriod(Number(e.target.value))}
-            className="bg-[#121212] border border-[#222] text-xs text-gray-400 rounded-lg px-2 py-1 outline-none cursor-pointer"
-        >
-            <option value={3}>3 Meses</option>
-            <option value={6}>6 Meses</option>
-            <option value={12}>1 Ano</option>
-        </select>
+        
+        {/* Dropdown de Período */}
+        <div className="relative z-50">
+          <button
+            onClick={() => setIsPeriodOpen(!isPeriodOpen)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all active:scale-95 ${
+              isPeriodOpen ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400 hover:text-white'
+            }`}
+          >
+            <Calendar size={14} />
+            <span className="text-xs font-bold">{activePeriodLabel}</span>
+            <ChevronDown size={14} className={`transition-transform ${isPeriodOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isPeriodOpen && (
+            <div className="absolute top-full right-0 mt-2 w-36 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
+              {periodOptions.map(opt => (
+                <button
+                  key={opt.val}
+                  onClick={() => { setPeriod(opt.val); setSelectedMonthIndex(null); setIsPeriodOpen(false); }}
+                  className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+                    period === opt.val ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -149,19 +180,35 @@ export default function Analysis() {
                         </div>
                     </div>
                     
-                    <div className="flex items-end justify-between gap-2 h-48 pt-2 border-b border-[#222] pb-1">
+                    <div className="flex items-end justify-between gap-1 h-48 pt-8 pb-1 relative mt-4">
                         {data.monthList.map((m, i) => (
-                            <div key={i} className="flex flex-col items-center gap-2 flex-1 group h-full justify-end">
-                                <div className="flex gap-1 items-end justify-center w-full h-full relative">
+                            <div 
+                              key={i} 
+                              onClick={() => setSelectedMonthIndex(selectedMonthIndex === i ? null : i)}
+                              className="flex flex-col items-center flex-1 group h-full justify-end cursor-pointer relative"
+                            >
+                                {/* Tooltip */}
+                                {selectedMonthIndex === i && (
+                                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#1a1a1a] border border-[#333] text-white text-[9px] whitespace-nowrap px-2.5 py-2 rounded-xl shadow-2xl z-30 animate-in zoom-in-95 fade-in duration-200">
+                                    <div className="flex flex-col gap-1 items-center">
+                                      <span className="text-green-400 font-bold">+ {m.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                      <span className="text-red-400 font-bold">- {m.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                      <span className="text-[8px] text-gray-500 border-t border-[#333] pt-1 mt-0.5">Saldo: {(m.income - m.expense).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                    </div>
+                                    <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-[#333] w-0 h-0"></div>
+                                  </div>
+                                )}
+
+                                <div className="flex gap-[3px] items-end justify-center w-full h-full">
                                     {/* Barra Receita */}
                                     <div 
-                                        className="w-2 md:w-5 bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-500 min-h-[4px]"
-                                        style={{ height: `${(m.income / maxChartValue) * 100}%` }}
+                                        className={`w-3 md:w-5 rounded-t transition-all duration-300 min-h-[4px] ${selectedMonthIndex !== null && selectedMonthIndex !== i ? 'bg-blue-600/20' : 'bg-blue-600 group-hover:bg-blue-500 group-hover:shadow-[0_0_12px_rgba(37,99,235,0.3)]'} ${selectedMonthIndex === i ? 'bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : ''}`}
+                                        style={{ height: `${Math.max((m.income / maxChartValue) * 100, 2)}%` }}
                                     ></div>
                                     {/* Barra Despesa */}
                                     <div 
-                                        className="w-2 md:w-5 bg-red-600 rounded-t-sm transition-all group-hover:bg-red-500 min-h-[4px]"
-                                        style={{ height: `${(m.expense / maxChartValue) * 100}%` }}
+                                        className={`w-3 md:w-5 rounded-t transition-all duration-300 min-h-[4px] ${selectedMonthIndex !== null && selectedMonthIndex !== i ? 'bg-red-600/20' : 'bg-red-600 group-hover:bg-red-500 group-hover:shadow-[0_0_12px_rgba(220,38,38,0.3)]'} ${selectedMonthIndex === i ? 'bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]' : ''}`}
+                                        style={{ height: `${Math.max((m.expense / maxChartValue) * 100, 2)}%` }}
                                     ></div>
                                 </div>
                             </div>
@@ -170,7 +217,9 @@ export default function Analysis() {
                     {/* Legenda Meses */}
                     <div className="flex justify-between mt-3 px-1">
                          {data.monthList.map((m, i) => (
-                             <span key={i} className="text-[9px] md:text-[10px] uppercase font-bold text-gray-500 w-full text-center">{m.label}</span>
+                             <span key={i} className={`text-[9px] md:text-[10px] uppercase font-bold w-full text-center transition-colors ${selectedMonthIndex === i ? 'text-white' : 'text-gray-500'}`}>
+                                {m.label}
+                             </span>
                          ))}
                     </div>
                 </div>
