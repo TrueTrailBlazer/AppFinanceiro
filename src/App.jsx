@@ -16,6 +16,7 @@ import AddTransaction from './pages/AddTransaction.jsx';
 import Extract from './pages/Extract.jsx';
 import Settings from './pages/Settings.jsx';
 import Analysis from './pages/Analysis.jsx';
+import CategoryDetails from './pages/CategoryDetails.jsx';
 
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/add" element={<AddTransaction />} />
               <Route path="/extract" element={<Extract />} />
               <Route path="/analysis" element={<Analysis />} />
+              <Route path="/category-details" element={<CategoryDetails />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
 
