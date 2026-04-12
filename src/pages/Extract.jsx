@@ -8,17 +8,20 @@ import {
   CheckCircle2, XCircle, Filter, TrendingUp, 
   TrendingDown, ChevronDown, ChevronUp, ArrowUpDown 
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
 import { MonthSelector } from '../components/dashboard/MonthSelector';
 
 export default function Extract() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { transactions, loading } = useTransactionsContext();
   const { showAlert } = useNotifications();
   
-  const [activeFilter, setActiveFilter] = useState('all');
+  // Verifica se veio uma categoria pelo state (drill-down da Análise)
+  const initialCategory = location.state?.category || 'all';
+  const [activeFilter, setActiveFilter] = useState(initialCategory);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState('date'); // 'date', 'amount_desc', 'amount_asc'
@@ -57,11 +60,15 @@ export default function Extract() {
 
   const filteredList = useMemo(() => {
     let list = [...transactions].filter(t => {
+      // Filtros Especiais
+      if (activeFilter === 'all') return true;
       if (activeFilter === 'income') return t.type === 'income';
       if (activeFilter === 'expense') return t.type !== 'income';
       if (activeFilter === 'pending') return !t.is_paid && t.type !== 'income';
       if (activeFilter === 'paid') return t.is_paid;
-      return true;
+      
+      // Filtro por Categoria Específica (Drill-down)
+      return t.category === activeFilter;
     });
 
     if (sortOrder === 'amount_desc') {

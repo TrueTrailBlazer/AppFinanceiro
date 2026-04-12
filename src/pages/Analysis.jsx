@@ -1,15 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, TrendingDown, Wallet, Award, 
   Calendar, ChevronDown, Tag, PieChart, 
-  ArrowUpRight, Target, Flame
+  ArrowUpRight, Target, Flame, HelpCircle
 } from 'lucide-react';
 import { getCategory } from '../utils/constants';
 
 export default function Analysis() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(6);
@@ -192,18 +194,34 @@ export default function Analysis() {
       ) : (
         <>
             {/* KPI GRID */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#121212] p-5 rounded-[2rem] border border-[#222] relative group">
-                    <div className="absolute top-4 right-4 p-2 bg-blue-500/10 rounded-xl text-blue-500"><Target size={16}/></div>
-                    <p className="text-[10px] uppercase font-black text-gray-500 tracking-widest">Saldo Total</p>
-                    <h3 className={`text-lg font-black mt-2 tracking-tight ${data.totalSaved >= 0 ? 'text-white' : 'text-red-500'}`}>
+            <div className="grid grid-cols-2 gap-3 px-1">
+                <div className="bg-[#121212] p-4 sm:p-5 rounded-[2rem] border border-[#222] relative group overflow-hidden">
+                    <div className="absolute top-4 right-4 p-2 bg-blue-500/10 rounded-xl text-blue-500 hidden sm:block"><Target size={16}/></div>
+                    <div className="flex items-center gap-1">
+                        <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Saldo Total</p>
+                        <div className="group/help relative">
+                            <HelpCircle size={10} className="text-gray-700 cursor-help" />
+                            <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-white text-black text-[8px] font-bold rounded-lg shadow-xl opacity-0 group-hover/help:opacity-100 transition-opacity pointer-events-none z-50">
+                                Diferença entre tudo o que você ganhou e gastou no período selecionado.
+                            </div>
+                        </div>
+                    </div>
+                    <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.totalSaved >= 0 ? 'text-white' : 'text-red-500'}`}>
                         {data.totalSaved.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </h3>
                 </div>
-                <div className="bg-[#121212] p-5 rounded-[2rem] border border-[#222] relative group">
-                    <div className="absolute top-4 right-4 p-2 bg-green-500/10 rounded-xl text-green-500"><Flame size={16}/></div>
-                    <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Eficiência</p>
-                    <h3 className={`text-lg font-black mt-2 tracking-tight ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="bg-[#121212] p-4 sm:p-5 rounded-[2rem] border border-[#222] relative group overflow-hidden">
+                    <div className="absolute top-4 right-4 p-2 bg-green-500/10 rounded-xl text-green-500 hidden sm:block"><Flame size={16}/></div>
+                    <div className="flex items-center gap-1">
+                        <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Eficiência</p>
+                        <div className="group/help relative">
+                            <HelpCircle size={10} className="text-gray-700 cursor-help" />
+                            <div className="absolute right-0 bottom-full mb-2 w-48 p-2 bg-white text-black text-[8px] font-bold rounded-lg shadow-xl opacity-0 group-hover/help:opacity-100 transition-opacity pointer-events-none z-50">
+                                Percentual do seu ganho que não foi gasto. Quanto maior, mais você economizou.
+                            </div>
+                        </div>
+                    </div>
+                    <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {data.avgSavingsRate.toFixed(1)}%
                     </h3>
                 </div>
@@ -211,47 +229,50 @@ export default function Analysis() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                {/* GRÁFICO DE BARRAS */}
-                <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
-                    <div className="flex justify-between items-center mb-10">
+                {/* GRÁFICO DE BARRAS - SCROLLABLE */}
+                <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl overflow-hidden">
+                    <div className="flex justify-between items-center mb-8">
                         <div className="flex flex-col">
                             <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
                                 <TrendingUp size={16} className="text-blue-500"/> Fluxo Mensal
                             </h3>
                             <span className="text-[9px] text-gray-600 font-bold uppercase">Receitas vs Despesas</span>
                         </div>
+                        {period > 6 && <span className="text-[8px] text-blue-500 font-bold bg-blue-500/10 px-2 py-1 rounded-full animate-pulse">Deslize para o lado →</span>}
                     </div>
                     
-                    <div className="flex items-end justify-between gap-2 h-44 relative">
-                        {data.monthList.map((m, i) => (
-                            <div key={i} onClick={() => setSelectedMonthIndex(selectedMonthIndex === i ? null : i)} className="flex flex-col items-center flex-1 h-full justify-end cursor-pointer group relative">
-                                {selectedMonthIndex === i && (
-                                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black p-3 rounded-2xl shadow-2xl z-30 animate-in slide-in-from-bottom-2 duration-300">
-                                    <div className="flex flex-col items-center gap-1 font-black">
-                                      <span className="text-[10px] text-green-600">+ {m.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
-                                      <span className="text-[10px] text-red-600">- {m.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                    <div className="overflow-x-auto pb-4 custom-scrollbar-horizontal snap-x snap-mandatory">
+                        <div className="flex items-end justify-between gap-3 h-44 min-w-[500px] md:min-w-full relative px-2">
+                            {data.monthList.map((m, i) => (
+                                <div key={i} onClick={() => setSelectedMonthIndex(selectedMonthIndex === i ? null : i)} className="flex flex-col items-center flex-1 h-full justify-end cursor-pointer group relative snap-center">
+                                    {selectedMonthIndex === i && (
+                                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black p-3 rounded-2xl shadow-2xl z-30 animate-in slide-in-from-bottom-2 duration-300">
+                                        <div className="flex flex-col items-center gap-1 font-black">
+                                          <span className="text-[10px] text-green-600">+ {m.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                          <span className="text-[10px] text-red-600">- {m.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                        </div>
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45"></div>
+                                      </div>
+                                    )}
+                                    <div className="flex gap-1 items-end justify-center w-full h-full">
+                                        <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 ${selectedMonthIndex === i ? 'bg-blue-500 h-full scale-110' : 'bg-blue-600/30'}`} style={{ height: `${(m.income / maxChartValue) * 100}%` }}></div>
+                                        <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 ${selectedMonthIndex === i ? 'bg-red-500 h-full scale-110' : 'bg-red-600/30'}`} style={{ height: `${(m.expense / maxChartValue) * 100}%` }}></div>
                                     </div>
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45"></div>
-                                  </div>
-                                )}
-                                <div className="flex gap-1 items-end justify-center w-full h-full">
-                                    <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 ${selectedMonthIndex === i ? 'bg-blue-500 h-full scale-110' : 'bg-blue-600/30'}`} style={{ height: `${(m.income / maxChartValue) * 100}%` }}></div>
-                                    <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 ${selectedMonthIndex === i ? 'bg-red-500 h-full scale-110' : 'bg-red-600/30'}`} style={{ height: `${(m.expense / maxChartValue) * 100}%` }}></div>
+                                    <span className={`text-[8px] font-black uppercase mt-4 transition-colors ${selectedMonthIndex === i ? 'text-white' : 'text-gray-600'}`}>{m.label}</span>
                                 </div>
-                                <span className={`text-[8px] font-black uppercase mt-4 transition-colors ${selectedMonthIndex === i ? 'text-white' : 'text-gray-600'}`}>{m.label}</span>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/* RANKING CATEGORIAS - REDESIGN PREMIUM */}
+                {/* RANKING CATEGORIAS - DRILL DOWN */}
                 <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
                     <div className="flex justify-between items-center mb-8">
                         <div className="flex flex-col">
                             <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
                                 <Tag size={16} className="text-blue-500"/> Gastos por Categoria
                             </h3>
-                            <span className="text-[9px] text-gray-600 font-bold uppercase">Ranking de Impacto</span>
+                            <span className="text-[9px] text-gray-600 font-bold uppercase">Toque para ver detalhes</span>
                         </div>
                         <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222]">
                             <button onClick={() => setRankingMode('month')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'month' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Mês</button>
@@ -266,8 +287,12 @@ export default function Analysis() {
                                 const Icon = catInfo.icon;
                                 const percent = (amount / data.maxCatValue) * 100;
                                 return (
-                                    <div key={cat} className="p-4 bg-[#121212] rounded-3xl border border-[#1a1a1a] relative overflow-hidden group hover:border-blue-500/30 transition-all">
-                                        <div className="absolute bottom-0 left-0 h-1 bg-blue-600/20 group-hover:bg-blue-600/40 transition-all" style={{ width: `${percent}%` }}></div>
+                                    <div 
+                                        key={cat} 
+                                        onClick={() => navigate('/extract', { state: { category: cat } })}
+                                        className="p-4 bg-[#121212] rounded-3xl border border-[#1a1a1a] relative overflow-hidden group hover:border-blue-500 transition-all cursor-pointer active:scale-[0.98]"
+                                    >
+                                        <div className="absolute bottom-0 left-0 h-1 bg-blue-600/20 group-hover:bg-blue-600 transition-all" style={{ width: `${percent}%` }}></div>
                                         <div className="flex items-start justify-between mb-3">
                                             <div className={`p-2.5 rounded-2xl ${catInfo.bg} border border-white/5`}>
                                                 <Icon size={16} className={catInfo.color} />
