@@ -2,7 +2,9 @@
 
 **Fluxo** é uma aplicação web progressiva (PWA) de alta performance desenvolvida para oferecer controle total sobre suas finanças pessoais de forma rápida, intuitiva e com estética premium.
 
-![Fluxo Dashboard](/public/fluxo-icon.svg)
+<p align="center">
+  <img src="public/fluxo-icon.svg" width="120" alt="Fluxo Logo">
+</p>
 
 ## ✨ Principais Funcionalidades
 
