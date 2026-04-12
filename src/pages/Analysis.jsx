@@ -167,7 +167,7 @@ export default function Analysis() {
       {/* HEADER */}
       <div className="flex justify-between items-center px-1">
         <div className="flex flex-col">
-            <h1 className="text-xl font-black text-white tracking-tight italic">ANÁLISE</h1>
+            <h1 className="text-xl font-black text-white tracking-tight">ANÁLISE</h1>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inteligência Financeira</p>
         </div>
         
@@ -252,8 +252,8 @@ export default function Analysis() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* GRÁFICO DE BARRAS - SCROLLABLE & FOCUS */}
-                <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl overflow-hidden">
-                    <div className="flex justify-between items-center mb-8">
+                <div className="bg-[#0c0c0c] p-6 pt-16 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl overflow-visible relative">
+                    <div className="absolute top-6 left-6 right-6 flex justify-between items-center mb-8">
                         <div className="flex flex-col">
                             <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
                                 <TrendingUp size={16} className="text-blue-500"/> Fluxo Mensal
@@ -264,7 +264,7 @@ export default function Analysis() {
                     </div>
                     
                     <div ref={chartScrollRef} className="overflow-x-auto pb-4 custom-scrollbar-horizontal snap-x snap-mandatory">
-                        <div className="flex items-end justify-between gap-3 h-44 min-w-[500px] md:min-w-full relative px-4">
+                        <div className="flex items-end justify-between gap-3 h-56 pt-14 min-w-[500px] md:min-w-full relative px-4">
                             {data.monthList.map((m, i) => (
                                 <div key={i} 
                                     onClick={(e) => { e.stopPropagation(); setSelectedMonthIndex(selectedMonthIndex === i ? null : i); }} 
@@ -340,12 +340,12 @@ export default function Analysis() {
                                             <ArrowUpRight size={14} className="text-gray-700 group-hover:text-blue-500 transition-colors" />
                                         </div>
                                         <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{catInfo.label}</h4>
-                                        <p className="text-sm font-black text-white mt-1 italic">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                        <p className="text-sm font-black text-white mt-1">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                                     </div>
                                 );
                             })
                         ) : (
-                            <div className="col-span-full py-16 text-center text-[10px] text-gray-700 font-black uppercase tracking-[0.2em] opacity-30 italic">Sem movimentação</div>
+                            <div className="col-span-full py-16 text-center text-[10px] text-gray-700 font-black uppercase tracking-[0.2em] opacity-30">Sem movimentação</div>
                         )}
                     </div>
                 </div>
@@ -364,11 +364,11 @@ export default function Analysis() {
                                     <div className="flex items-center gap-4 truncate">
                                         <div className={`p-3 rounded-2xl ${catInfo.bg} text-blue-500`}><Icon size={18} className={catInfo.color} /></div>
                                         <div className="flex flex-col truncate">
-                                            <span className="text-sm font-black text-white truncate uppercase tracking-tight italic">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
+                                            <span className="text-sm font-black text-white truncate uppercase tracking-tight mb-0.5">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
                                             <span className="text-[9px] text-gray-600 font-black uppercase tracking-widest">{catInfo.label} • {new Date(item.created_at).toLocaleDateString('pt-BR')}</span>
                                         </div>
                                     </div>
-                                    <span className="text-lg font-black text-white shrink-0 ml-4 italic">
+                                    <span className="text-lg font-black text-white shrink-0 ml-4">
                                         {Number(item.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </span>
                                 </div>

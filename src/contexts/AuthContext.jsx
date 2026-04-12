@@ -11,18 +11,31 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (mounted) {
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (error || !session) {
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
         setLoading(false);
       }
-    });
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (mounted) {
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+          setSession(null);
+          setUser(null);
+        } else if (session) {
+          setSession(session);
+          setUser(session.user);
+        }
         setLoading(false);
       }
     });
