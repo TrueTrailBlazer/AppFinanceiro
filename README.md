@@ -1,75 +1,70 @@
-# 📈 Fluxo - Controle Financeiro Pessoal
+# Fluxo - Gestão Financeira Profissional
 
-**Fluxo** é uma aplicação web progressiva (PWA) de alta performance desenvolvida para oferecer controle total sobre suas finanças pessoais de forma rápida, intuitiva e com estética premium.
+Fluxo é uma aplicação web progressiva (PWA) de alta performance desenvolvida para oferecer controle total sobre finanças pessoais com foco em usabilidade, segurança e design de alta fidelidade.
 
 <p align="center">
-  <img src="public/fluxo-icon.svg" width="120" alt="Fluxo Logo">
+  <img src="public/fluxo-icon.svg" width="160" alt="Fluxo Logo">
 </p>
 
-## ✨ Principais Funcionalidades
+## Funcionalidades Principais
 
-### 🏠 Dashboard Inteligente
-- **Visão Geral:** Balanço de receitas, despesas e saldo atual em cards dinâmicos.
-- **Gráficos Interativos:** Visualização mensal de Receitas vs Despesas com tooltips detalhados ao toque.
-- **KPIs Financeiros:** Cálculo automático de saldo acumulado e taxa de poupança média.
+### Dashboard de Controle
+- **Monitoramento de Balanço:** Visualização em tempo real de receitas, despesas e saldo remanescente.
+- **Gráficos Dinâmicos:** Comparativos mensais de Receitas vs Despesas com interação via tooltips.
+- **Indicadores de Performance:** Cálculo automático de saldo acumulado e taxa média de poupança.
 
-### 📋 Extrato Detalhado
-- **Filtros Avançados:** Filtre por entradas, saídas, pagos ou pendentes.
-- **Ordenação Estável:** Lista organizada de forma determinística para evitar saltos visuais.
-- **Gestão de Status:** Altere o status de pagamento (Pago/Pendente) diretamente na lista.
+### Gestão de Transações e Extrato
+- **Filtragem Avançada:** Segmentação por tipo de transação (Entrada/Saída) e status de pagamento.
+- **Estabilidade Visual:** Ordenação composta e determinística para preservar o posicionamento dos itens durante atualizações.
+- **Controle de Pagamentos:** Gestão intuitiva de status Pago/Pendente.
 
-### 💰 Gestão de Transações
-- **Entradas e Saídas:** Cadastro simplificado com categorias personalizadas.
-- **Parcelamento Inteligente:** Suporte a compras parceladas com cálculo automático para meses futuros.
-- **Máscara de Moeda:** Input de valores com formatação brasileira (BRL) automática.
-- **Auto-fill Inteligente:** Sugestões de descrição baseadas na categoria selecionada.
+### Lançamentos Inteligentes
+- **Operações Parceladas:** Suporte nativo para compras parceladas com propagação automática em períodos futuros.
+- **Máscara de Valores:** Formatação automática de moeda seguindo o padrão BRL.
+- **Nomenclatura Automatizada:** Sugestão de descrição baseada em categorias pré-definidas para acelerar o processo de entrada.
 
-### 📅 Navegação Temporal
-- **Month Picker Centralizado:** Modal elegante para alternar entre anos e meses.
-- **Swipe Gestures:** Navegação por gestos (deslizar) para trocar de ano.
-- **Indicador de Dados:** Visualização rápida de quais meses possuem registros.
+### Navegação Temporal Avançada
+- **Interface Centrada:** Seletor de meses e anos em modal centralizado para foco total.
+- **Navegação de Gestos:** Suporte completo a eventos de toque (swipe) para alternância de anos.
+- **Mapeamento de Dados:** Indicadores visuais que destacam meses com atividade financeira existente.
 
-## 📱 Experiência Mobile (PWA)
-- **Instalável:** Adicione o Fluxo à sua tela inicial como um app nativo.
-- **Splash Screen Premium:** Carregamento elegante com fundo dark (sem flash branco).
-- **Offline Ready:** Configurado para persistência de sessão e carregamento instantâneo.
+## Experiência Mobile (PWA)
+- **Instalação Nativa:** Disponível para adição à tela inicial como aplicação independente.
+- **Otimização de Carregamento:** Splash screen configurada em fundo escuro para eliminar flashes de brilho durante o boot inicial.
+- **Recursos Offline:** Persistência de sessão e cache global de dados para carregamento instantâneo.
 
-## 🛠️ Tecnologias Utilizadas
+## Especificações Técnicas
 
-- **Frontend:** [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Estilização:** [Tailwind CSS v4](https://tailwindcss.com/)
-- **Backend/DB:** [Supabase](https://supabase.com/) (PostgreSQL + Auth + Realtime)
-- **Ícones:** [Lucide React](https://lucide.dev/)
-- **Estado Global:** Context API para Cache de Transações
+- **Core:** React 19, Vite
+- **Estilização:** Tailwind CSS v4
+- **Persistência e Autenticação:** Supabase (Auth, PostgreSQL, Realtime)
+- **Interface de Ícones:** Lucide React
+- **Arquitetura:** Gerenciamento de estado global via Context API para otimização de cache.
 
-## 🚀 Como Executar o Projeto
+## Procedimentos de Instalação
 
-1. **Clone o repositório:**
+1. **Clonagem do Repositório:**
    ```bash
-   git clone https://github.com/seu-usuario/fluxo-app.git
+   git clone https://github.com/usuario/fluxo-app.git
    cd fluxo-app
    ```
 
-2. **Instale as dependências:**
+2. **Instalação de Dependências:**
    ```bash
    npm install
    ```
 
-3. **Configure as Variáveis de Ambiente:**
-   Crie um arquivo `.env` na raiz do projeto com suas chaves do Supabase:
+3. **Configuração de Ambiente:**
+   Configure as credenciais do Supabase no arquivo `.env`:
    ```env
-   VITE_SUPABASE_URL=sua_url_aqui
-   VITE_SUPABASE_ANON_KEY=sua_chave_anon_aqui
+   VITE_SUPABASE_URL=SUA_URL
+   VITE_SUPABASE_ANON_KEY=SUA_CHAVE_ANON
    ```
 
-4. **Inicie o servidor de desenvolvimento:**
+4. **Execução em Desenvolvimento:**
    ```bash
    npm run dev
    ```
 
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
 ---
-Desenvolvido com foco em UX e Performance. 🚀
+Desenvolvido com foco em engenharia de software e experiência do usuário.
