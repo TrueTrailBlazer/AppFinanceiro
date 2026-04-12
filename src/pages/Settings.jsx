@@ -50,7 +50,7 @@ export default function Settings() {
 
   // --- MENU PRINCIPAL ---
   return (
-    <div className="animate-in fade-in slide-in-from-left-4 duration-300 pb-10 max-w-lg mx-auto space-y-6">
+    <div className="animate-in fade-in slide-in-from-left-4 duration-300 max-w-lg mx-auto space-y-6">
       
       {/* Hero Profile */}
       <div className="flex flex-col items-center justify-center py-8">

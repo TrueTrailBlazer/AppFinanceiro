@@ -9,7 +9,7 @@ export function AppLayout() {
     : "text-gray-500 hover:text-gray-300";
 
   return (
-    <div className="flex flex-col h-screen bg-background text-white md:flex-row overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-background text-white md:flex-row overflow-hidden">
       
       {/* --- SIDEBAR (PC) --- */}
       <aside className="hidden md:flex flex-col w-64 bg-card border-r border-[#222] p-6 justify-between shrink-0">
@@ -41,7 +41,7 @@ export function AppLayout() {
       </aside>
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
-      <main id="main-content" className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-background">
+      <main id="main-content" className="flex-1 overflow-y-auto pb-32 md:pb-8 relative scroll-smooth bg-background">
         <div className="w-full md:max-w-4xl mx-auto p-3 md:p-8">
            <Outlet />
         </div>

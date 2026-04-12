@@ -70,7 +70,7 @@ export default function Extract() {
   }, [transactions]);
 
   return (
-    <div className="animate-in fade-in duration-500 pb-10 md:pb-0">
+    <div className="animate-in fade-in duration-500 md:pb-0">
 
       {/* --- ÁREA FIXA SUPERIOR --- */}
       <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222] px-1 -mx-1 md:px-0 md:mx-0">
