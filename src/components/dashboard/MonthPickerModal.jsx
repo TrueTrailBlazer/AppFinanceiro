@@ -8,6 +8,35 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
   const { user } = useAuth();
   const [year, setYear] = useState(currentDate.getFullYear());
   const [monthsWithData, setMonthsWithData] = useState(new Set());
+  
+  // Swipe Handlers
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null); // Reset
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      setYear(y => y + 1); // Swipe left = next year
+    }
+    if (isRightSwipe) {
+      setYear(y => y - 1); // Swipe right = previous year
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -72,12 +101,23 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
           </button>
         </div>
 
-        {/* Counter / Ano */}
-        <div className="flex items-center justify-between p-6">
+        {/* Counter / Ano com Suporte a Swipe */}
+        <div 
+          className="flex items-center justify-between p-6"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <button onClick={() => setYear(y => y - 1)} className="p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#333] transition-colors active:scale-95">
              <ChevronLeft size={20} className="text-gray-300"/>
           </button>
-          <span className="text-2xl font-black text-white">{year}</span>
+          
+          <div className="flex-1 flex justify-center items-center overflow-hidden relative">
+             <span className="text-2xl font-black text-white px-8 animate-in fade-in slide-in-from-bottom-2 duration-300 select-none" key={year}>
+               {year}
+             </span>
+          </div>
+
           <button onClick={() => setYear(y => y + 1)} className="p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#333] transition-colors active:scale-95">
              <ChevronRight size={20} className="text-gray-300"/>
           </button>
