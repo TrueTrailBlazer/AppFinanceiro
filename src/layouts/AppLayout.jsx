@@ -48,31 +48,33 @@ export function AppLayout() {
       </main>
 
       {/* --- MENU MOBILE --- */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-[#222] px-6 pb-4 pt-3 flex justify-between items-center z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-[#222] px-1 pb-4 pt-4 grid grid-cols-5 items-center justify-items-center z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
         
-        <Link to="/" className={`flex flex-col items-center gap-1 w-12 active:scale-95 transition-transform mt-2 ${isActive('/')}`}>
+        <Link to="/" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/')}`}>
           <Home size={22} />
           <span className="text-[9px] font-medium leading-none">Mês</span>
         </Link>
         
-        <Link to="/extract" className={`flex flex-col items-center gap-1 w-12 active:scale-95 transition-transform mt-2 ${isActive('/extract')}`}>
+        <Link to="/extract" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/extract')}`}>
           <Layers size={22} />
           <span className="text-[9px] font-medium leading-none">Extrato</span>
         </Link>
 
         {/* Botão Central (Mobile) */}
-        <Link to="/add" className="relative -top-5 shrink-0 px-2">
-          <div className="bg-blue-600 rounded-full p-4 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[4px] border-[#050505] active:scale-90 transition-transform">
-            <Plus size={24} color="white" className="stroke-[3px]" />
-          </div>
-        </Link>
+        <div className="relative -top-6 flex justify-center w-full">
+          <Link to="/add">
+            <div className="bg-blue-600 rounded-full p-4 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[4px] border-[#050505] active:scale-90 transition-transform flex items-center justify-center">
+              <Plus size={24} color="white" className="stroke-[3px]" />
+            </div>
+          </Link>
+        </div>
 
-        <Link to="/analysis" className={`flex flex-col items-center gap-1 w-12 active:scale-95 transition-transform mt-2 ${isActive('/analysis')}`}>
+        <Link to="/analysis" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/analysis')}`}>
           <BarChart3 size={22} />
           <span className="text-[9px] font-medium leading-none">Análise</span>
         </Link>
         
-        <Link to="/settings" className={`flex flex-col items-center gap-1 w-12 active:scale-95 transition-transform mt-2 ${isActive('/settings')}`}>
+        <Link to="/settings" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/settings')}`}>
           <User size={22} />
           <span className="text-[9px] font-medium leading-none">Perfil</span>
         </Link>

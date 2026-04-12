@@ -12,6 +12,7 @@ export function ProfileSettings({ onBack }) {
     const [loading, setLoading] = useState(false);
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(user?.user_metadata?.avatar_url || '');
+    const [pendingDelete, setPendingDelete] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleImageChange = (e) => {
@@ -32,6 +33,11 @@ export function ProfileSettings({ onBack }) {
 
         try {
             let avatar_url = user?.user_metadata?.avatar_url || '';
+
+            // Se o usuário clicou para deletar a foto, limpamos a URL
+            if (pendingDelete) {
+                avatar_url = '';
+            }
 
             // 1. Upload da imagem se houver novo arquivo
             if (avatarFile) {

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { AppLayout } from './layouts/AppLayout.jsx';
 import { DateProvider } from './contexts/DateContext.jsx';
+import { TransactionProvider } from './contexts/TransactionContext.jsx';
 import { NotificationProvider } from './contexts/NotificationContext.jsx';
 import { CustomToaster } from './components/ui/CustomToaster.jsx';
 import { CustomConfirm } from './components/ui/CustomConfirm.jsx';
@@ -21,8 +22,9 @@ export default function App() {
   return (
     <AuthProvider>
       <DateProvider>
-        <NotificationProvider>
-          <BrowserRouter>
+        <TransactionProvider>
+          <NotificationProvider>
+            <BrowserRouter>
             <CustomToaster />
             <CustomConfirm />
             <Routes>
@@ -42,11 +44,11 @@ export default function App() {
               <Route path="/settings" element={<Settings />} />
             </Route>
 
-            {/* Qualquer rota desconhecida manda pro Login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </BrowserRouter>
         </NotificationProvider>
+        </TransactionProvider>
       </DateProvider>
     </AuthProvider>
   );

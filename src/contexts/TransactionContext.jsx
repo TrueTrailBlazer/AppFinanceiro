@@ -1,17 +1,28 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../services/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { useDate } from '../contexts/DateContext';
+import { useAuth } from './AuthContext';
+import { useDate } from './DateContext';
 
-export function useTransactions() {
+const TransactionContext = createContext({});
+
+export function TransactionProvider({ children }) {
   const { user } = useAuth();
   const { currentDate, changeMonth, monthTitle } = useDate();
-  const [transactions, setTransactions] = useState([]);
+  
+  // Cache por mês no formato "YYYY-MM"
+  const [cache, setCache] = useState({});
   const [loading, setLoading] = useState(true);
 
-  const fetchMonthData = useCallback(async () => {
+  const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
+
+  const fetchMonthData = useCallback(async (forced = false) => {
     if (!user) return;
     
+    // Se não tiver no cache, liga o loading. Caso contrário, carrega silenciosamente.
+    if (!cache[monthKey] && !forced) {
+        setLoading(true);
+    }
+
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
@@ -24,33 +35,35 @@ export function useTransactions() {
       .order('created_at', { ascending: false });
 
     if (data) {
-      setTransactions(data);
+      setCache(prev => ({ ...prev, [monthKey]: data }));
     }
+    
     setLoading(false);
-  }, [user, currentDate]);
+  }, [user, currentDate, monthKey, cache]);
 
   useEffect(() => {
     if (!user) return;
-    let mounted = true;
-
-    setLoading(true);
+    
     fetchMonthData();
 
+    // Inscrição para Realtime
     const channel = supabase
-      .channel('home-realtime')
+      .channel('global-transactions')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, 
         () => {
-          if (mounted) fetchMonthData();
+          fetchMonthData(true); // Força refresh sem piscar a tela
         }
       )
       .subscribe();
 
     return () => {
-      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [user, fetchMonthData]);
+
+  // Transações do mês atualmente visualizado
+  const transactions = cache[monthKey] || [];
 
   const summary = useMemo(() => {
     const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
@@ -61,13 +74,20 @@ export function useTransactions() {
 
   const recentTransactions = useMemo(() => transactions.slice(0, 3), [transactions]);
 
-  return {
-    transactions,
-    recentTransactions,
-    loading,
-    currentDate,
-    monthTitle,
-    summary,
-    changeMonth,
-  };
+  return (
+    <TransactionContext.Provider value={{
+      transactions,
+      recentTransactions,
+      loading: !cache[monthKey] && loading, // Só é considerado carregando SE não houver cache
+      summary,
+      currentDate,
+      monthTitle,
+      changeMonth,
+      refreshData: () => fetchMonthData(true)
+    }}>
+      {children}
+    </TransactionContext.Provider>
+  );
 }
+
+export const useTransactionsContext = () => useContext(TransactionContext);

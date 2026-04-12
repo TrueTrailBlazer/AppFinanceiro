@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { useDate } from '../contexts/DateContext';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useTransactionsContext } from '../contexts/TransactionContext';
 import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
@@ -11,52 +11,13 @@ import { MonthSelector } from '../components/dashboard/MonthSelector';
 export default function Extract() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { transactions, loading, monthTitle, changeMonth } = useTransactionsContext();
   const [viewMode, setViewMode] = useState('month');
-  const { currentDate, changeMonth, monthTitle } = useDate();
+  
   const { showAlert } = useNotifications();
-
   const [activeFilter, setActiveFilter] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // --- Busca ---
-  const fetchTransactions = async () => {
-    setLoading(true);
-    let query = supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (viewMode === 'month') {
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
-      query = query.gte('created_at', startOfMonth).lte('created_at', endOfMonth);
-    } else {
-      query = query.limit(200);
-    }
-
-    const { data } = await query;
-    if (data) setTransactions(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!user) return;
-    fetchTransactions();
-
-    const channel = supabase
-      .channel('extract-realtime')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` },
-        () => fetchTransactions()
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user, currentDate, viewMode]);
 
   // --- Ações ---
   const togglePaid = async (e, t) => {
@@ -64,7 +25,6 @@ export default function Extract() {
     if (t.type === 'income') return; // Segurança: Entradas não mudam
 
     const newStatus = !t.is_paid;
-    setTransactions(prev => prev.map(item => item.id === t.id ? { ...item, is_paid: newStatus } : item));
 
     const { error } = await supabase
       .from('transactions')
@@ -225,7 +185,7 @@ export default function Extract() {
                 </div>
 
                 <div className="flex flex-col items-end shrink-0 ml-2">
-                  <span className={`text-[13px] font-bold ${isIncome ? 'text-green-400' : 'text-white'} leading-tight`}>
+                  <span className={`text-[14px] font-extrabold ${isIncome ? 'text-green-400' : 'text-white'} leading-tight`}>
                     {isIncome ? '+ ' : '- '}
                     {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
@@ -233,7 +193,7 @@ export default function Extract() {
                   {!isIncome && (
                     <button
                       onClick={(e) => togglePaid(e, t)}
-                      className={`mt-1 px-1.5 py-0.5 rounded border font-bold text-[8px] uppercase tracking-wider transition-all
+                      className={`mt-2 px-3 py-1.5 rounded-lg border font-bold text-[9px] uppercase tracking-widest transition-all
                             ${t.is_paid
                           ? 'bg-green-500/10 border-green-500/50 text-green-500'
                           : 'bg-red-500/10 border-red-500/40 text-red-500'}`}

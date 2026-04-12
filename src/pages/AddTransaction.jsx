@@ -40,7 +40,7 @@ export default function AddTransaction() {
 
   useEffect(() => {
     if (editingTransaction) {
-      setAmount(editingTransaction.amount.toString());
+      setAmount(Number(editingTransaction.amount).toFixed(2));
       setName(editingTransaction.name);
       setType(editingTransaction.type);
       setCategory(editingTransaction.category || 'others');
@@ -61,7 +61,7 @@ export default function AddTransaction() {
     const now = new Date();
     const baseDate = new Date(date);
     baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
-    const baseAmount = parseFloat(amount);
+    const baseAmount = parseFloat(Number(amount).toFixed(2));
 
     try {
       if (editingTransaction) {
@@ -116,14 +116,17 @@ export default function AddTransaction() {
           const txs = [];
           let pieceAmount = baseAmount;
           if (installmentType === 'divide_total') {
-            pieceAmount = baseAmount / installmentsCount;
+            const count = parseInt(installmentsCount) || 2;
+            pieceAmount = parseFloat((baseAmount / count).toFixed(2));
           }
 
-          for (let i = 0; i < installmentsCount; i++) {
+          const count = parseInt(installmentsCount) || 2;
+          for (let i = 0; i < count; i++) {
             const stepDate = new Date(baseDate);
             stepDate.setMonth(stepDate.getMonth() + i);
 
-            const txName = `${name} (${i + 1}/${installmentsCount})`;
+            const count = parseInt(installmentsCount) || 2;
+            const txName = `${name} (${i + 1}/${count})`;
             // Primeira parcela pode ser efetivada, mas as demais entram sempre como pendentes
             const txIsPaid = i === 0 ? isPaid : false;
 
@@ -212,7 +215,7 @@ export default function AddTransaction() {
                 <input
                   type="number" pattern="\d*" inputMode="decimal" step="0.01" autoFocus={!editingTransaction}
                   value={amount} onChange={e => setAmount(e.target.value)}
-                  placeholder="0,00"
+                  placeholder="0.00"
                   className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-800 outline-none"
                 />
               </div>
@@ -223,16 +226,18 @@ export default function AddTransaction() {
               <button
                 type="button"
                 onClick={() => setIsPaid(true)}
-                className={`flex-1 py-1.5 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
+                className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
               >
-                <span className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><CheckCircle2 size={12} /> Efetivado</span>
+                <CheckCircle2 size={16} />
+                <span className="text-[11px] font-bold uppercase tracking-wide">Efetivado</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsPaid(false)}
-                className={`flex-1 py-1.5 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
+                className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
               >
-                <span className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><XCircle size={12} /> Pendente</span>
+                <XCircle size={16} />
+                <span className="text-[11px] font-bold uppercase tracking-wide">Pendente</span>
               </button>
             </div>
 
@@ -288,7 +293,10 @@ export default function AddTransaction() {
                     <div className="flex items-center gap-3">
                       <div className="flex-1 space-y-1">
                         <label className="text-[9px] font-bold text-gray-500 uppercase">Qtd. Parcelas</label>
-                        <input type="number" pattern="\d*" inputMode="numeric" min="2" max="72" value={installmentsCount} onChange={e => setInstallmentsCount(parseInt(e.target.value) || 2)}
+                        <input type="number" pattern="\d*" inputMode="numeric" min="2" max="72" value={installmentsCount} onChange={e => {
+                          const val = e.target.value;
+                          setInstallmentsCount(val === '' ? '' : parseInt(val));
+                        }}
                           className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
                       </div>
                     </div>
@@ -296,13 +304,13 @@ export default function AddTransaction() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-gray-500 uppercase">Como calcular?</label>
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => setInstallmentType('divide_total')} className={`flex-1 flex flex-col p-2 rounded-lg border text-left transition-all ${installmentType === 'divide_total' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100'}`}>
-                          <span className={`text-[10px] font-bold ${installmentType === 'divide_total' ? 'text-blue-400' : 'text-gray-400'}`}>Dividir o Total</span>
-                          <span className="text-[8px] text-gray-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Ex: 100 em 2x = 50 cada</span>
+                        <button type="button" onClick={() => setInstallmentType('divide_total')} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all ${installmentType === 'divide_total' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100'}`}>
+                          <span className={`text-[11px] font-bold ${installmentType === 'divide_total' ? 'text-blue-400' : 'text-gray-400'}`}>Dividir o Total</span>
+                          <span className="text-[8px] text-gray-500 mt-1 line-clamp-1 leading-tight">Divide para as parcelas</span>
                         </button>
-                        <button type="button" onClick={() => setInstallmentType('multiply_parcel')} className={`flex-1 flex flex-col p-2 rounded-lg border text-left transition-all ${installmentType === 'multiply_parcel' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100'}`}>
-                          <span className={`text-[10px] font-bold ${installmentType === 'multiply_parcel' ? 'text-blue-400' : 'text-gray-400'}`}>É da Parcela</span>
-                          <span className="text-[8px] text-gray-500 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Ex: 100 em 2x = 200 total</span>
+                        <button type="button" onClick={() => setInstallmentType('multiply_parcel')} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all ${installmentType === 'multiply_parcel' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100'}`}>
+                          <span className={`text-[11px] font-bold ${installmentType === 'multiply_parcel' ? 'text-blue-400' : 'text-gray-400'}`}>É da Parcela</span>
+                          <span className="text-[8px] text-gray-500 mt-1 line-clamp-1 leading-tight">Valor é vezes meses</span>
                         </button>
                       </div>
                     </div>

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useTransactions } from '../hooks/useTransactions';
+import { useTransactionsContext } from '../contexts/TransactionContext';
 import { MonthSelector } from '../components/dashboard/MonthSelector';
 import { SummaryCards } from '../components/dashboard/SummaryCards';
 import { TransactionList } from '../components/dashboard/TransactionList';
@@ -13,7 +13,7 @@ export default function Home() {
     monthTitle, 
     summary, 
     changeMonth 
-  } = useTransactions();
+  } = useTransactionsContext();
 
   const handleEdit = (transaction) => {
     navigate('/add', { state: { transaction } });
