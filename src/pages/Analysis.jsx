@@ -260,11 +260,11 @@ export default function Analysis() {
                             </h3>
                             <span className="text-[9px] text-gray-600 font-bold uppercase">Toque na barra para ver valores</span>
                         </div>
-                        {period > 6 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">HOJE →</span>}
+                        {period === 12 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">DESLIZE →</span>}
                     </div>
                     
-                    <div ref={chartScrollRef} className="overflow-x-auto pb-4 custom-scrollbar-horizontal snap-x snap-mandatory">
-                        <div className="flex items-end justify-between gap-3 h-56 pt-14 min-w-[500px] md:min-w-full relative px-4">
+                    <div ref={chartScrollRef} className={`${period === 12 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 custom-scrollbar-horizontal snap-x snap-mandatory`}>
+                        <div className={`flex items-end justify-start gap-3 h-56 pt-14 ${period === 12 ? 'min-w-[600px] pr-20' : 'w-full'} relative px-4`}>
                             {data.monthList.map((m, i) => (
                                 <div key={i} 
                                     onClick={(e) => { e.stopPropagation(); setSelectedMonthIndex(selectedMonthIndex === i ? null : i); }} 

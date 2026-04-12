@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { Plus, Trash2, Zap, CheckCircle2, ArrowLeft, Calendar, Coins, X, Check } from 'lucide-react';
+import { Plus, Trash2, Zap, CheckCircle2, ArrowLeft, Calendar, Coins, X, Check, Type } from 'lucide-react';
 import { getCategory, CATEGORIES } from '../../utils/constants';
 import { useNavigate } from 'react-router-dom';
 

@@ -8,6 +8,7 @@ import { CustomToaster } from './components/ui/CustomToaster.jsx';
 import { CustomConfirm } from './components/ui/CustomConfirm.jsx';
 import { PrivateRoute } from './components/router/PrivateRoute.jsx';
 import { PublicRoute } from './components/router/PublicRoute.jsx';
+import ScrollToTop from './components/router/ScrollToTop.jsx';
 
 // Páginas
 import Login from './pages/Login.jsx';
@@ -26,6 +27,7 @@ export default function App() {
         <TransactionProvider>
           <NotificationProvider>
             <BrowserRouter>
+            <ScrollToTop />
             <CustomToaster />
             <CustomConfirm />
             <Routes>
