@@ -91,7 +91,12 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
       {/* Clicar fora para fechar */}
       <div className="absolute inset-0 z-0" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-sm bg-[#121212] border border-[#222] rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+      <div 
+        className="relative z-10 w-full max-w-sm bg-[#121212] border border-[#222] rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-[#222]">
@@ -104,9 +109,6 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
         {/* Counter / Ano com Suporte a Swipe */}
         <div 
           className="flex items-center justify-between p-6"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         >
           <button onClick={() => setYear(y => y - 1)} className="p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#333] transition-colors active:scale-95">
              <ChevronLeft size={20} className="text-gray-300"/>
