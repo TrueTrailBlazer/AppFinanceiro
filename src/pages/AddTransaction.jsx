@@ -26,6 +26,7 @@ export default function AddTransaction() {
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState(2);
   const [installmentType, setInstallmentType] = useState('divide_total');
+  const [currentInstallment, setCurrentInstallment] = useState(1);
 
   const getInstallmentInfo = (txName) => {
     if (!txName) return null;
@@ -129,14 +130,17 @@ export default function AddTransaction() {
           }
 
           const count = parseInt(installmentsCount) || 2;
-          for (let i = 0; i < count; i++) {
+          const startAt = parseInt(currentInstallment) || 1;
+          
+          for (let i = 1; i <= count; i++) {
             const stepDate = new Date(baseDate);
-            stepDate.setMonth(stepDate.getMonth() + i);
+            // Ajusta a data para que a parcela 'startAt' seja na 'baseDate'
+            stepDate.setMonth(stepDate.getMonth() + (i - startAt));
 
-            const count = parseInt(installmentsCount) || 2;
-            const txName = `${name} (${i + 1}/${count})`;
-            // Primeira parcela pode ser paga, mas as demais entram sempre como pendentes
-            const txIsPaid = i === 0 ? isPaid : false;
+            const txName = `${name} (${i}/${count})`;
+            // Parcelas anteriores à atual e a atual são marcadas como pagas se as parcelas futuras forem pendentes
+            // Ou segue o estado do botão 'isPaid' para a parcela atual
+            const txIsPaid = i < startAt ? true : (i === startAt ? isPaid : false);
 
             txs.push({
               user_id: user.id,
@@ -324,6 +328,14 @@ export default function AddTransaction() {
                         <input type="number" pattern="\d*" inputMode="numeric" min="2" max="72" value={installmentsCount} onChange={e => {
                           const val = e.target.value;
                           setInstallmentsCount(val === '' ? '' : parseInt(val));
+                        }}
+                          className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase">Parcela Atual</label>
+                        <input type="number" pattern="\d*" inputMode="numeric" min="1" max={installmentsCount} value={currentInstallment} onChange={e => {
+                          const val = e.target.value;
+                          setCurrentInstallment(val === '' ? '' : parseInt(val));
                         }}
                           className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
                       </div>

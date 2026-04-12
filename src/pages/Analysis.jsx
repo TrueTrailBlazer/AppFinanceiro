@@ -1,7 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, TrendingDown, Wallet, Award, Calendar, ChevronDown } from 'lucide-react';
+import { 
+  TrendingUp, TrendingDown, Wallet, Award, 
+  Calendar, ChevronDown, Tag, PieChart, 
+  ArrowUpRight, Target, Flame
+} from 'lucide-react';
 import { getCategory } from '../utils/constants';
 
 export default function Analysis() {
@@ -11,6 +15,7 @@ export default function Analysis() {
   const [period, setPeriod] = useState(6);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
   const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+  const [rankingMode, setRankingMode] = useState('month'); // 'month' or 'all'
 
   const periodOptions = [
     { val: 3, label: '3 Meses' },
@@ -28,7 +33,7 @@ export default function Analysis() {
             .from('transactions')
             .select('*')
             .eq('user_id', user.id)
-            .order('created_at', { ascending: true }); // Crescente para o gráfico
+            .order('created_at', { ascending: true });
         
         if (error) throw error;
         if (data) setTransactions(data);
@@ -45,15 +50,12 @@ export default function Analysis() {
   const data = useMemo(() => {
     if (!transactions || transactions.length === 0) return null;
 
-    // 1. Agrupar por Mês
     const months = {};
     const now = new Date();
     
-    // Cria chaves para os últimos X meses (garante que meses vazios apareçam)
     for (let i = period - 1; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
-        // Formata como Jan, Fev, Mar...
         const label = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.','');
         months[key] = { label, income: 0, expense: 0 };
     }
@@ -61,7 +63,6 @@ export default function Analysis() {
     transactions.forEach(t => {
         const d = new Date(t.created_at);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
-        
         if (months[key]) {
             const val = Number(t.amount);
             if (t.type === 'income') months[key].income += val;
@@ -71,9 +72,20 @@ export default function Analysis() {
 
     const monthList = Object.values(months);
 
-    // 2. Top Maiores Gastos (Transações Individuais)
-    const topExpensesList = transactions
+    // 2. Top Maiores Gastos (UNIFICADOS - Evita repetição de parcelas)
+    const uniqueExpensesMap = new Map();
+    transactions
         .filter(t => t.type !== 'income')
+        .forEach(t => {
+            // Remove o indicativo de parcela (ex: "Compra (1/10)" -> "Compra")
+            const cleanName = t.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
+            // Mantém apenas o de maior valor para cada nome limpo
+            if (!uniqueExpensesMap.has(cleanName) || Number(t.amount) > Number(uniqueExpensesMap.get(cleanName).amount)) {
+                uniqueExpensesMap.set(cleanName, t);
+            }
+        });
+
+    const topExpensesList = Array.from(uniqueExpensesMap.values())
         .sort((a, b) => Number(b.amount) - Number(a.amount))
         .slice(0, 5);
 
@@ -82,7 +94,6 @@ export default function Analysis() {
     // 3. KPIs
     const totalSaved = transactions.reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
     
-    // Média de Poupança (evita divisão por zero)
     let savingsRateSum = 0;
     let validMonths = 0;
     monthList.forEach(m => {
@@ -93,14 +104,40 @@ export default function Analysis() {
     });
     const avgSavingsRate = validMonths > 0 ? (savingsRateSum / validMonths) * 100 : 0;
 
-    return { monthList, topExpensesList, maxTopExpenseValue, totalSaved, avgSavingsRate };
-  }, [transactions, period]);
+    // 4. Ranking por Categoria
+    let filteredForRanking = transactions.filter(t => t.type !== 'income');
+    if (rankingMode === 'month') {
+        const targetDate = selectedMonthIndex !== null 
+            ? new Date(now.getFullYear(), now.getMonth() - (period - 1 - selectedMonthIndex), 1)
+            : now;
+        filteredForRanking = filteredForRanking.filter(t => {
+            const d = new Date(t.created_at);
+            return d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear();
+        });
+    }
 
-  // Se não houver dados
+    const catTotals = {};
+    filteredForRanking.forEach(t => {
+        catTotals[t.category] = (catTotals[t.category] || 0) + Number(t.amount);
+    });
+
+    const categoryRanking = Object.entries(catTotals)
+        .map(([cat, amount]) => ({ cat, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+    const maxCatValue = Math.max(...categoryRanking.map(c => c.amount), 1);
+
+    return { monthList, topExpensesList, maxTopExpenseValue, totalSaved, avgSavingsRate, categoryRanking, maxCatValue };
+  }, [transactions, period, selectedMonthIndex, rankingMode]);
+
   if (!loading && (!data || transactions.length === 0)) {
       return (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <p>Adicione transações para ver a análise.</p>
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500 animate-in fade-in duration-700">
+              <div className="p-6 bg-[#121212] rounded-full mb-4 border border-[#222]">
+                  <PieChart size={32} className="opacity-20" />
+              </div>
+              <p className="text-sm font-bold uppercase tracking-widest opacity-40">Sem dados para análise</p>
+              <p className="text-xs mt-1">Adicione lançamentos para liberar os gráficos.</p>
           </div>
       );
   }
@@ -108,31 +145,35 @@ export default function Analysis() {
   const maxChartValue = data ? Math.max(...data.monthList.map(m => Math.max(m.income, m.expense)), 100) : 100;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      
+      {/* HEADER */}
       <div className="flex justify-between items-center px-1">
-        <h1 className="text-xl font-bold text-white">Análise</h1>
+        <div className="flex flex-col">
+            <h1 className="text-xl font-black text-white tracking-tight">ANÁLISE</h1>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inteligência Financeira</p>
+        </div>
         
-        {/* Dropdown de Período */}
         <div className="relative z-50">
           <button
             onClick={() => setIsPeriodOpen(!isPeriodOpen)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border transition-all active:scale-95 ${
               isPeriodOpen ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400 hover:text-white'
             }`}
           >
             <Calendar size={14} />
-            <span className="text-xs font-bold">{activePeriodLabel}</span>
-            <ChevronDown size={14} className={`transition-transform ${isPeriodOpen ? 'rotate-180' : ''}`} />
+            <span className="text-xs font-black uppercase tracking-wider">{activePeriodLabel}</span>
+            <ChevronDown size={14} className={`transition-transform duration-300 ${isPeriodOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isPeriodOpen && (
-            <div className="absolute top-full right-0 mt-2 w-36 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
+            <div className="absolute top-full right-0 mt-2 w-40 bg-[#121212]/95 backdrop-blur-xl border border-[#222] rounded-2xl shadow-2xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-4 duration-300">
               {periodOptions.map(opt => (
                 <button
                   key={opt.val}
                   onClick={() => { setPeriod(opt.val); setSelectedMonthIndex(null); setIsPeriodOpen(false); }}
-                  className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
-                    period === opt.val ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'
+                  className={`text-left px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    period === opt.val ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
                   }`}
                 >
                   {opt.label}
@@ -144,124 +185,131 @@ export default function Analysis() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-xs text-gray-500 animate-pulse">Calculando...</div>
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest transition-pulse">Auditando suas contas...</p>
+        </div>
       ) : (
         <>
-            {/* --- KPIs --- */}
+            {/* KPI GRID */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#121212] p-4 rounded-2xl border border-[#222] relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-10"><Wallet size={40} className="text-blue-500"/></div>
-                    <p className="text-[10px] uppercase font-bold text-gray-500">Saldo Acumulado</p>
-                    <h3 className={`text-lg font-bold mt-1 ${data.totalSaved >= 0 ? 'text-white' : 'text-red-400'}`}>
+                <div className="bg-[#121212] p-5 rounded-[2rem] border border-[#222] relative group">
+                    <div className="absolute top-4 right-4 p-2 bg-blue-500/10 rounded-xl text-blue-500"><Target size={16}/></div>
+                    <p className="text-[10px] uppercase font-black text-gray-500 tracking-widest">Saldo Total</p>
+                    <h3 className={`text-lg font-black mt-2 tracking-tight ${data.totalSaved >= 0 ? 'text-white' : 'text-red-500'}`}>
                         {data.totalSaved.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </h3>
                 </div>
-                <div className="bg-[#121212] p-4 rounded-2xl border border-[#222] relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-10"><Award size={40} className="text-yellow-500"/></div>
-                    <p className="text-[10px] uppercase font-bold text-gray-400">Taxa de Poupança (Média)</p>
-                    <h3 className={`text-lg font-bold mt-1 ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="bg-[#121212] p-5 rounded-[2rem] border border-[#222] relative group">
+                    <div className="absolute top-4 right-4 p-2 bg-green-500/10 rounded-xl text-green-500"><Flame size={16}/></div>
+                    <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Eficiência</p>
+                    <h3 className={`text-lg font-black mt-2 tracking-tight ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {data.avgSavingsRate.toFixed(1)}%
                     </h3>
                 </div>
             </div>
 
-            {/* --- Desktop Grid para Gráfico + Ranking --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* --- GRÁFICO --- */}
-                <div className="bg-[#121212] p-5 rounded-2xl border border-[#222] h-fit shadow-lg">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2">
-                            <TrendingUp size={16} className="text-blue-500"/> Receitas vs. Despesas
-                        </h3>
-                        <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 uppercase">
-                            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-600"></div> Receitas</div>
-                            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-600"></div> Despesas</div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* GRÁFICO DE BARRAS */}
+                <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
+                    <div className="flex justify-between items-center mb-10">
+                        <div className="flex flex-col">
+                            <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
+                                <TrendingUp size={16} className="text-blue-500"/> Fluxo Mensal
+                            </h3>
+                            <span className="text-[9px] text-gray-600 font-bold uppercase">Receitas vs Despesas</span>
                         </div>
                     </div>
                     
-                    <div className="flex items-end justify-between gap-1 h-48 pt-8 pb-1 relative mt-4">
+                    <div className="flex items-end justify-between gap-2 h-44 relative">
                         {data.monthList.map((m, i) => (
-                            <div 
-                              key={i} 
-                              onClick={() => setSelectedMonthIndex(selectedMonthIndex === i ? null : i)}
-                              className="flex flex-col items-center flex-1 group h-full justify-end cursor-pointer relative"
-                            >
-                                {/* Tooltip */}
+                            <div key={i} onClick={() => setSelectedMonthIndex(selectedMonthIndex === i ? null : i)} className="flex flex-col items-center flex-1 h-full justify-end cursor-pointer group relative">
                                 {selectedMonthIndex === i && (
-                                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#1a1a1a] border border-[#333] text-white text-[9px] whitespace-nowrap px-2.5 py-2 rounded-xl shadow-2xl z-30 animate-in zoom-in-95 fade-in duration-200">
-                                    <div className="flex flex-col gap-1 items-center">
-                                      <span className="text-green-400 font-bold">+ {m.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
-                                      <span className="text-red-400 font-bold">- {m.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
-                                      <span className="text-[8px] text-gray-500 border-t border-[#333] pt-1 mt-0.5">Saldo: {(m.income - m.expense).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black p-3 rounded-2xl shadow-2xl z-30 animate-in slide-in-from-bottom-2 duration-300">
+                                    <div className="flex flex-col items-center gap-1 font-black">
+                                      <span className="text-[10px] text-green-600">+ {m.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
+                                      <span className="text-[10px] text-red-600">- {m.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
                                     </div>
-                                    <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-[#333] w-0 h-0"></div>
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45"></div>
                                   </div>
                                 )}
-
-                                <div className="flex gap-[3px] items-end justify-center w-full h-full">
-                                    {/* Barra Receita */}
-                                    <div 
-                                        className={`w-3 md:w-5 rounded-t transition-all duration-300 min-h-[4px] ${selectedMonthIndex !== null && selectedMonthIndex !== i ? 'bg-blue-600/20' : 'bg-blue-600 group-hover:bg-blue-500 group-hover:shadow-[0_0_12px_rgba(37,99,235,0.3)]'} ${selectedMonthIndex === i ? 'bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : ''}`}
-                                        style={{ height: `${Math.max((m.income / maxChartValue) * 100, 2)}%` }}
-                                    ></div>
-                                    {/* Barra Despesa */}
-                                    <div 
-                                        className={`w-3 md:w-5 rounded-t transition-all duration-300 min-h-[4px] ${selectedMonthIndex !== null && selectedMonthIndex !== i ? 'bg-red-600/20' : 'bg-red-600 group-hover:bg-red-500 group-hover:shadow-[0_0_12px_rgba(220,38,38,0.3)]'} ${selectedMonthIndex === i ? 'bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]' : ''}`}
-                                        style={{ height: `${Math.max((m.expense / maxChartValue) * 100, 2)}%` }}
-                                    ></div>
+                                <div className="flex gap-1 items-end justify-center w-full h-full">
+                                    <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 ${selectedMonthIndex === i ? 'bg-blue-500 h-full scale-110' : 'bg-blue-600/30'}`} style={{ height: `${(m.income / maxChartValue) * 100}%` }}></div>
+                                    <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 ${selectedMonthIndex === i ? 'bg-red-500 h-full scale-110' : 'bg-red-600/30'}`} style={{ height: `${(m.expense / maxChartValue) * 100}%` }}></div>
                                 </div>
+                                <span className={`text-[8px] font-black uppercase mt-4 transition-colors ${selectedMonthIndex === i ? 'text-white' : 'text-gray-600'}`}>{m.label}</span>
                             </div>
                         ))}
                     </div>
-                    {/* Legenda Meses */}
-                    <div className="flex justify-between mt-3 px-1">
-                         {data.monthList.map((m, i) => (
-                             <span key={i} className={`text-[9px] md:text-[10px] uppercase font-bold w-full text-center transition-colors ${selectedMonthIndex === i ? 'text-white' : 'text-gray-500'}`}>
-                                {m.label}
-                             </span>
-                         ))}
+                </div>
+
+                {/* RANKING CATEGORIAS - REDESIGN PREMIUM */}
+                <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
+                    <div className="flex justify-between items-center mb-8">
+                        <div className="flex flex-col">
+                            <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
+                                <Tag size={16} className="text-blue-500"/> Gastos por Categoria
+                            </h3>
+                            <span className="text-[9px] text-gray-600 font-bold uppercase">Ranking de Impacto</span>
+                        </div>
+                        <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222]">
+                            <button onClick={() => setRankingMode('month')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'month' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Mês</button>
+                            <button onClick={() => setRankingMode('all')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'all' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Total</button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {data.categoryRanking.length > 0 ? (
+                            data.categoryRanking.map(({ cat, amount }) => {
+                                const catInfo = getCategory(cat);
+                                const Icon = catInfo.icon;
+                                const percent = (amount / data.maxCatValue) * 100;
+                                return (
+                                    <div key={cat} className="p-4 bg-[#121212] rounded-3xl border border-[#1a1a1a] relative overflow-hidden group hover:border-blue-500/30 transition-all">
+                                        <div className="absolute bottom-0 left-0 h-1 bg-blue-600/20 group-hover:bg-blue-600/40 transition-all" style={{ width: `${percent}%` }}></div>
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className={`p-2.5 rounded-2xl ${catInfo.bg} border border-white/5`}>
+                                                <Icon size={16} className={catInfo.color} />
+                                            </div>
+                                            <ArrowUpRight size={14} className="text-gray-700 group-hover:text-blue-500 transition-colors" />
+                                        </div>
+                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{catInfo.label}</h4>
+                                        <p className="text-sm font-black text-white mt-1">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="col-span-full py-16 text-center text-[10px] text-gray-700 font-black uppercase tracking-[0.2em] opacity-30">Vazio</div>
+                        )}
                     </div>
                 </div>
 
-                {/* --- RANKING --- */}
-                <div className="space-y-3 p-4 bg-[#121212]/30 md:bg-transparent rounded-2xl">
-                    <h3 className="text-sm font-bold text-gray-300 px-1 flex items-center gap-2">
-                        <TrendingDown size={18} className="text-red-500" />
-                        Maiores Gastos
+                {/* TOP 5 GASTOS - LOGICA UNIQUE */}
+                <div className="lg:col-span-2 bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
+                    <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2 mb-8">
+                        <TrendingDown size={18} className="text-red-500" /> Maiores Despesas Únicas
                     </h3>
-                    {data.topExpensesList.map(item => {
-                        const catInfo = getCategory(item.category);
-                        const Icon = catInfo.icon;
-                        const amount = Number(item.amount);
-                        const percent = (amount / data.maxTopExpenseValue) * 100;
-                        
-                        return (
-                            <div key={item.id} className="bg-[#121212] p-3 rounded-xl border border-[#222] flex items-center gap-3 relative overflow-hidden transition-colors hover:border-[#333]">
-                                <div 
-                                    className="absolute left-0 top-0 bottom-0 bg-red-900/10 pointer-events-none transition-all duration-1000" 
-                                    style={{ width: `${percent}%` }}
-                                />
-                                <div className={`p-2.5 rounded-lg shrink-0 ${catInfo.bg} z-10 border border-[#222]`}>
-                                    <Icon size={16} className={catInfo.color} />
-                                </div>
-                                <div className="flex-1 z-10">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs font-bold text-gray-200 truncate pr-2">{item.name}</span>
-                                        <span className="text-sm font-bold text-white shrink-0">
-                                            {amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                        </span>
+                    <div className="space-y-3">
+                        {data.topExpensesList.map(item => {
+                            const catInfo = getCategory(item.category);
+                            const Icon = catInfo.icon;
+                            return (
+                                <div key={item.id} className="flex items-center justify-between p-4 bg-[#121212] rounded-[1.5rem] border border-[#1a1a1a] group hover:scale-[1.01] transition-all">
+                                    <div className="flex items-center gap-4 truncate">
+                                        <div className={`p-3 rounded-2xl ${catInfo.bg} text-blue-500`}><Icon size={18} className={catInfo.color} /></div>
+                                        <div className="flex flex-col truncate">
+                                            <span className="text-sm font-black text-white truncate uppercase tracking-tight">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
+                                            <span className="text-[9px] text-gray-600 font-black uppercase tracking-widest">{catInfo.label} • {new Date(item.created_at).toLocaleDateString('pt-BR')}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                         <span className="text-[10px] text-gray-500 font-medium">
-                                            {new Date(item.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}
-                                         </span>
-                                         <span className="text-[9px] bg-[#222] text-gray-400 px-1.5 py-0.5 rounded capitalize font-medium">{catInfo.label}</span>
-                                    </div>
+                                    <span className="text-lg font-black text-white shrink-0 ml-4">
+                                        {Number(item.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
                                 </div>
-                            </div>
-                        )
-                    })}
+                            )
+                        })}
+                    </div>
                 </div>
             </div>
         </>

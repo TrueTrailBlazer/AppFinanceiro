@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { User, Zap, LogOut, ChevronRight, Shield, Wallet } from 'lucide-react';
+import { User, Zap, LogOut, ChevronRight, Shield, Wallet, FileSpreadsheet } from 'lucide-react';
 import { RecurringExpenses } from '../components/settings/RecurringExpenses';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
 import { ProfileSettings } from '../components/settings/ProfileSettings';
 import { FinancialGoals } from '../components/settings/FinancialGoals';
+import { CSVImport } from '../components/settings/CSVImport';
 
 export default function Settings() {
   const { user, signOut } = useAuth();
   const { showAlert } = useNotifications();
-  const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'profile' | 'recurring' | 'security' | 'goals'
+  const [currentView, setCurrentView] = useState('menu'); // 'menu' | 'profile' | 'recurring' | 'security' | 'goals' | 'csv'
 
   const handleLogout = async () => {
     await signOut();
@@ -46,6 +47,9 @@ export default function Settings() {
   }
   if (currentView === 'recurring') {
     return <RecurringExpenses onBack={() => setCurrentView('menu')} />;
+  }
+  if (currentView === 'csv') {
+    return <CSVImport onBack={() => setCurrentView('menu')} />;
   }
 
   // --- MENU PRINCIPAL ---
@@ -90,6 +94,12 @@ export default function Settings() {
                 label="Metas Financeiras" 
                 subLabel="Planeje seu futuro"
                 onClick={() => setCurrentView('goals')}
+            />
+            <MenuItem 
+                icon={FileSpreadsheet} 
+                label="Importar Extrato" 
+                subLabel="Importe gastos via arquivo CSV"
+                onClick={() => setCurrentView('csv')}
             />
         </div>
       </div>

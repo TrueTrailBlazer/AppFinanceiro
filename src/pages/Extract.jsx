@@ -3,7 +3,11 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useTransactionsContext } from '../contexts/TransactionContext';
-import { Search, ChevronLeft, ChevronRight, Calendar, CheckCircle2, XCircle, Filter, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Search, ChevronLeft, ChevronRight, Calendar, 
+  CheckCircle2, XCircle, Filter, TrendingUp, 
+  TrendingDown, ChevronDown, ChevronUp, ArrowUpDown 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategory } from '../utils/constants';
 import { MonthSelector } from '../components/dashboard/MonthSelector';
@@ -11,21 +15,20 @@ import { MonthSelector } from '../components/dashboard/MonthSelector';
 export default function Extract() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  const { transactions, loading, monthTitle, changeMonth } = useTransactionsContext();
-  const [viewMode, setViewMode] = useState('month');
-  
+  const { transactions, loading } = useTransactionsContext();
   const { showAlert } = useNotifications();
+  
   const [activeFilter, setActiveFilter] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState('date'); // 'date', 'amount_desc', 'amount_asc'
 
   // --- Ações ---
   const togglePaid = async (e, t) => {
     e.stopPropagation();
-    if (t.type === 'income') return; // Segurança: Entradas não mudam
+    if (t.type === 'income') return;
 
     const newStatus = !t.is_paid;
-
     const { error } = await supabase
       .from('transactions')
       .update({ is_paid: newStatus })
@@ -38,7 +41,6 @@ export default function Extract() {
     navigate('/add', { state: { transaction } });
   };
 
-  // --- Filtros ---
   const filterOptions = [
     { id: 'all', label: 'Todos' },
     { id: 'income', label: 'Entradas' },
@@ -47,105 +49,129 @@ export default function Extract() {
     { id: 'paid', label: 'Pagos' }
   ];
 
-  const getActiveLabel = () => filterOptions.find(f => f.id === activeFilter)?.label;
+  const sortOptions = [
+    { id: 'date', label: 'Mais Recentes', icon: Calendar },
+    { id: 'amount_desc', label: 'Maior Valor', icon: ChevronDown },
+    { id: 'amount_asc', label: 'Menor Valor', icon: ChevronUp }
+  ];
 
   const filteredList = useMemo(() => {
-    return transactions.filter(t => {
+    let list = [...transactions].filter(t => {
       if (activeFilter === 'income') return t.type === 'income';
       if (activeFilter === 'expense') return t.type !== 'income';
       if (activeFilter === 'pending') return !t.is_paid && t.type !== 'income';
       if (activeFilter === 'paid') return t.is_paid;
       return true;
     });
-  }, [transactions, activeFilter]);
+
+    if (sortOrder === 'amount_desc') {
+        list.sort((a, b) => b.amount - a.amount);
+    } else if (sortOrder === 'amount_asc') {
+        list.sort((a, b) => a.amount - b.amount);
+    } else {
+        list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    return list;
+  }, [transactions, activeFilter, sortOrder]);
 
   const summary = useMemo(() => {
-    const baseList = transactions;
-    const totalIncome = baseList.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const totalExpense = baseList.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+    const totalExpense = transactions.filter(t => t.type !== 'income').reduce((acc, t) => acc + t.amount, 0);
     const balance = totalIncome - totalExpense;
-    const pendingExpense = baseList.filter(t => t.type !== 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
+    const pendingExpense = transactions.filter(t => t.type !== 'income' && !t.is_paid).reduce((acc, t) => acc + t.amount, 0);
 
     return { balance, pendingExpense };
   }, [transactions]);
 
   return (
-    <div className="animate-in fade-in duration-500 md:pb-0">
-
-      {/* --- ÁREA FIXA SUPERIOR --- */}
-      <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222] px-1 -mx-1 md:px-0 md:mx-0">
-
+    <div className="animate-in fade-in duration-500">
+      
+      {/* HEADER FIXO */}
+      <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222]">
+        
         {/* Cards de Resumo */}
         <div className="grid grid-cols-2 gap-2">
           <div className={`p-2.5 rounded-xl border flex flex-col justify-center items-center text-center ${summary.balance >= 0 ? 'bg-green-900/10 border-green-900/30' : 'bg-red-900/10 border-red-900/30'}`}>
             <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5">Sobra Prevista</p>
-            <span className={`text-xs md:text-sm font-bold ${summary.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`text-xs font-bold ${summary.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
           </div>
           <div className="p-2.5 rounded-xl border border-red-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
             <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5 flex items-center gap-1"><TrendingDown size={10} /> Falta Pagar</p>
-            <span className={`text-xs md:text-sm font-bold ${summary.pendingExpense > 0 ? 'text-red-400' : 'text-gray-500'}`}>
+            <span className={`text-xs font-bold ${summary.pendingExpense > 0 ? 'text-red-400' : 'text-gray-500'}`}>
               {summary.pendingExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
           </div>
         </div>
 
-        {/* --- BARRA DE FERRAMENTAS --- */}
-        <div className="flex flex-row items-center justify-between gap-2 relative">
-
-          {/* 1. FILTRO ICON (Mobile) */}
-          <div className="md:hidden relative z-50">
-            <button
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center
-                    ${activeFilter !== 'all' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400'}`}
-            >
-              <Filter size={18} />
-            </button>
-
-            {/* Dropdown Menu */}
-            {isFilterOpen && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
-                {filterOptions.map(option => (
-                  <button
-                    key={option.id}
-                    onClick={() => { setActiveFilter(option.id); setIsFilterOpen(false); }}
-                    className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors
-                          ${activeFilter === option.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 2. FILTROS PC */}
-          <div className="hidden md:flex gap-2 pb-1">
-            {filterOptions.map(filter => (
+        {/* BARRA DE FERRAMENTAS */}
+        <div className="flex items-center justify-between gap-2 relative">
+          <div className="flex items-center gap-2">
+            {/* FILTRO */}
+            <div className="relative">
               <button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors
-                        ${activeFilter === filter.id
-                    ? 'bg-blue-600/10 border-blue-600 text-blue-500'
-                    : 'bg-[#121212] border-[#222] text-gray-500 hover:border-gray-600'}`}
+                onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }}
+                className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center gap-2
+                      ${activeFilter !== 'all' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400'}`}
               >
-                {filter.label}
+                <Filter size={18} />
+                <span className="text-[10px] font-bold uppercase hidden md:block">Filtrar</span>
               </button>
-            ))}
+
+              {isFilterOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200 z-50">
+                  {filterOptions.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => { setActiveFilter(opt.id); setIsFilterOpen(false); }}
+                      className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors
+                            ${activeFilter === opt.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ORDENAÇÃO */}
+            <div className="relative">
+                <button 
+                    onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterOpen(false); }}
+                    className={`p-2.5 rounded-xl border transition-all flex items-center justify-center gap-2
+                        ${sortOrder !== 'date' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400'}`}
+                >
+                    <ArrowUpDown size={18} />
+                    <span className="text-[10px] font-bold uppercase hidden md:block">Ordenar</span>
+                </button>
+
+                {isSortOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200 z-50">
+                  {sortOptions.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => { setSortOrder(opt.id); setIsSortOpen(false); }}
+                      className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between
+                            ${sortOrder === opt.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
+                    >
+                      {opt.label}
+                      <opt.icon size={14} className="opacity-50" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex z-50">
+          <div className="z-40">
             <MonthSelector />
           </div>
-
-          {/* NAVEGAÇÃO DESKTOP ANTIGA (Removida, substituída pelo MonthSelector modal unificado) */}
         </div>
       </div>
 
-      {/* --- LISTA DE TRANSAÇÕES --- */}
+      {/* LISTA */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
         {loading ? (
           <div className="text-center md:col-span-2 py-12 text-xs text-gray-500 animate-pulse">Carregando...</div>
@@ -204,14 +230,10 @@ export default function Extract() {
           })
         ) : (
           <div className="py-20 md:col-span-2 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
-            <Search size={24} className="opacity-20" />
-            <p className="text-sm font-medium">Nada encontrado com este filtro.</p>
+            <p className="text-sm font-medium">Nada encontrado.</p>
           </div>
         )}
       </div>
-
-      {/* NAVEGAÇÃO MOBILE ANTIGA REMOVIDA */}
-
     </div>
   );
 }
