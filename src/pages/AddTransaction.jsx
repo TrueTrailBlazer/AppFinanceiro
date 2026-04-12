@@ -20,7 +20,7 @@ export default function AddTransaction() {
   const [type, setType] = useState('variable');
   const [category, setCategory] = useState('others');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isPaid, setIsPaid] = useState(true);
+  const [isPaid, setIsPaid] = useState(false);
 
   // Installment states
   const [isInstallment, setIsInstallment] = useState(false);
@@ -52,7 +52,7 @@ export default function AddTransaction() {
       setName(editingTransaction.name);
       setType(editingTransaction.type);
       setCategory(editingTransaction.category || 'others');
-      setIsPaid(editingTransaction.is_paid !== undefined ? editingTransaction.is_paid : true);
+      setIsPaid(editingTransaction.is_paid !== undefined ? editingTransaction.is_paid : false);
 
       if (editingTransaction.created_at) {
         const dbDate = new Date(editingTransaction.created_at);
@@ -135,7 +135,7 @@ export default function AddTransaction() {
 
             const count = parseInt(installmentsCount) || 2;
             const txName = `${name} (${i + 1}/${count})`;
-            // Primeira parcela pode ser efetivada, mas as demais entram sempre como pendentes
+            // Primeira parcela pode ser paga, mas as demais entram sempre como pendentes
             const txIsPaid = i === 0 ? isPaid : false;
 
             txs.push({
@@ -251,7 +251,7 @@ export default function AddTransaction() {
                 className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
               >
                 <CheckCircle2 size={16} />
-                <span className="text-[11px] font-bold uppercase tracking-wide">Efetivado</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide">Pago</span>
               </button>
               <button
                 type="button"
