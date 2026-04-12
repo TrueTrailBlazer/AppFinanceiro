@@ -20,7 +20,7 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-500 pb-32 md:pb-0">
+    <div className="space-y-5 animate-in fade-in duration-500 pb-10 md:pb-0">
       <div className="flex justify-between items-center px-1">
         <h1 className="text-xl font-bold text-white">Visão Mensal</h1>
         <MonthSelector />
