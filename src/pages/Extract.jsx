@@ -54,8 +54,8 @@ export default function Extract() {
 
   const sortOptions = [
     { id: 'date', label: 'Mais Recentes', icon: Calendar },
-    { id: 'amount_desc', label: 'Maior Valor', icon: ChevronDown },
-    { id: 'amount_asc', label: 'Menor Valor', icon: ChevronUp }
+    { id: 'amount_desc', label: 'Maior Valor', icon: TrendingDown },
+    { id: 'amount_asc', label: 'Menor Valor', icon: TrendingUp }
   ];
 
   const filteredList = useMemo(() => {
@@ -95,7 +95,7 @@ export default function Extract() {
     <div className="animate-in fade-in duration-500">
       
       {/* HEADER FIXO */}
-      <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-[#222]">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-border">
         
         {/* Cards de Resumo */}
         <div className="grid grid-cols-2 gap-2">
@@ -105,7 +105,7 @@ export default function Extract() {
               {summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
           </div>
-          <div className="p-2.5 rounded-xl border border-red-900/20 bg-[#121212] flex flex-col justify-center items-center text-center">
+          <div className="p-2.5 rounded-xl border border-red-900/20 bg-card flex flex-col justify-center items-center text-center">
             <p className="text-[9px] uppercase font-bold text-gray-500 mb-0.5 flex items-center gap-1"><TrendingDown size={10} /> Falta Pagar</p>
             <span className={`text-xs font-bold ${summary.pendingExpense > 0 ? 'text-red-400' : 'text-gray-500'}`}>
               {summary.pendingExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -121,20 +121,20 @@ export default function Extract() {
               <button
                 onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }}
                 className={`p-2.5 rounded-xl border transition-colors flex items-center justify-center gap-2
-                      ${activeFilter !== 'all' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400'}`}
+                      ${activeFilter !== 'all' ? 'bg-blue-600 border-blue-600 text-foreground' : 'bg-card border-border text-gray-400'}`}
               >
                 <Filter size={18} />
                 <span className="text-[10px] font-bold uppercase hidden md:block">Filtrar</span>
               </button>
 
               {isFilterOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200 z-50">
+                <div className="absolute top-full left-0 mt-2 w-48 bg-card-hover border border-border rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200 z-50">
                   {filterOptions.map(opt => (
                     <button
                       key={opt.id}
                       onClick={() => { setActiveFilter(opt.id); setIsFilterOpen(false); }}
                       className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors
-                            ${activeFilter === opt.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
+                            ${activeFilter === opt.id ? 'bg-blue-600 text-foreground' : 'text-gray-400 hover:bg-border hover:text-foreground'}`}
                     >
                       {opt.label}
                     </button>
@@ -148,20 +148,20 @@ export default function Extract() {
                 <button 
                     onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterOpen(false); }}
                     className={`p-2.5 rounded-xl border transition-all flex items-center justify-center gap-2
-                        ${sortOrder !== 'date' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400'}`}
+                        ${sortOrder !== 'date' ? 'bg-blue-600 border-blue-600 text-foreground' : 'bg-card border-border text-gray-400'}`}
                 >
                     <ArrowUpDown size={18} />
                     <span className="text-[10px] font-bold uppercase hidden md:block">Ordenar</span>
                 </button>
 
                 {isSortOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-[#222] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200 z-50">
+                <div className="absolute top-full left-0 mt-2 w-48 bg-card-hover border border-border rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200 z-50">
                   {sortOptions.map(opt => (
                     <button
                       key={opt.id}
                       onClick={() => { setSortOrder(opt.id); setIsSortOpen(false); }}
                       className={`text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between
-                            ${sortOrder === opt.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#222] hover:text-white'}`}
+                            ${sortOrder === opt.id ? 'bg-blue-600 text-foreground' : 'text-gray-400 hover:bg-border hover:text-foreground'}`}
                     >
                       {opt.label}
                       <opt.icon size={14} className="opacity-50" />
@@ -194,19 +194,19 @@ export default function Extract() {
                 onClick={() => handleEdit(t)}
                 className={`group flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer overflow-hidden
                     ${isIncome
-                    ? 'bg-[#1a1a1a] border-green-500/10 shadow-[inset_3px_0_0_0_#22c55e]'
+                    ? 'bg-card-hover border-green-500/10 shadow-[inset_3px_0_0_0_#22c55e]'
                     : t.is_paid
-                      ? 'bg-[#121212] border-[#222] hover:border-[#333]'
-                      : 'bg-[#1a1a1a] border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
+                      ? 'bg-card border-border hover:border-border-strong'
+                      : 'bg-card-hover border-red-500/30 shadow-[inset_3px_0_0_0_#ef4444]'}`}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div className={`p-2.5 rounded-full shrink-0 ${isIncome ? 'bg-green-500/10' : (t.is_paid ? catData.bg : 'bg-red-500/10')}`}>
-                    <CategoryIcon size={18} className={isIncome ? 'text-green-500' : (t.is_paid ? catData.color : 'text-red-500')} />
+                  <div className={`p-2.5 rounded-full shrink-0 ${isIncome ? 'bg-green-500/10' : catData.bg}`}>
+                    <CategoryIcon size={18} className={isIncome ? 'text-green-500' : catData.color} />
                   </div>
                   <div className="flex flex-col truncate">
-                    <h3 className={`font-bold text-[13px] ${isIncome ? 'text-white' : (t.is_paid ? 'text-white' : 'text-red-100')} line-clamp-1 leading-tight`}>{t.name}</h3>
+                    <h3 className={`font-bold text-[13px] text-foreground line-clamp-1 leading-tight`}>{t.name}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5 opacity-80">
-                      <span className="text-[9px] text-gray-500 bg-[#2b2b2b] px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
+                      <span className="text-[9px] text-gray-500 bg-background border border-border px-1.5 py-0.5 rounded capitalize">{catData.label}</span>
                       <span className="text-[9px] font-medium text-gray-500">
                         {new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                       </span>
@@ -215,7 +215,7 @@ export default function Extract() {
                 </div>
 
                 <div className="flex flex-col items-end shrink-0 ml-2">
-                  <span className={`text-[14px] font-extrabold ${isIncome ? 'text-green-400' : 'text-white'} leading-tight`}>
+                  <span className={`text-[14px] font-extrabold ${isIncome ? 'text-green-400' : 'text-foreground'} leading-tight`}>
                     {isIncome ? '+ ' : '- '}
                     {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
@@ -236,7 +236,7 @@ export default function Extract() {
             );
           })
         ) : (
-          <div className="py-20 md:col-span-2 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
+          <div className="py-20 md:col-span-2 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-border rounded-2xl bg-card/30">
             <p className="text-sm font-medium">Nada encontrado.</p>
           </div>
         )}

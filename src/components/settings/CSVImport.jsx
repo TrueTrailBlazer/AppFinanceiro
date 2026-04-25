@@ -239,14 +239,14 @@ export function CSVImport({ onBack }) {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-right-4 duration-300 max-w-2xl mx-auto flex flex-col h-full bg-[#050505]">
+    <div className="animate-in fade-in slide-in-from-right-4 duration-300 max-w-2xl mx-auto flex flex-col h-full bg-background">
       
       {/* Header */}
-      <div className="px-4 py-4 border-b border-[#222] flex items-center justify-between sticky top-0 bg-[#050505] z-10">
-        <button onClick={onBack} className="p-2 hover:bg-[#1a1a1a] rounded-xl transition-colors text-gray-400">
+      <div className="px-4 py-4 border-b border-border flex items-center justify-between sticky top-0 bg-background z-10">
+        <button onClick={onBack} className="p-2 hover:bg-card-hover rounded-xl transition-colors text-gray-400">
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-sm font-bold text-white uppercase tracking-widest">Importador Inteligente</h2>
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest">Importador Inteligente</h2>
         <div className="w-9" />
       </div>
 
@@ -259,12 +259,12 @@ export function CSVImport({ onBack }) {
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${step >= 1 ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700'}`}>1</span>
                     Arquivo
                 </div>
-                <div className="w-8 h-[1px] bg-[#222]" />
+                <div className="w-8 h-[1px] bg-border" />
                 <div className={`flex items-center gap-2 ${step >= 2 ? 'text-blue-500' : 'text-gray-600'}`}>
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${step >= 2 ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700'}`}>2</span>
                     Colunas
                 </div>
-                <div className="w-8 h-[1px] bg-[#222]" />
+                <div className="w-8 h-[1px] bg-border" />
                 <div className={`flex items-center gap-2 ${step >= 3 ? 'text-blue-500' : 'text-gray-600'}`}>
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${step >= 3 ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700'}`}>3</span>
                     Revisão
@@ -274,13 +274,13 @@ export function CSVImport({ onBack }) {
 
         {/* STEP 1: UPLOAD */}
         {step === 1 && !importCompleted && (
-          <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-[#222] rounded-3xl bg-[#121212]/50 hover:border-blue-500/30 transition-all cursor-pointer group"
+          <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-border rounded-3xl bg-card/50 hover:border-blue-500/30 transition-all cursor-pointer group"
                onClick={() => fileInputRef.current.click()}>
             <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
             <div className="p-4 bg-blue-500/10 rounded-full text-blue-500 mb-4 group-hover:scale-110 transition-transform">
               <FileUp size={32} />
             </div>
-            <h3 className="text-white font-bold mb-2">Selecione seu arquivo CSV</h3>
+            <h3 className="text-foreground font-bold mb-2">Selecione seu arquivo CSV</h3>
             <p className="text-xs text-gray-500 text-center max-w-xs leading-relaxed">
               Arraste seu extrato bancário ou fatura aqui. O sistema reconhecerá automaticamente bancos como Nubank, C6, Inter e Bradesco.
             </p>
@@ -290,7 +290,7 @@ export function CSVImport({ onBack }) {
         {/* STEP 2: MAPPING */}
         {step === 2 && !importCompleted && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-            <div className="bg-[#121212] rounded-2xl p-4 border border-[#222] space-y-4">
+            <div className="bg-card rounded-2xl p-4 border border-border space-y-4">
                 <div className="flex items-center gap-2 text-blue-500 mb-2">
                     <Settings2 size={18} />
                     <h3 className="text-xs font-bold uppercase">Ajustar Mapeamento</h3>
@@ -299,28 +299,28 @@ export function CSVImport({ onBack }) {
                 <div className="space-y-4 pt-2">
                     <div className="space-y-1.5">
                         <label className="text-[10px] uppercase font-bold text-gray-600">Coluna da Data</label>
-                        <select value={mapping.date} onChange={e => setMapping({...mapping, date: e.target.value})} className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500">
+                        <select value={mapping.date} onChange={e => setMapping({...mapping, date: e.target.value})} className="w-full bg-card-hover border border-border text-foreground text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500">
                             <option value="">Selecione...</option>
                             {headers.map(h => <option key={h} value={h}>{h}</option>)}
                         </select>
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-[10px] uppercase font-bold text-gray-600">Coluna da Descrição (Nome)</label>
-                        <select value={mapping.name} onChange={e => setMapping({...mapping, name: e.target.value})} className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500">
+                        <select value={mapping.name} onChange={e => setMapping({...mapping, name: e.target.value})} className="w-full bg-card-hover border border-border text-foreground text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500">
                             <option value="">Selecione...</option>
                             {headers.map(h => <option key={h} value={h}>{h}</option>)}
                         </select>
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-[10px] uppercase font-bold text-gray-600">Coluna do Valor</label>
-                        <select value={mapping.amount} onChange={e => setMapping({...mapping, amount: e.target.value})} className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500">
+                        <select value={mapping.amount} onChange={e => setMapping({...mapping, amount: e.target.value})} className="w-full bg-card-hover border border-border text-foreground text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500">
                             <option value="">Selecione...</option>
                             {headers.map(h => <option key={h} value={h}>{h}</option>)}
                         </select>
                     </div>
                 </div>
             </div>
-            <button onClick={() => processMapping()} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95">
+            <button onClick={() => processMapping()} className="w-full bg-blue-600 hover:bg-blue-500 text-foreground font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95">
                 Processar Transações <ArrowRight size={18} />
             </button>
           </div>
@@ -336,7 +336,7 @@ export function CSVImport({ onBack }) {
                 </h3>
                 
                 {/* Seletor de Status Global */}
-                <div className="bg-[#121212] p-3 rounded-2xl border border-[#222] space-y-3">
+                <div className="bg-card p-3 rounded-2xl border border-border space-y-3">
                     <p className="text-[10px] font-bold text-gray-500 uppercase">Marcar todos como:</p>
                     <div className="flex gap-2">
                         <button onClick={() => setAllStatus(true)} className="flex-1 py-2 bg-green-500/10 border border-green-500/30 text-green-500 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 transition-all">
@@ -354,20 +354,20 @@ export function CSVImport({ onBack }) {
                     const CategoryIcon = CATEGORIES[t.category]?.icon || CATEGORIES.others.icon;
                     const isRetro = detectInstallments(t.name);
                     return (
-                        <div key={i} className={`flex items-center justify-between p-3 border rounded-2xl transition-all ${t.is_paid ? 'bg-[#121212] border-[#222]' : 'bg-[#1a1a1a] border-yellow-500/20 shadow-[inset_3px_0_0_0_#eab308]'}`}>
+                        <div key={i} className={`flex items-center justify-between p-3 border rounded-2xl transition-all ${t.is_paid ? 'bg-card border-border' : 'bg-card-hover border-yellow-500/20 shadow-[inset_3px_0_0_0_#eab308]'}`}>
                             <div className="flex items-center gap-3 truncate">
-                                <div className="p-2 bg-[#1a1a1a] rounded-full text-gray-500 shrink-0">
+                                <div className="p-2 bg-card-hover rounded-full text-gray-500 shrink-0">
                                     <CategoryIcon size={14} />
                                 </div>
                                 <div className="flex flex-col truncate">
-                                    <span className="text-xs font-bold text-white line-clamp-1">{t.name}</span>
+                                    <span className="text-xs font-bold text-foreground line-clamp-1">{t.name}</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[9px] text-gray-500 font-medium">{new Date(t.created_at).toLocaleDateString('pt-BR')}</span>
                                         {isRetro && <span className="text-[8px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1"><CalendarRange size={8} /> Parcelamento</span>}
                                     </div>
                                 </div>
                             </div>
-                            <span className={`text-[13px] font-bold shrink-0 ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
+                            <span className={`text-[13px] font-bold shrink-0 ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-foreground'}`}>
                                 {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </span>
                         </div>
@@ -376,10 +376,10 @@ export function CSVImport({ onBack }) {
                 {transactions.length > 15 && <p className="text-center text-[10px] text-gray-600 py-2 font-bold uppercase tracking-widest">... e mais {transactions.length - 15} itens</p>}
             </div>
 
-            <div className="p-4 border-t border-[#222] bg-[#050505] sticky bottom-0 -mx-4 pb-8 md:pb-4 flex flex-col gap-3">
+            <div className="p-4 border-t border-border bg-background sticky bottom-0 -mx-4 pb-8 md:pb-4 flex flex-col gap-3">
                 <button 
                     onClick={handleImport} disabled={loading}
-                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95"
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-foreground font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95"
                 >
                     {loading ? <Loader2 className="animate-spin" size={20} /> : <>Importar {transactions.length} Lançamentos</>}
                 </button>
@@ -393,7 +393,7 @@ export function CSVImport({ onBack }) {
                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mb-6 border border-green-500/30">
                     <Check size={40} />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Importação Concluída!</h3>
+                <h3 className="text-xl font-bold text-foreground mb-2">Importação Concluída!</h3>
                 <p className="text-sm text-gray-500 text-center mb-10 max-w-[250px]">
                     Todos os {transactions.length} lançamentos foram adicionados ao seu extrato.
                 </p>
@@ -401,7 +401,7 @@ export function CSVImport({ onBack }) {
                 <div className="w-full space-y-3">
                     <button 
                         onClick={onBack}
-                        className="w-full bg-[#121212] hover:bg-[#1a1a1a] text-white border border-[#222] font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-card hover:bg-card-hover text-foreground border border-border font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
                     >
                         Voltar para Configurações
                     </button>

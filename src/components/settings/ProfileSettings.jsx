@@ -90,13 +90,13 @@ export function ProfileSettings({ onBack }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
+        <div className="fixed inset-0 z-[60] bg-background flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
 
-            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl md:border md:border-[#222] md:shadow-2xl overflow-hidden relative">
+            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl md:border md:border-border md:shadow-2xl overflow-hidden relative">
 
                 {/* Header */}
-                <div className="px-5 py-5 border-b border-[#222] text-center bg-[#121212] shrink-0">
-                    <h2 className="text-lg font-bold text-white">Editar Perfil</h2>
+                <div className="px-5 py-5 border-b border-border text-center bg-card shrink-0">
+                    <h2 className="text-lg font-bold text-foreground">Editar Perfil</h2>
                 </div>
 
                 {/* Conteúdo */}
@@ -105,7 +105,7 @@ export function ProfileSettings({ onBack }) {
 
                         <div className="flex flex-col items-center gap-4">
                             <div className="relative group">
-                                <div className="w-32 h-32 rounded-full bg-[#121212] border-2 border-[#222] overflow-hidden flex items-center justify-center relative shadow-2xl">
+                                <div className="w-32 h-32 rounded-full bg-card border-2 border-border overflow-hidden flex items-center justify-center relative shadow-2xl">
                                     {avatarPreview ? (
                                         <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
                                     ) : (
@@ -117,7 +117,7 @@ export function ProfileSettings({ onBack }) {
                                         onClick={() => fileInputRef.current?.click()}
                                         className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        <Camera className="text-white" size={24} />
+                                        <Camera className="text-foreground" size={24} />
                                     </button>
                                 </div>
 
@@ -132,7 +132,7 @@ export function ProfileSettings({ onBack }) {
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-white shadow-lg active:scale-90 transition-transform md:hidden"
+                                    className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-foreground shadow-lg active:scale-90 transition-transform md:hidden"
                                 >
                                     <Camera size={16} />
                                 </button>
@@ -153,7 +153,7 @@ export function ProfileSettings({ onBack }) {
                         <div className="w-full space-y-4">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Seu Nome</label>
-                                <div className="relative bg-[#1a1a1a] rounded-xl border border-[#222] focus-within:border-blue-500/50 transition-colors">
+                                <div className="relative bg-card-hover rounded-xl border border-border focus-within:border-blue-500/50 transition-colors">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <User size={16} className="text-gray-500" />
                                     </div>
@@ -162,7 +162,7 @@ export function ProfileSettings({ onBack }) {
                                         placeholder="Como devemos te chamar?"
                                         value={name}
                                         onChange={e => setName(e.target.value)}
-                                        className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm text-white outline-none font-medium"
+                                        className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm text-foreground outline-none font-medium"
                                     />
                                 </div>
                             </div>
@@ -173,7 +173,7 @@ export function ProfileSettings({ onBack }) {
                                     type="text"
                                     disabled
                                     value={user?.email}
-                                    className="w-full bg-[#121212] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-gray-600 cursor-not-allowed"
+                                    className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-sm text-gray-600 cursor-not-allowed"
                                 />
                             </div>
                         </div>
@@ -182,11 +182,11 @@ export function ProfileSettings({ onBack }) {
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+                <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
                     <button
                         type="button"
                         onClick={onBack}
-                        className="flex-1 px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center"
+                        className="flex-1 px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center"
                     >
                         Cancelar
                     </button>
@@ -194,7 +194,7 @@ export function ProfileSettings({ onBack }) {
                         type="submit"
                         form="profile-form"
                         disabled={loading || !name}
-                        className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
                         {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Salvar Alterações</>}
                     </button>

@@ -92,16 +92,16 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
       <div className="absolute inset-0 z-0" onClick={onClose} />
 
       <div 
-        className="relative z-10 w-full max-w-sm bg-[#121212] border border-[#222] rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+        className="relative z-10 w-full max-w-sm bg-card border border-border rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         
         {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-[#222]">
-          <h3 className="font-bold text-white">Selecionar Mês</h3>
-          <button onClick={onClose} className="p-2 bg-[#1a1a1a] rounded-full text-gray-400 hover:text-white transition-colors active:scale-95">
+        <div className="flex justify-between items-center p-5 border-b border-border">
+          <h3 className="font-bold text-foreground">Selecionar Mês</h3>
+          <button onClick={onClose} className="p-2 bg-card-hover rounded-full text-gray-400 hover:text-foreground transition-colors active:scale-95">
             <X size={18} />
           </button>
         </div>
@@ -110,17 +110,17 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
         <div 
           className="flex items-center justify-between p-6"
         >
-          <button onClick={() => setYear(y => y - 1)} className="p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#333] transition-colors active:scale-95">
+          <button onClick={() => setYear(y => y - 1)} className="p-3 bg-card-hover rounded-xl hover:bg-border-strong transition-colors active:scale-95">
              <ChevronLeft size={20} className="text-gray-300"/>
           </button>
           
           <div className="flex-1 flex justify-center items-center overflow-hidden relative">
-             <span className="text-2xl font-black text-white px-8 animate-in fade-in slide-in-from-bottom-2 duration-300 select-none" key={year}>
+             <span className="text-2xl font-black text-foreground px-8 animate-in fade-in slide-in-from-bottom-2 duration-300 select-none" key={year}>
                {year}
              </span>
           </div>
 
-          <button onClick={() => setYear(y => y + 1)} className="p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#333] transition-colors active:scale-95">
+          <button onClick={() => setYear(y => y + 1)} className="p-3 bg-card-hover rounded-xl hover:bg-border-strong transition-colors active:scale-95">
              <ChevronRight size={20} className="text-gray-300"/>
           </button>
         </div>
@@ -139,8 +139,8 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
                   isCurrentMonth 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                     : hasData
-                      ? 'bg-[#1a1a1a] text-gray-300 hover:bg-[#222] hover:text-white border border-[#222] hover:border-[#333]'
-                      : 'bg-[#0a0a0a] text-gray-700 hover:bg-[#111] hover:text-gray-400 border border-[#111]'
+                      ? 'bg-card-hover text-foreground hover:bg-border border border-border hover:border-border-strong'
+                      : 'bg-background text-gray-500 hover:bg-card hover:text-gray-400 border border-border'
                 }`}
               >
                 {m}

@@ -81,7 +81,7 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#050505] text-white">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-background text-foreground">
       <div className="w-full max-w-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         
         <div className="text-center space-y-2">
@@ -124,7 +124,7 @@ export default function Login() {
                 placeholder="Seu e-mail" 
                 value={email} 
                 onChange={e => { setEmail(e.target.value); setError(''); }}
-                className="w-full bg-[#121212] border border-[#222] rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all" 
+                className="w-full bg-card border border-border rounded-xl py-4 pl-12 pr-4 text-foreground placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all" 
                 required 
               />
             </div>
@@ -138,13 +138,13 @@ export default function Login() {
                 placeholder="Sua senha" 
                 value={password} 
                 onChange={e => { setPassword(e.target.value); setError(''); }}
-                className="w-full bg-[#121212] border border-[#222] rounded-xl py-4 pl-12 pr-12 text-white placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all" 
+                className="w-full bg-card border border-border rounded-xl py-4 pl-12 pr-12 text-foreground placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all" 
                 required 
               />
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-white transition-colors"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -154,7 +154,7 @@ export default function Login() {
           <button 
             type="submit" 
             disabled={loading} 
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 disabled:opacity-70 disabled:cursor-not-allowed mt-6"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-foreground font-bold py-4 rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 disabled:opacity-70 disabled:cursor-not-allowed mt-6"
           >
             {loading ? <Loader2 className="animate-spin" /> : (
               <>

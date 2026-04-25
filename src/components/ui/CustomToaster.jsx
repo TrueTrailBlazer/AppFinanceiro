@@ -32,12 +32,12 @@ function Toast({ toast, onClose }) {
 
     return (
         <div className={`
-            pointer-events-auto flex items-center gap-3 p-4 rounded-2xl bg-[#121212]/90 backdrop-blur-xl border ${colors[toast.type]} 
+            pointer-events-auto flex items-center gap-3 p-4 rounded-2xl bg-card/90 backdrop-blur-xl border ${colors[toast.type]} 
             shadow-2xl animate-in slide-in-from-top-4 fade-in duration-300
         `}>
             <div className="shrink-0">{icons[toast.type]}</div>
-            <p className="flex-1 text-sm font-medium text-white">{toast.message}</p>
-            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
+            <p className="flex-1 text-sm font-medium text-foreground">{toast.message}</p>
+            <button onClick={onClose} className="text-gray-500 hover:text-foreground transition-colors p-1">
                 <X size={16} />
             </button>
         </div>

@@ -204,13 +204,13 @@ export default function AddTransaction() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center">
 
-      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] md:flex-initial md:h-auto md:max-h-[85vh] md:w-full md:rounded-3xl md:border md:border-[#222] md:shadow-2xl overflow-hidden relative">
+      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background md:flex-initial md:h-auto md:max-h-[85vh] md:w-full md:rounded-3xl md:border md:border-border md:shadow-2xl overflow-hidden relative">
 
         {/* Header Elegante Minimalista */}
-        <div className="px-5 py-4 text-center bg-[#121212] border-b border-[#222] shrink-0">
-          <h1 className="font-bold text-white text-lg">
+        <div className="px-5 py-4 text-center bg-card border-b border-border shrink-0">
+          <h1 className="font-bold text-foreground text-lg">
             {editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
           </h1>
         </div>
@@ -220,7 +220,7 @@ export default function AddTransaction() {
           <form id="transaction-form" onSubmit={handleSave} className="flex flex-col gap-4">
 
             {/* Valor */}
-            <div className="relative bg-[#1a1a1a] rounded-xl p-3 border border-[#222] focus-within:border-blue-500/50 shadow-inner">
+            <div className="relative bg-card-hover rounded-xl p-3 border border-border focus-within:border-blue-500/50 shadow-inner">
               <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1 block">Valor da Transação</label>
               <div className="flex items-center">
                 <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
@@ -242,7 +242,7 @@ export default function AddTransaction() {
                     );
                   }}
                   placeholder="0,00"
-                  className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-800 outline-none"
+                  className="w-full bg-transparent text-4xl font-bold text-foreground placeholder-gray-800 outline-none"
                 />
               </div>
             </div>
@@ -252,7 +252,7 @@ export default function AddTransaction() {
               <button
                 type="button"
                 onClick={() => setIsPaid(true)}
-                className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
+                className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${isPaid ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-card-hover border-border text-gray-500'}`}
               >
                 <CheckCircle2 size={16} />
                 <span className="text-[11px] font-bold uppercase tracking-wide">Pago</span>
@@ -260,7 +260,7 @@ export default function AddTransaction() {
               <button
                 type="button"
                 onClick={() => setIsPaid(false)}
-                className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 'bg-[#1a1a1a] border-[#222] text-gray-500'}`}
+                className={`flex-1 py-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition-all ${!isPaid ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 'bg-card-hover border-border text-gray-500'}`}
               >
                 <XCircle size={16} />
                 <span className="text-[11px] font-bold uppercase tracking-wide">Pendente</span>
@@ -269,23 +269,23 @@ export default function AddTransaction() {
 
             {/* Descrição e Data */}
             <div className="grid grid-cols-1 gap-3">
-              <div className="bg-[#121212] rounded-xl px-4 py-3 border border-[#222] flex items-center gap-3 focus-within:border-gray-500 transition-colors">
+              <div className="bg-card rounded-xl px-4 py-3 border border-border flex items-center gap-3 focus-within:border-gray-500 transition-colors">
                 <Type size={18} className="text-gray-500 shrink-0" />
                 <div className="flex-1 flex flex-col justify-center">
                   <label className="block text-[9px] font-bold text-gray-500 uppercase">Descrição O que foi?</label>
                   <input
                     type="text" enterKeyHint="done" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Conta de Luz"
-                    className="w-full bg-transparent text-sm text-white placeholder-gray-700 outline-none font-medium mt-0.5"
+                    className="w-full bg-transparent text-sm text-foreground placeholder-gray-700 outline-none font-medium mt-0.5"
                   />
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <div className="flex-[1.5] bg-[#121212] rounded-xl px-4 py-3 border border-[#222] flex items-center gap-3 relative overflow-hidden group focus-within:border-gray-500 transition-colors">
+                <div className="flex-[1.5] bg-card rounded-xl px-4 py-3 border border-border flex items-center gap-3 relative overflow-hidden group focus-within:border-gray-500 transition-colors">
                   <Calendar size={18} className="text-gray-500 shrink-0" />
                   <div className="flex-1 flex flex-col justify-center pointer-events-none">
                     <label className="block text-[9px] font-bold text-gray-500 uppercase">Data</label>
-                    <span className="text-sm font-bold text-white mt-0.5 capitalize truncate">
+                    <span className="text-sm font-bold text-foreground mt-0.5 capitalize truncate">
                       {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(' de ', ' ')}
                     </span>
                   </div>
@@ -299,29 +299,29 @@ export default function AddTransaction() {
                 </div>
 
                 {/* Tipo Switch */}
-                <div className="flex-1 bg-[#121212] p-1.5 rounded-xl border border-[#222] overflow-hidden flex">
+                <div className="flex-1 bg-card p-1.5 rounded-xl border border-border overflow-hidden flex">
                   <button type="button" onClick={() => { setType('variable'); setIsInstallment(false); if (['salary', 'investment'].includes(category)) setCategory('food'); }}
-                    className={`flex-1 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all flex items-center justify-center ${type !== 'income' ? 'bg-[#222] text-white shadow-sm' : 'text-gray-500 opacity-60'}`}>Saída</button>
+                    className={`flex-1 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all flex items-center justify-center ${type !== 'income' ? 'bg-border text-foreground shadow-sm' : 'text-gray-500 opacity-60'}`}>Saída</button>
                   <button type="button" onClick={() => { setType('income'); setIsInstallment(false); setCategory('salary'); }}
-                    className={`flex-1 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all flex items-center justify-center ${type === 'income' ? 'bg-[#222] text-green-400 shadow-sm' : 'text-gray-500 opacity-60'}`}>Entrada</button>
+                    className={`flex-1 rounded-lg text-[10px] uppercase tracking-wider font-bold transition-all flex items-center justify-center ${type === 'income' ? 'bg-border text-green-400 shadow-sm' : 'text-gray-500 opacity-60'}`}>Entrada</button>
                 </div>
               </div>
             </div>
 
             {/* Installments Option (Apenas se for novo e Saída) */}
             {!editingTransaction && type !== 'income' && (
-              <div className="bg-[#121212] rounded-xl p-4 border border-[#222] space-y-3">
+              <div className="bg-card rounded-xl p-4 border border-border space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Compra Parcelada?</span>
                   </div>
-                  <button type="button" onClick={() => setIsInstallment(!isInstallment)} className={`w-12 h-6 rounded-full transition-colors relative ${isInstallment ? 'bg-blue-600' : 'bg-[#333]'}`}>
+                  <button type="button" onClick={() => setIsInstallment(!isInstallment)} className={`w-12 h-6 rounded-full transition-colors relative ${isInstallment ? 'bg-blue-600' : 'bg-border-strong'}`}>
                     <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${isInstallment ? 'translate-x-7' : 'translate-x-1'}`} />
                   </button>
                 </div>
 
                 {isInstallment && (
-                  <div className="animate-in fade-in slide-in-from-top-2 pt-3 border-t border-[#222] space-y-4">
+                  <div className="animate-in fade-in slide-in-from-top-2 pt-3 border-t border-border space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="flex-1 space-y-1">
                         <label className="text-[9px] font-bold text-gray-500 uppercase">Qtd. Parcelas</label>
@@ -329,7 +329,7 @@ export default function AddTransaction() {
                           const val = e.target.value;
                           setInstallmentsCount(val === '' ? '' : parseInt(val));
                         }}
-                          className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
+                          className="w-full bg-card-hover border border-border text-foreground text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
                       </div>
                       <div className="flex-1 space-y-1">
                         <label className="text-[9px] font-bold text-gray-500 uppercase">Parcela Atual</label>
@@ -337,18 +337,18 @@ export default function AddTransaction() {
                           const val = e.target.value;
                           setCurrentInstallment(val === '' ? '' : parseInt(val));
                         }}
-                          className="w-full bg-[#1a1a1a] border border-[#222] text-white text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
+                          className="w-full bg-card-hover border border-border text-foreground text-sm font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-gray-500 uppercase">Como calcular?</label>
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => setInstallmentType('divide_total')} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all ${installmentType === 'divide_total' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100'}`}>
+                        <button type="button" onClick={() => setInstallmentType('divide_total')} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all ${installmentType === 'divide_total' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-card-hover border-border opacity-70 hover:opacity-100'}`}>
                           <span className={`text-[11px] font-bold ${installmentType === 'divide_total' ? 'text-blue-400' : 'text-gray-400'}`}>Dividir o Total</span>
                           <span className="text-[8px] text-gray-500 mt-1 line-clamp-1 leading-tight">Divide para as parcelas</span>
                         </button>
-                        <button type="button" onClick={() => setInstallmentType('multiply_parcel')} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all ${installmentType === 'multiply_parcel' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100'}`}>
+                        <button type="button" onClick={() => setInstallmentType('multiply_parcel')} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all ${installmentType === 'multiply_parcel' ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]' : 'bg-card-hover border-border opacity-70 hover:opacity-100'}`}>
                           <span className={`text-[11px] font-bold ${installmentType === 'multiply_parcel' ? 'text-blue-400' : 'text-gray-400'}`}>É da Parcela</span>
                           <span className="text-[8px] text-gray-500 mt-1 line-clamp-1 leading-tight">Valor é vezes meses</span>
                         </button>
@@ -361,12 +361,12 @@ export default function AddTransaction() {
 
             {/* Opções de Edição para Conta Parcelada */}
             {instInfo && (
-              <div className="bg-[#121212] rounded-xl p-4 border border-[#222] flex items-center justify-between">
+              <div className="bg-card rounded-xl p-4 border border-border flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1.5"><Calendar size={12} /> Conta Parcelada ({instInfo.current}/{instInfo.total})</p>
                   <p className="text-[10px] text-gray-500 mt-1 uppercase">Aplicar nas próximas parcelas?</p>
                 </div>
-                <button type="button" onClick={() => setApplyToFuture(!applyToFuture)} className={`w-12 h-6 rounded-full shrink-0 transition-colors relative ${applyToFuture ? 'bg-blue-600' : 'bg-[#333]'}`}>
+                <button type="button" onClick={() => setApplyToFuture(!applyToFuture)} className={`w-12 h-6 rounded-full shrink-0 transition-colors relative ${applyToFuture ? 'bg-blue-600' : 'bg-border-strong'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${applyToFuture ? 'translate-x-7' : 'translate-x-1'}`} />
                 </button>
               </div>
@@ -394,11 +394,11 @@ export default function AddTransaction() {
                     }}
                     className={`relative p-2 rounded-lg border transition-all flex flex-col justify-center items-center gap-1 ${category === key
                         ? `bg-blue-600/10 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.1)]`
-                        : 'bg-[#1a1a1a] border-[#222] opacity-70 hover:opacity-100 hover:border-[#333]'
+                        : 'bg-card-hover border-border opacity-70 hover:opacity-100 hover:border-border-strong'
                       }`}
                   >
                     <cat.icon size={16} className={category === key ? cat.color : 'text-gray-400'} />
-                    <span className={`text-[8px] font-bold uppercase truncate max-w-full text-center ${category === key ? 'text-white' : 'text-gray-600'}`}>
+                    <span className={`text-[8px] font-bold uppercase truncate max-w-full text-center ${category === key ? 'text-foreground' : 'text-gray-600'}`}>
                       {cat.label}
                     </span>
                   </button>
@@ -410,11 +410,11 @@ export default function AddTransaction() {
         </div>
 
         {/* --- BOTTOM ACTION BAR (THUMB ZONE) --- */}
-        <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex items-center justify-center gap-3 z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
+        <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex items-center justify-center gap-3 z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold text-sm hover:bg-[#222] active:scale-95 transition-all text-center flex-1 md:flex-none"
+            className="px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold text-sm hover:bg-border active:scale-95 transition-all text-center flex-1 md:flex-none"
           >
             Cancelar
           </button>
@@ -423,7 +423,7 @@ export default function AddTransaction() {
             <button
               type="button"
               onClick={handleDelete}
-              className="px-5 py-3.5 rounded-xl bg-[#222] border border-[#333] text-red-500 font-bold hover:bg-red-500/10 hover:border-red-500/50 active:scale-95 transition-all shrink-0"
+              className="px-5 py-3.5 rounded-xl bg-border border border-border-strong text-red-500 font-bold hover:bg-red-500/10 hover:border-red-500/50 active:scale-95 transition-all shrink-0"
             >
               <Trash2 size={20} />
             </button>
@@ -433,7 +433,7 @@ export default function AddTransaction() {
             type="submit"
             form="transaction-form"
             disabled={loading || !amount || !name}
-            className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+            className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-foreground font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Check size={18} /> Salvar</>}
           </button>

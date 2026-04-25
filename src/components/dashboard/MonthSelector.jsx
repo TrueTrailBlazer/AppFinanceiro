@@ -1,9 +1,9 @@
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useDate } from '../../contexts/DateContext';
 import { MonthPickerModal } from './MonthPickerModal';
 
-export function MonthSelector() {
+export function MonthSelector({ variant = 'default' }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { currentDate, setCurrentDate } = useDate();
 
@@ -53,7 +53,6 @@ export function MonthSelector() {
     <>
       <button 
         onClick={() => {
-          // Só abre o modal se não houve movimento de swipe signficativo
           if (!touchEnd || Math.abs(touchStart - touchEnd) < 10) {
             setIsModalOpen(true);
           }
@@ -61,13 +60,18 @@ export function MonthSelector() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#121212] border border-[#222] hover:bg-[#1a1a1a] transition-all active:scale-95 group shadow-sm z-50 select-none touch-pan-y"
+        className={`flex items-center gap-1.5 transition-all active:scale-95 group z-50 select-none touch-pan-y ${
+          variant === 'tab' 
+            ? 'px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow-md' 
+            : 'px-3 py-1.5 rounded-xl bg-card border border-border hover:bg-card-hover shadow-sm'
+        }`}
       >
-        <Calendar size={14} className="text-blue-500 group-hover:text-blue-400 transition-colors" />
-        <span className="font-bold text-xs md:text-sm capitalize text-gray-300 group-hover:text-white transition-colors" key={shortTitle}>
+        <ChevronLeft size={14} className={variant === 'tab' ? "text-white/70 hover:text-white" : "text-gray-500 opacity-50 group-hover:opacity-100 transition-opacity"} />
+        {variant !== 'tab' && <Calendar size={14} className="text-blue-500 group-hover:text-blue-400 transition-colors hidden md:block" />}
+        <span className={`font-black text-[9px] md:text-[10px] uppercase tracking-widest ${variant === 'tab' ? 'text-white' : 'text-foreground/80 group-hover:text-foreground transition-colors'}`} key={shortTitle}>
           {shortTitle}
         </span>
-        <ChevronDown size={14} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
+        <ChevronRight size={14} className={variant === 'tab' ? "text-white/70 hover:text-white" : "text-gray-500 opacity-50 group-hover:opacity-100 transition-opacity"} />
       </button>
 
       <MonthPickerModal 

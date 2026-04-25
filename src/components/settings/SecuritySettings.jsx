@@ -64,22 +64,22 @@ export function SecuritySettings({ onBack }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#050505] animate-in slide-in-from-right-4 duration-300 flex flex-col md:relative md:inset-auto md:z-auto md:overflow-visible">
+    <div className="fixed inset-0 z-[60] bg-background animate-in slide-in-from-right-4 duration-300 flex flex-col md:relative md:inset-auto md:z-auto md:overflow-visible">
       
       {/* Header Minimalista S/ Botão */}
-      <div className="py-5 px-1 bg-[#121212] border-b border-[#222] shrink-0 text-center">
-        <h1 className="text-lg font-bold text-white">Alterar Senha</h1>
+      <div className="py-5 px-1 bg-card border-b border-border shrink-0 text-center">
+        <h1 className="text-lg font-bold text-foreground">Alterar Senha</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 md:px-2 space-y-6">
         
         {/* Intro */}
-        <div className="bg-[#121212] border border-[#222] p-5 rounded-2xl flex gap-4 items-center">
+        <div className="bg-card border border-border p-5 rounded-2xl flex gap-4 items-center">
             <div className="p-3 bg-blue-900/10 text-blue-500 rounded-full shrink-0">
                 <ShieldCheck size={24} />
             </div>
             <div>
-                <h3 className="text-sm font-bold text-white">Segurança Forte</h3>
+                <h3 className="text-sm font-bold text-foreground">Segurança Forte</h3>
                 <p className="text-xs text-gray-400 mt-0.5">
                     Preencha os dados abaixo para atualizar sua credencial de acesso.
                 </p>
@@ -98,12 +98,12 @@ export function SecuritySettings({ onBack }) {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Digite sua senha atual"
-                        className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-600"
+                        className="w-full bg-card-hover border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all placeholder-gray-600"
                     />
                 </div>
             </div>
 
-            <div className="h-px bg-[#222] my-2"></div>
+            <div className="h-px bg-border my-2"></div>
 
             {/* Nova Senha */}
             <div className="space-y-1.5">
@@ -115,12 +115,12 @@ export function SecuritySettings({ onBack }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Crie uma nova senha"
-                        className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-600"
+                        className="w-full bg-card-hover border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all placeholder-gray-600"
                     />
                     <button 
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-gray-500 hover:text-white"
+                        className="absolute right-3 top-3 text-gray-500 hover:text-foreground"
                     >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -128,7 +128,7 @@ export function SecuritySettings({ onBack }) {
             </div>
 
             {/* Checklist de Validação (Feedback Visual) */}
-            <div className="bg-[#121212] p-3 rounded-xl border border-[#222] grid grid-cols-1 gap-2">
+            <div className="bg-card p-3 rounded-xl border border-border grid grid-cols-1 gap-2">
                 {validations.map((v, i) => {
                     const isValid = v.test(password);
                     return (
@@ -150,7 +150,7 @@ export function SecuritySettings({ onBack }) {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Repita a nova senha"
-                        className={`w-full bg-[#1a1a1a] border border-[#222] rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none transition-all placeholder-gray-600
+                        className={`w-full bg-card-hover border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-foreground outline-none transition-all placeholder-gray-600
                             ${confirmPassword && password !== confirmPassword ? 'border-red-500/50 focus:border-red-500' : 'focus:border-blue-500'}
                         `}
                     />
@@ -168,11 +168,11 @@ export function SecuritySettings({ onBack }) {
       </div>
 
       {/* FOOTER LISTA - Thumb Zone */}
-      <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-10 sticky bottom-0">
+      <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-10 sticky bottom-0">
           <button 
               type="button" 
               onClick={onBack} 
-              className="px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center flex-1 md:flex-none"
+              className="px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center flex-1 md:flex-none"
           >
               Voltar
           </button>
@@ -181,7 +181,7 @@ export function SecuritySettings({ onBack }) {
               type="submit" 
               form="security-form"
               disabled={loading || !isPasswordValid || password !== confirmPassword || !currentPassword}
-              className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+              className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
           >
               {loading ? 'Validando...' : 'Salvar Senha'}
           </button>

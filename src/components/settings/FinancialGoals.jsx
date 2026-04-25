@@ -139,18 +139,18 @@ export function FinancialGoals({ onBack }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
+        <div className="fixed inset-0 z-[60] bg-background flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
             
-            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] md:flex-initial md:h-auto md:max-h-[85vh] md:w-full md:rounded-3xl md:border md:border-[#222] md:shadow-2xl overflow-hidden relative">
+            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background md:flex-initial md:h-auto md:max-h-[85vh] md:w-full md:rounded-3xl md:border md:border-border md:shadow-2xl overflow-hidden relative">
                 
                 {/* Header */}
-                <div className="flex items-center justify-between py-5 px-5 bg-[#121212] border-b border-[#222] shrink-0">
-                    <h1 className="text-lg font-bold text-white flex items-center gap-2">
+                <div className="flex items-center justify-between py-5 px-5 bg-card border-b border-border shrink-0">
+                    <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
                         <Target size={20} className="text-blue-500" /> Metas
                     </h1>
                     <button 
                         onClick={() => { resetForm(); setIsModalOpen(true); }}
-                        className="bg-blue-600 text-white p-2 rounded-xl active:scale-95 transition-all"
+                        className="bg-blue-600 text-foreground p-2 rounded-xl active:scale-95 transition-all"
                     >
                         <Plus size={20} />
                     </button>
@@ -161,10 +161,10 @@ export function FinancialGoals({ onBack }) {
                     {loading ? (
                         <p className="text-center text-gray-500 py-10 text-sm">Carregando metas...</p>
                     ) : goals.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-4 border border-dashed border-[#222] rounded-3xl bg-[#121212]/30">
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-4 border border-dashed border-border rounded-3xl bg-card/30">
                             <Flag size={40} className="opacity-20 text-blue-500" />
                             <div className="text-center">
-                                <p className="text-sm font-bold text-white">Nenhuma meta ainda</p>
+                                <p className="text-sm font-bold text-foreground">Nenhuma meta ainda</p>
                                 <p className="text-[10px] mt-1">Defina objetivos para o seu futuro financeiro.</p>
                             </div>
                         </div>
@@ -174,14 +174,14 @@ export function FinancialGoals({ onBack }) {
                             const remaining = Math.max(0, goal.target_amount - goal.current_amount);
                             
                             return (
-                                <div key={goal.id} className="bg-[#121212] border border-[#222] rounded-3xl p-5 space-y-4 hover:border-blue-500/30 transition-colors">
+                                <div key={goal.id} className="bg-card border border-border rounded-3xl p-5 space-y-4 hover:border-blue-500/30 transition-colors">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500">
                                                 <Target size={20} />
                                             </div>
                                             <div>
-                                                <h3 className="text-sm font-bold text-white">{goal.name}</h3>
+                                                <h3 className="text-sm font-bold text-foreground">{goal.name}</h3>
                                                 {goal.deadline && (
                                                     <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
                                                         <Calendar size={10} /> Até {new Date(goal.deadline).toLocaleDateString('pt-BR')}
@@ -190,7 +190,7 @@ export function FinancialGoals({ onBack }) {
                                             </div>
                                         </div>
                                         <div className="flex gap-1">
-                                            <button onClick={() => openEdit(goal)} className="p-1.5 text-gray-600 hover:text-white transition-colors">
+                                            <button onClick={() => openEdit(goal)} className="p-1.5 text-gray-600 hover:text-foreground transition-colors">
                                                 <Pencil size={14} />
                                             </button>
                                             <button onClick={() => handleDelete(goal.id)} className="p-1.5 text-gray-600 hover:text-red-500 transition-colors">
@@ -202,9 +202,9 @@ export function FinancialGoals({ onBack }) {
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-[10px] font-bold">
                                             <span className="text-gray-400 uppercase tracking-wider">{progress}% Concluído</span>
-                                            <span className="text-white">R$ {goal.current_amount.toLocaleString()} / R$ {goal.target_amount.toLocaleString()}</span>
+                                            <span className="text-foreground">R$ {goal.current_amount.toLocaleString()} / R$ {goal.target_amount.toLocaleString()}</span>
                                         </div>
-                                        <div className="h-2 bg-[#222] rounded-full overflow-hidden">
+                                        <div className="h-2 bg-border rounded-full overflow-hidden">
                                             <div 
                                                 className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-1000"
                                                 style={{ width: `${progress}%` }}
@@ -219,7 +219,7 @@ export function FinancialGoals({ onBack }) {
                                             </div>
                                             <button 
                                                 onClick={() => { setSelectedGoal(goal); setIsContributeModalOpen(true); }}
-                                                className="bg-blue-600/10 text-blue-500 text-[10px] font-bold py-1.5 px-3 rounded-lg border border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all active:scale-95"
+                                                className="bg-blue-600/10 text-blue-500 text-[10px] font-bold py-1.5 px-3 rounded-lg border border-blue-500/20 hover:bg-blue-600 hover:text-foreground transition-all active:scale-95"
                                             >
                                                 Adicionar Valor
                                             </button>
@@ -236,8 +236,8 @@ export function FinancialGoals({ onBack }) {
                 </div>
 
                 {/* Footer Back Button */}
-                <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] shrink-0 md:hidden">
-                    <button onClick={onBack} className="w-full px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold text-sm">
+                <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 md:hidden">
+                    <button onClick={onBack} className="w-full px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold text-sm">
                         Voltar
                     </button>
                 </div>
@@ -246,9 +246,9 @@ export function FinancialGoals({ onBack }) {
             {/* --- MODAL ADICIONAR/EDITAR --- */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col justify-end md:justify-center md:items-center">
-                    <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] animate-in slide-in-from-bottom-10 duration-200 md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl border-t md:border border-[#222] overflow-hidden">
-                        <div className="p-5 border-b border-[#222] text-center shrink-0">
-                            <h2 className="text-sm font-bold text-white">{editingGoal ? 'Editar Meta' : 'Nova Meta Financeira'}</h2>
+                    <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background animate-in slide-in-from-bottom-10 duration-200 md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl border-t md:border border-border overflow-hidden">
+                        <div className="p-5 border-b border-border text-center shrink-0">
+                            <h2 className="text-sm font-bold text-foreground">{editingGoal ? 'Editar Meta' : 'Nova Meta Financeira'}</h2>
                         </div>
                         <div className="flex-1 p-6 overflow-y-auto">
                             <form id="goal-form" onSubmit={handleSaveGoal} className="space-y-6">
@@ -256,33 +256,33 @@ export function FinancialGoals({ onBack }) {
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">O que você quer alcançar?</label>
                                         <input type="text" placeholder="Ex: Reserva de Emergência" value={name} onChange={e => setName(e.target.value)} autoFocus
-                                            className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all"/>
+                                            className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all"/>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Meta final (R$)</label>
                                             <input type="number" placeholder="5000" value={targetAmount} onChange={e => setTargetAmount(e.target.value)}
-                                                className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all"/>
+                                                className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all"/>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Já tenho (R$)</label>
                                             <input type="number" placeholder="0" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)}
-                                                className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all"/>
+                                                className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all"/>
                                         </div>
                                     </div>
 
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Prazo Planejado (Opcional)</label>
                                         <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
-                                            className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all [&::-webkit-calendar-picker-indicator]:invert"/>
+                                            className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all [&::-webkit-calendar-picker-indicator]:invert"/>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                        <div className="p-4 pb-8 md:pb-4 border-t border-[#222] bg-[#121212] flex gap-3">
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-5 py-3.5 rounded-xl border border-[#333] text-gray-300 font-bold text-xs uppercase tracking-wider">Cancelar</button>
-                            <button type="submit" form="goal-form" className="flex-[2] bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Salvar Meta</button>
+                        <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card flex gap-3">
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold text-xs uppercase tracking-wider">Cancelar</button>
+                            <button type="submit" form="goal-form" className="flex-[2] bg-blue-600 text-foreground font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Salvar Meta</button>
                         </div>
                     </div>
                 </div>
@@ -291,9 +291,9 @@ export function FinancialGoals({ onBack }) {
             {/* --- MODAL APORTE --- */}
             {isContributeModalOpen && (
                 <div className="fixed inset-0 z-[110] bg-black/95 flex flex-col items-center justify-center p-6 animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-[#121212] border border-[#222] rounded-3xl p-6 space-y-6 shadow-2xl">
+                    <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-6 shadow-2xl">
                         <div className="text-center">
-                            <h3 className="text-lg font-bold text-white">Adicionar Valor</h3>
+                            <h3 className="text-lg font-bold text-foreground">Adicionar Valor</h3>
                             <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">Meta: {selectedGoal?.name}</p>
                         </div>
 
@@ -303,14 +303,14 @@ export function FinancialGoals({ onBack }) {
                                 <span className="text-2xl font-bold text-blue-500">R$</span>
                                 <input 
                                     type="number" value={contributeAmount} onChange={e => setContributeAmount(e.target.value)} autoFocus
-                                    className="bg-transparent text-4xl font-bold text-white outline-none w-40 text-center" placeholder="0"
+                                    className="bg-transparent text-4xl font-bold text-foreground outline-none w-40 text-center" placeholder="0"
                                 />
                             </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <button type="button" onClick={() => setIsContributeModalOpen(false)} className="flex-1 py-3.5 rounded-xl border border-[#333] text-gray-400 font-bold text-xs uppercase tracking-wider">Sair</button>
-                            <button onClick={handleContribute} className="flex-[2] bg-blue-600 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all">Confirmar</button>
+                            <button type="button" onClick={() => setIsContributeModalOpen(false)} className="flex-1 py-3.5 rounded-xl border border-border-strong text-gray-400 font-bold text-xs uppercase tracking-wider">Sair</button>
+                            <button onClick={handleContribute} className="flex-[2] bg-blue-600 text-foreground font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all">Confirmar</button>
                         </div>
                     </div>
                 </div>

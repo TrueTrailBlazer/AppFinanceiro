@@ -1,14 +1,54 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #050505;
-  --color-card: #121212;
+  --color-background: var(--bg);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-card-alt: var(--card-alt);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
   --color-primary: #3B82F6;
+}
+
+:root {
+  /* TEMA ESCURO (padrão antigo do app) */
+  --bg: #050505;
+  --card: #121212;
+  --card-hover: #1a1a1a;
+  --card-alt: #0c0c0c;
+  --border: #222222;
+  --border-strong: #333333;
+  --foreground: #ffffff;
+  --nav-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+}
+
+html.light {
+  /* TEMA CLARO PREMIUM - Ajustado para contraste real */
+  --bg: #EEF2F6;
+  --card: #FFFFFF;
+  --card-hover: #F8FAFC;
+  --card-alt: #FAFAFA;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --foreground: #0F172A;
+  
+  /* Substituir os cinzas do Tailwind apenas no modo Light para legibilidade (Escurecendo eles) */
+  --color-gray-300: #94A3B8; /* Slate-400 */
+  --color-gray-400: #64748B; /* Slate-500 */
+  --color-gray-500: #475569; /* Slate-600 */
+  --color-gray-600: #334155; /* Slate-700 */
+  
+  /* Ajuste de branco puramente hardcoded para contraste em Light Mode */
+  --color-white: #0F172A; /* Faz `text-white` e `border-white` virar escuro no light mode */
+  --nav-shadow: 0 -5px 20px rgba(0,0,0,0.06);
 }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
+  color: var(--foreground);
 }
 
 /* Esconder barra de rolagem mas permitir rolar (opcional, fica mais bonito) */
@@ -16,12 +56,13 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #222;
+  background: var(--border-strong);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #333;
+  background: var(--foreground);
+  opacity: 0.5;
 }

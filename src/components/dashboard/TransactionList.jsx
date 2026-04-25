@@ -21,14 +21,14 @@ export function TransactionList({ transactions, loading, recentTransactions, han
               <div 
                 key={t.id}
                 onClick={() => handleEdit(t)}
-                className="flex justify-between items-center p-3 bg-card border border-[#222] rounded-xl active:bg-[#1a1a1a] transition-colors cursor-pointer"
+                className="flex justify-between items-center p-3 bg-card border border-border rounded-xl active:bg-card-hover transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className={`p-2.5 rounded-full shrink-0 ${catData.bg}`}>
                     <CategoryIcon size={18} className={catData.color} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-white truncate text-sm leading-tight">{t.name}</p>
+                    <p className="font-medium text-foreground truncate text-sm leading-tight">{t.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-[10px] text-gray-500 capitalize">{catData.label}</p>
                       <span className="text-[8px] text-gray-700">•</span>
@@ -36,7 +36,7 @@ export function TransactionList({ transactions, loading, recentTransactions, han
                     </div>
                   </div>
                 </div>
-                <span className={`font-bold text-sm whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-white'}`}>
+                <span className={`font-bold text-sm whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-foreground'}`}>
                   {t.type === 'income' ? '+ ' : '- '}
                   {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
@@ -44,7 +44,7 @@ export function TransactionList({ transactions, loading, recentTransactions, han
             );
           })
         ) : (
-          <div className="text-center py-8 border border-dashed border-[#222] rounded-xl">
+          <div className="text-center py-8 border border-dashed border-border rounded-xl">
             <p className="text-gray-500 text-xs mb-2">Vazio por aqui.</p>
             <Link to="/add" className="text-blue-500 font-bold text-xs hover:underline">Adicionar</Link>
           </div>

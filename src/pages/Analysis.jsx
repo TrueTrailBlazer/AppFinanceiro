@@ -1,17 +1,20 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  TrendingUp, TrendingDown, Wallet, Award, 
-  Calendar, ChevronDown, Tag, PieChart, 
-  ArrowUpRight, Target, Flame, HelpCircle
+  TrendingUp, TrendingDown, Wallet, HelpCircle,
+  ChevronLeft, ChevronRight, PieChart, Tag, Calendar, ChevronDown, ArrowUpRight
 } from 'lucide-react';
 import { getCategory } from '../utils/constants';
+import { MonthSelector } from '../components/dashboard/MonthSelector';
+import { useDate } from '../contexts/DateContext';
 
 export default function Analysis() {
   const { user } = useAuth();
+  const { currentDate } = useDate();
   const navigate = useNavigate();
+  const location = useLocation();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(6);
@@ -19,6 +22,12 @@ export default function Analysis() {
   const [isPeriodOpen, setIsPeriodOpen] = useState(false);
   const [rankingMode, setRankingMode] = useState('month'); // 'month' or 'all'
   const [activeTooltip, setActiveTooltip] = useState(null); // 'saldo' or 'eficiencia'
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('analysis_tab') || 'geral');
+  const [expandedExpense, setExpandedExpense] = useState(null);
+
+  useEffect(() => {
+    sessionStorage.setItem('analysis_tab', activeTab);
+  }, [activeTab]);
 
   const chartScrollRef = useRef(null);
 
@@ -121,9 +130,9 @@ export default function Analysis() {
     let selectedMonthLabelForRanking = null;
 
     if (rankingMode === 'month') {
-        const targetDate = selectedMonthIndex !== null 
-            ? new Date(now.getFullYear(), now.getMonth() - (period - 1 - selectedMonthIndex), 1)
-            : now;
+        // Usa a data global selecionada pelo MonthSelector para a aba Categorias
+        const targetDate = currentDate;
+        
         selectedMonthKeyForRanking = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
         selectedMonthLabelForRanking = targetDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
         
@@ -145,12 +154,12 @@ export default function Analysis() {
     const maxCatValue = Math.max(...categoryRanking.map(c => c.amount), 1);
 
     return { monthList, topExpensesList, maxTopExpenseValue, totalSaved, avgSavingsRate, categoryRanking, maxCatValue, selectedMonthKeyForRanking, selectedMonthLabelForRanking };
-  }, [transactions, period, selectedMonthIndex, rankingMode]);
+  }, [transactions, period, rankingMode, currentDate]);
 
   if (!loading && (!data || transactions.length === 0)) {
       return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500 animate-in fade-in duration-700">
-              <div className="p-6 bg-[#121212] rounded-full mb-4 border border-[#222]">
+              <div className="p-6 bg-card rounded-full mb-4 border border-border">
                   <PieChart size={32} className="opacity-20" />
               </div>
               <p className="text-sm font-bold uppercase tracking-widest opacity-40">Sem dados para análise</p>
@@ -162,42 +171,13 @@ export default function Analysis() {
   const maxChartValue = data ? Math.max(...data.monthList.map(m => Math.max(m.income, m.expense)), 100) : 100;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-10" onClick={() => setActiveTooltip(null)}>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-40" onClick={() => setActiveTooltip(null)}>
       
       {/* HEADER */}
-      <div className="flex justify-between items-center px-1">
+      <div className="flex justify-between items-center px-1 mb-2">
         <div className="flex flex-col">
-            <h1 className="text-xl font-black text-white tracking-tight">ANÁLISE</h1>
+            <h1 className="text-xl font-black text-foreground tracking-tight">ANÁLISE</h1>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inteligência Financeira</p>
-        </div>
-        
-        <div className="relative z-50">
-          <button
-            onClick={() => setIsPeriodOpen(!isPeriodOpen)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border transition-all active:scale-95 ${
-              isPeriodOpen ? 'bg-blue-600 border-blue-600 text-white' : 'bg-[#121212] border-[#222] text-gray-400 hover:text-white'
-            }`}
-          >
-            <Calendar size={14} />
-            <span className="text-xs font-black uppercase tracking-wider">{activePeriodLabel}</span>
-            <ChevronDown size={14} className={`transition-transform duration-300 ${isPeriodOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isPeriodOpen && (
-            <div className="absolute top-full right-0 mt-2 w-40 bg-[#121212]/95 backdrop-blur-xl border border-[#222] rounded-2xl shadow-2xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-4 duration-300">
-              {periodOptions.map(opt => (
-                <button
-                  key={opt.val}
-                  onClick={() => { setPeriod(opt.val); setSelectedMonthIndex(null); setIsPeriodOpen(false); }}
-                  className={`text-left px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                    period === opt.val ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -208,106 +188,200 @@ export default function Analysis() {
         </div>
       ) : (
         <>
-            {/* KPI GRID - REFINADO */}
-            <div className="grid grid-cols-2 gap-3 px-1">
-                <div 
-                    onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'saldo' ? null : 'saldo'); }}
-                    className="bg-[#121212] p-4 sm:p-5 rounded-[2rem] border border-[#222] relative group overflow-hidden cursor-pointer active:scale-95 transition-all"
-                >
-                    <div className="flex items-center justify-between mb-1">
-                        <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Saldo Total</p>
-                        <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'saldo' ? 'text-blue-500' : 'text-gray-700'}`} />
-                    </div>
-                    <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.totalSaved >= 0 ? 'text-white' : 'text-red-500'}`}>
-                        {data.totalSaved.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </h3>
-                    
-                    {activeTooltip === 'saldo' && (
-                        <div className="absolute inset-0 bg-blue-600 p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
-                            <p className="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight text-center">Toda a sobra acumulada no período selecionado.</p>
-                        </div>
-                    )}
-                </div>
-
-                <div 
-                    onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'eficiencia' ? null : 'eficiencia'); }}
-                    className="bg-[#121212] p-4 sm:p-5 rounded-[2rem] border border-[#222] relative group overflow-hidden cursor-pointer active:scale-95 transition-all"
-                >
-                    <div className="flex items-center justify-between mb-1">
-                        <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Eficiência</p>
-                        <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'eficiencia' ? 'text-green-500' : 'text-gray-700'}`} />
-                    </div>
-                    <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {data.avgSavingsRate.toFixed(1)}%
-                    </h3>
-
-                    {activeTooltip === 'eficiencia' && (
-                        <div className="absolute inset-0 bg-green-600 p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
-                            <p className="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight text-center">O quanto você consegue salvar do seu ganho mensal.</p>
-                        </div>
-                    )}
-                </div>
+            {/* TABS MENU */}
+            <div className="flex gap-2 mb-6 px-1">
+                <button onClick={() => setActiveTab('geral')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'geral' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Geral</button>
+                <button onClick={() => setActiveTab('categories')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'categories' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Categorias</button>
+                <button onClick={() => setActiveTab('expenses')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'expenses' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Despesas</button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* GRÁFICO DE BARRAS - SCROLLABLE & FOCUS */}
-                <div className="bg-[#0c0c0c] p-6 pt-16 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl overflow-visible relative">
-                    <div className="absolute top-6 left-6 right-6 flex justify-between items-center mb-8">
-                        <div className="flex flex-col">
-                            <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
-                                <TrendingUp size={16} className="text-blue-500"/> Fluxo Mensal
+            {/* ABA GERAL */}
+            {activeTab === 'geral' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 flex flex-col">
+                    {/* KPI GRID */}
+                    <div className="grid grid-cols-2 gap-3 px-1">
+                        <div 
+                            onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'saldo' ? null : 'saldo'); }}
+                            className="bg-card p-4 sm:p-5 rounded-[2rem] border border-border relative group overflow-hidden cursor-pointer active:scale-95 transition-all"
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Saldo Total</p>
+                                <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'saldo' ? 'text-blue-500' : 'text-gray-500'}`} />
+                            </div>
+                            <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.totalSaved >= 0 ? 'text-foreground' : 'text-red-500'}`}>
+                                {data.totalSaved.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </h3>
-                            <span className="text-[9px] text-gray-600 font-bold uppercase">Toque na barra para ver valores</span>
-                        </div>
-                        {period === 12 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">DESLIZE →</span>}
-                    </div>
-                    
-                    <div ref={chartScrollRef} className={`${period === 12 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 custom-scrollbar-horizontal snap-x snap-mandatory`}>
-                        <div className={`flex items-end justify-start gap-3 h-56 pt-14 ${period === 12 ? 'min-w-[600px] pr-20' : 'w-full'} relative px-4`}>
-                            {data.monthList.map((m, i) => (
-                                <div key={i} 
-                                    onClick={(e) => { e.stopPropagation(); setSelectedMonthIndex(selectedMonthIndex === i ? null : i); }} 
-                                    className="flex flex-col items-center flex-1 h-full justify-end cursor-pointer group relative snap-center"
-                                >
-                                    {selectedMonthIndex === i && (
-                                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black p-3 rounded-2xl shadow-2xl z-30 animate-in slide-in-from-bottom-2 duration-300">
-                                        <div className="flex flex-col items-center gap-1 font-black">
-                                          <span className="text-[10px] text-green-600">+ {m.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
-                                          <span className="text-[10px] text-red-600">- {m.expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</span>
-                                        </div>
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45"></div>
-                                      </div>
-                                    )}
-                                    <div className="flex gap-1.5 items-end justify-center w-full h-full">
-                                        <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
-                                            ${selectedMonthIndex === i ? 'bg-blue-500 h-full scale-110' : 'bg-blue-600/30'}
-                                            ${m.isCurrent ? 'ring-2 ring-blue-500/50 ring-offset-2 ring-offset-[#0c0c0c] shadow-[0_0_15px_rgba(37,99,235,0.3)]' : ''}`} 
-                                            style={{ height: `${(m.income / maxChartValue) * 100}%` }}></div>
-                                        <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
-                                            ${selectedMonthIndex === i ? 'bg-red-500 h-full scale-110' : 'bg-red-600/30'}
-                                            ${m.isCurrent ? 'ring-2 ring-red-500/50 ring-offset-2 ring-offset-[#0c0c0c] shadow-[0_0_15px_rgba(239,68,68,0.3)]' : ''}`} 
-                                            style={{ height: `${(m.expense / maxChartValue) * 100}%` }}></div>
-                                    </div>
-                                    <span className={`text-[8px] font-black uppercase mt-4 transition-colors ${selectedMonthIndex === i || m.isCurrent ? 'text-white' : 'text-gray-600'}`}>{m.label}</span>
+                            
+                            {activeTooltip === 'saldo' && (
+                                <div className="absolute inset-0 bg-blue-600 p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
+                                    <p className="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight text-center">Toda a sobra acumulada no período selecionado.</p>
                                 </div>
-                            ))}
+                            )}
+                        </div>
+
+                        <div 
+                            onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'eficiencia' ? null : 'eficiencia'); }}
+                            className="bg-card p-4 sm:p-5 rounded-[2rem] border border-border relative group overflow-hidden cursor-pointer active:scale-95 transition-all"
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Eficiência</p>
+                                <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'eficiencia' ? 'text-green-500' : 'text-gray-500'}`} />
+                            </div>
+                            <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {data.avgSavingsRate.toFixed(1)}%
+                            </h3>
+
+                            {activeTooltip === 'eficiencia' && (
+                                <div className="absolute inset-0 bg-green-600 p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
+                                    <p className="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight text-center">O quanto você consegue salvar do seu ganho mensal.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
 
-                {/* RANKING CATEGORIAS - NAVEGAÇÃO NOVA TELA */}
-                <div className="bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
-                    <div className="flex justify-between items-center mb-8">
+                    {/* SELETOR DE PERIODO (Thumb-Zone Mapeada no centro da leitura em tela inteira) */}
+                    <div className="flex justify-center my-4 z-40 relative px-1">
+                        <div className="relative w-full">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsPeriodOpen(!isPeriodOpen); }}
+                                className={`flex items-center justify-between w-full px-5 py-4 rounded-[1.5rem] border transition-all active:scale-95 shadow-sm ${
+                                isPeriodOpen ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/30' : 'bg-card border-border text-foreground hover:bg-card-hover hover:border-blue-500/50'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-xl ${isPeriodOpen ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-500'}`}>
+                                        <Calendar size={18} />
+                                    </div>
+                                    <div className="flex flex-col items-start leading-none text-left">
+                                        <span className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: isPeriodOpen ? 'rgba(255,255,255,0.7)' : 'var(--color-gray-500)' }}>Analisar Fluxo de:</span>
+                                        <span className="text-sm font-black uppercase tracking-wider">{activePeriodLabel}</span>
+                                    </div>
+                                </div>
+                                <ChevronDown size={18} className={`transition-transform duration-300 ${isPeriodOpen ? 'rotate-180 text-white' : 'text-gray-400'}`} />
+                            </button>
+
+                            {isPeriodOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-3 bg-card border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-4 duration-200 z-50">
+                                    {periodOptions.map(opt => (
+                                        <button
+                                        key={opt.val}
+                                        onClick={(e) => { e.stopPropagation(); setPeriod(opt.val); setSelectedMonthIndex(null); setIsPeriodOpen(false); }}
+                                        className={`text-left px-5 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                            period === opt.val ? 'bg-blue-600 text-white' : 'text-foreground hover:bg-card-hover hover:text-blue-500'
+                                        }`}
+                                        >
+                                        {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* GRÁFICO DE BARRAS */}
+                    <div className="bg-card-alt p-6 pt-16 rounded-[2.5rem] border border-border shadow-md overflow-visible relative">
+                        <div className="absolute top-6 left-6 right-6 flex justify-between items-center mb-8">
+                            <div className="flex flex-col">
+                                <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <TrendingUp size={16} className="text-blue-500"/> Fluxo Mensal
+                                </h3>
+                                <span className="text-[9px] text-gray-500 font-bold uppercase">Toque na barra para ver valores</span>
+                            </div>
+                            {period === 12 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">DESLIZE →</span>}
+                        </div>
+                        
+                        <div ref={chartScrollRef} className={`${period === 12 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 custom-scrollbar-horizontal snap-x snap-mandatory`}>
+                            <div className={`flex items-end justify-start gap-3 h-56 pt-14 ${period === 12 ? 'min-w-[600px] pr-20' : 'w-full'} relative px-4`}>
+                                {data.monthList.map((m, i) => (
+                                    <div key={i} 
+                                        className="flex flex-col items-center flex-1 h-full justify-end cursor-default group relative snap-center"
+                                    >
+                                        <div className="flex gap-1.5 items-end justify-center w-full h-full">
+                                            <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
+                                                ${m.isCurrent ? 'bg-blue-500 h-full scale-110 ring-2 ring-blue-500/50 ring-offset-2 ring-offset-background' : 'bg-blue-500/50'}`} 
+                                                style={{ height: `${(m.income / maxChartValue) * 100}%` }}></div>
+                                            <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
+                                                ${m.isCurrent ? 'bg-red-500 h-full scale-110 ring-2 ring-red-500/50 ring-offset-2 ring-offset-background' : 'bg-red-500/50'}`} 
+                                                style={{ height: `${(m.expense / maxChartValue) * 100}%` }}></div>
+                                        </div>
+                                        <span className={`text-[8px] font-black uppercase mt-4 transition-colors ${m.isCurrent ? 'text-foreground' : 'text-gray-400'}`}>{m.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* DESTAQUES DO PERÍODO (PREENCHIMENTO DO VAZIO) */}
+                    {(data.categoryRanking.length > 0 || data.topExpensesList.length > 0) && (
+                        <div className="flex flex-col gap-3 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 mt-2">Destaques do Período</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Maior Categoria */}
+                                {data.categoryRanking.length > 0 && (() => {
+                                    const topCat = data.categoryRanking[0];
+                                    const catInfo = getCategory(topCat.cat);
+                                    const Icon = catInfo.icon;
+                                    return (
+                                        <div onClick={() => setActiveTab('categories')} className="bg-card p-4 rounded-[1.5rem] border border-border relative overflow-hidden flex flex-col justify-between min-h-[110px] cursor-pointer active:scale-95 transition-all group">
+                                            <div className="flex items-start justify-between">
+                                                <div className={`p-2 rounded-xl ${catInfo.bg} border border-border/10`}>
+                                                    <Icon size={14} className={catInfo.color} />
+                                                </div>
+                                                <span className="text-[8px] uppercase font-black text-gray-400 bg-card-hover px-2 py-1 rounded-md">Categoria Top</span>
+                                            </div>
+                                            <div className="mt-3">
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{catInfo.label}</p>
+                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{topCat.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Maior Despesa */}
+                                {data.topExpensesList.length > 0 && (() => {
+                                    const topExp = data.topExpensesList[0];
+                                    const expCatInfo = getCategory(topExp.category);
+                                    return (
+                                        <div onClick={() => setActiveTab('expenses')} className="bg-card p-4 rounded-[1.5rem] border border-border relative overflow-hidden flex flex-col justify-between min-h-[110px] cursor-pointer active:scale-95 transition-all group">
+                                            <div className="flex items-start justify-between">
+                                                <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
+                                                    <TrendingDown size={14} className="text-red-500" />
+                                                </div>
+                                                <span className="text-[8px] uppercase font-black text-gray-400 bg-card-hover px-2 py-1 rounded-md">Maior Custo</span>
+                                            </div>
+                                            <div className="mt-3 flex flex-col">
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{topExp.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</p>
+                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{Number(topExp.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            )}
+
+            {/* ABA CATEGORIAS */}
+            {activeTab === 'categories' && (
+                <div className="bg-card-alt p-6 rounded-[2.5rem] border border-border shadow-md animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex justify-between items-center mb-6">
                         <div className="flex flex-col">
-                            <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2">
+                            <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
                                 <Tag size={16} className="text-blue-500"/> Gastos por Categoria
                             </h3>
-                            <span className="text-[9px] text-gray-600 font-bold uppercase">Toque para ver Detalhes</span>
+                            <span className="text-[9px] text-gray-500 font-bold uppercase mt-1">Toque para ver Detalhes</span>
                         </div>
-                        <div className="flex bg-[#121212] p-1 rounded-xl border border-[#222]">
-                            <button onClick={(e) => { e.stopPropagation(); setRankingMode('month'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'month' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Mês</button>
-                            <button onClick={(e) => { e.stopPropagation(); setRankingMode('all'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'all' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>Total</button>
+                        <div className="flex bg-card p-1 rounded-xl border border-border shadow-sm items-center">
+                            {rankingMode === 'month' ? (
+                                <div className="animate-in fade-in zoom-in-95 duration-200">
+                                    <MonthSelector variant="tab" />
+                                </div>
+                            ) : (
+                                <button onClick={(e) => { e.stopPropagation(); setRankingMode('month'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all text-gray-500 hover:text-foreground hover:bg-card-hover`}>Mês</button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); setRankingMode('all'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-foreground hover:bg-card-hover'}`}>Total</button>
                         </div>
                     </div>
 
@@ -330,53 +404,85 @@ export default function Analysis() {
                                                 } 
                                             });
                                         }}
-                                        className="p-4 bg-[#121212] rounded-3xl border border-[#1a1a1a] relative overflow-hidden group hover:border-blue-500 transition-all cursor-pointer active:scale-[0.98]"
+                                        className="p-4 bg-card rounded-3xl border border-border relative overflow-hidden group hover:border-blue-500 transition-all cursor-pointer active:scale-[0.98]"
                                     >
                                         <div className="absolute bottom-0 left-0 h-1 bg-blue-600/20 group-hover:bg-blue-600 transition-all" style={{ width: `${percent}%` }}></div>
                                         <div className="flex items-start justify-between mb-3">
-                                            <div className={`p-2.5 rounded-2xl ${catInfo.bg} border border-white/5`}>
+                                            <div className={`p-2.5 rounded-2xl ${catInfo.bg} border border-border/10`}>
                                                 <Icon size={16} className={catInfo.color} />
                                             </div>
-                                            <ArrowUpRight size={14} className="text-gray-700 group-hover:text-blue-500 transition-colors" />
+                                            <ArrowUpRight size={14} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
                                         </div>
                                         <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{catInfo.label}</h4>
-                                        <p className="text-sm font-black text-white mt-1">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                        <p className="text-sm font-black text-foreground mt-1">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                                     </div>
                                 );
                             })
                         ) : (
-                            <div className="col-span-full py-16 text-center text-[10px] text-gray-700 font-black uppercase tracking-[0.2em] opacity-30">Sem movimentação</div>
+                            <div className="col-span-full py-16 text-center text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] opacity-50">Sem movimentação</div>
                         )}
                     </div>
                 </div>
+            )}
 
-                {/* TOP 5 GASTOS */}
-                <div className="lg:col-span-2 bg-[#0c0c0c] p-6 rounded-[2.5rem] border border-[#1a1a1a] shadow-2xl">
-                    <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-2 mb-8">
+            {/* ABA MAIORES DESPESAS */}
+            {activeTab === 'expenses' && (
+                <div className="bg-card-alt p-6 rounded-[2.5rem] border border-border shadow-md animate-in fade-in slide-in-from-bottom-2">
+                    <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2 mb-8">
                         <TrendingDown size={18} className="text-red-500" /> Maiores Despesas Únicas
                     </h3>
                     <div className="space-y-3">
-                        {data.topExpensesList.map(item => {
+                        {data.topExpensesList.length > 0 ? data.topExpensesList.map(item => {
                             const catInfo = getCategory(item.category);
                             const Icon = catInfo.icon;
+                            const isExpanded = expandedExpense === item.id;
+                            
                             return (
-                                <div key={item.id} className="flex items-center justify-between p-4 bg-[#121212] rounded-[1.5rem] border border-[#1a1a1a] group hover:scale-[1.01] transition-all">
-                                    <div className="flex items-center gap-4 truncate">
-                                        <div className={`p-3 rounded-2xl ${catInfo.bg} text-blue-500`}><Icon size={18} className={catInfo.color} /></div>
-                                        <div className="flex flex-col truncate">
-                                            <span className="text-sm font-black text-white truncate uppercase tracking-tight mb-0.5">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
-                                            <span className="text-[9px] text-gray-600 font-black uppercase tracking-widest">{catInfo.label} • {new Date(item.created_at).toLocaleDateString('pt-BR')}</span>
+                                <div key={item.id} onClick={() => setExpandedExpense(isExpanded ? null : item.id)} className={`relative flex flex-col p-4 bg-card rounded-[1.5rem] border transition-all cursor-pointer ${isExpanded ? 'border-blue-500 shadow-md ring-1 ring-blue-500/20' : 'border-border hover:border-blue-500 hover:shadow-sm'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4 truncate">
+                                            <div className={`p-3 rounded-2xl ${catInfo.bg} text-blue-500 border border-border/10`}><Icon size={18} className={catInfo.color} /></div>
+                                            <div className="flex flex-col truncate">
+                                                <span className="text-sm font-black text-foreground truncate tracking-tight mb-0.5 max-w-[130px] sm:max-w-[180px]">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
+                                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{catInfo.label}</span>
+                                            </div>
                                         </div>
+                                        <span className="text-base font-black text-foreground shrink-0 ml-4">
+                                            {Number(item.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </span>
                                     </div>
-                                    <span className="text-lg font-black text-white shrink-0 ml-4">
-                                        {Number(item.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                    </span>
+
+                                    {/* Accordion Context */}
+                                    {isExpanded && (
+                                        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
+                                            <div className="flex justify-between items-center text-[11px] text-gray-500">
+                                                <span className="font-bold uppercase tracking-wider">Data do Registro:</span>
+                                                <span className="text-foreground font-black bg-card-hover px-2 py-1 rounded-md border border-border">
+                                                    {new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[11px] text-gray-500">
+                                                <span className="font-bold uppercase tracking-wider">Status:</span>
+                                                <span className={`font-black px-2 py-1 rounded-md ${item.is_paid ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                    {item.is_paid ? 'Pago' : 'Pendente'}
+                                                </span>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); navigate('/add', { state: { transaction: item } })}} 
+                                                className="mt-2 py-2 w-full rounded-xl bg-blue-600/10 border border-blue-500/20 text-[10px] font-black text-blue-500 hover:bg-blue-600/20 uppercase tracking-widest active:scale-95 transition-all"
+                                            >
+                                                Editar Despesa
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )
-                        })}
+                        }) : (
+                             <div className="py-16 text-center text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] opacity-50">Sem movimentação</div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
         </>
       )}
     </div>

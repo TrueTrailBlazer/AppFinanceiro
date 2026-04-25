@@ -141,16 +141,16 @@ export function RecurringExpenses({ onBack }) {
   const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + Number(item.amount), 0), [recurring]);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col items-center justify-start h-[100dvh] overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-start h-[100dvh] overflow-hidden animate-in fade-in duration-300">
       
-      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] overflow-hidden relative shadow-2xl">
+      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background overflow-hidden relative shadow-2xl">
         
         {/* Header Minimalista */}
-        <div className="flex items-center justify-between py-5 px-5 bg-[#121212] border-b border-[#222] shrink-0">
-          <h1 className="text-lg font-bold text-white tracking-tight text-left">Despesas Fixas</h1>
+        <div className="flex items-center justify-between py-5 px-5 bg-card border-b border-border shrink-0">
+          <h1 className="text-lg font-bold text-foreground tracking-tight text-left">Despesas Fixas</h1>
           <button 
               onClick={() => { resetForm(); setIsModalOpen(true); }}
-              className="flex items-center gap-1.5 bg-blue-600/10 text-blue-500 hover:text-white hover:bg-blue-600 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
+              className="flex items-center gap-1.5 bg-blue-600/10 text-blue-500 hover:text-foreground hover:bg-blue-600 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
           >
               <Plus size={16} /> Nova
           </button>
@@ -161,12 +161,12 @@ export function RecurringExpenses({ onBack }) {
             {/* Card Resumo */}
             {recurring.length > 0 && (
                 <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-lg mx-2 mb-2">
-                    <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-white"/></div>
+                    <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-foreground"/></div>
                     <div className="relative z-10">
                         <p className="text-[10px] uppercase font-bold text-blue-200 mb-1 flex items-center gap-1">
                             <Coins size={12}/> Total Mensal Recorrente
                         </p>
-                        <h2 className="text-3xl font-bold text-white mb-4 tracking-tight">
+                        <h2 className="text-3xl font-bold text-foreground mb-4 tracking-tight">
                             {totalFixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </h2>
                         <button 
@@ -187,7 +187,7 @@ export function RecurringExpenses({ onBack }) {
                         <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mb-4" />
                     </div>
                 ) : recurring.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3 border border-dashed border-[#222] rounded-2xl bg-[#121212]/30">
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3 border border-dashed border-border rounded-2xl bg-card/30">
                         <Zap size={32} className="opacity-20"/>
                         <p className="text-xs font-medium uppercase tracking-widest opacity-60">Nenhuma conta fixa</p>
                     </div>
@@ -199,21 +199,21 @@ export function RecurringExpenses({ onBack }) {
                     <div 
                         key={item.id} 
                         onClick={() => handleEdit(item)}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-[#121212] border border-[#222] hover:border-[#333] transition-all group cursor-pointer active:scale-[0.98] shadow-sm ml-1 mr-1"
+                        className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border hover:border-border-strong transition-all group cursor-pointer active:scale-[0.98] shadow-sm ml-1 mr-1"
                     >
                         <div className="flex items-center gap-3">
-                            <div className={`p-3 rounded-xl bg-[#1a1a1a] text-gray-400 border border-[#222] transition-colors group-hover:bg-[#222]`}>
+                            <div className={`p-3 rounded-xl bg-card-hover text-gray-400 border border-border transition-colors group-hover:bg-border`}>
                                 <CatIcon size={20} />
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <p className="text-sm font-bold text-white mb-0.5 truncate">{item.name}</p>
+                                <p className="text-sm font-bold text-foreground mb-0.5 truncate">{item.name}</p>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] bg-[#222] text-gray-400 px-2 py-0.5 rounded font-medium border border-[#333]">Dia {item.day}</span>
+                                    <span className="text-[10px] bg-border text-gray-400 px-2 py-0.5 rounded font-medium border border-border-strong">Dia {item.day}</span>
                                 </div>
                             </div>
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="text-sm font-black text-white">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-sm font-black text-foreground">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
                                 className="text-gray-700 hover:text-red-500 transition-colors p-1"
@@ -228,10 +228,10 @@ export function RecurringExpenses({ onBack }) {
         </div>
 
         {/* Footer Voltar - Estilo Unificado */}
-        <div className="p-4 pb-8 bg-[#121212] border-t border-[#222] shrink-0 w-full shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <div className="p-4 pb-8 bg-card border-t border-border shrink-0 w-full shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
             <button 
                 onClick={onBack} 
-                className="w-full px-5 py-4 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center tracking-wide"
+                className="w-full px-5 py-4 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center tracking-wide"
             >
                 Voltar
             </button>
@@ -240,17 +240,17 @@ export function RecurringExpenses({ onBack }) {
 
       {/* --- MODAL DE ADICIONAR --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-[#050505]/95 flex flex-col justify-end md:justify-center md:items-center">
+        <div className="fixed inset-0 z-[100] bg-background/95 flex flex-col justify-end md:justify-center md:items-center">
             
-            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-[#050505] animate-in slide-in-from-bottom-10 duration-300 md:flex-initial md:rounded-3xl md:border md:border-[#222] max-h-[100dvh]">
+            <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background animate-in slide-in-from-bottom-10 duration-300 md:flex-initial md:rounded-3xl md:border md:border-border max-h-[100dvh]">
                 
                 {/* Header Modal */}
-                <div className="px-5 py-5 border-b border-[#222] text-center bg-[#121212] flex items-center justify-between shrink-0">
+                <div className="px-5 py-5 border-b border-border text-center bg-card flex items-center justify-between shrink-0">
                     <div className="w-8" />
-                    <h2 className="text-lg font-bold text-white">
+                    <h2 className="text-lg font-bold text-foreground">
                         {editingExpense ? 'Editar Despesa' : 'Nova Despesa'}
                     </h2>
-                    <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-gray-500 p-1 hover:text-white transition-colors">
+                    <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-gray-500 p-1 hover:text-foreground transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -261,7 +261,7 @@ export function RecurringExpenses({ onBack }) {
                         
                         <div className="space-y-6">
                             {/* VALOR COM MÁSCARA */}
-                            <div className="relative bg-[#1a1a1a] rounded-xl p-4 border border-[#222] focus-within:border-blue-500 transition-all shadow-inner">
+                            <div className="relative bg-card-hover rounded-xl p-4 border border-border focus-within:border-blue-500 transition-all shadow-inner">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Valor da Conta</label>
                                 <div className="flex items-center">
                                     <span className="text-xl mr-2 font-medium text-blue-500">R$</span>
@@ -276,7 +276,7 @@ export function RecurringExpenses({ onBack }) {
                                             setDisplayAmount(new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numValue / 100));
                                         }}
                                         placeholder="0,00"
-                                        className="w-full bg-transparent text-4xl font-black text-white placeholder-gray-800 outline-none"
+                                        className="w-full bg-transparent text-4xl font-black text-foreground placeholder-gray-800 outline-none"
                                     />
                                 </div>
                             </div>
@@ -284,7 +284,7 @@ export function RecurringExpenses({ onBack }) {
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5 ml-1"><Type size={12}/> Nome da Conta</label>
                                 <input type="text" placeholder="Ex: Netflix, Aluguel, Internet..." value={newName} onChange={e => setNewName(e.target.value)} autoFocus
-                                    className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all font-medium shadow-sm"/>
+                                    className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-medium shadow-sm"/>
                             </div>
 
                             <div className="space-y-1.5">
@@ -302,7 +302,7 @@ export function RecurringExpenses({ onBack }) {
                                             setNewDay(val);
                                         }
                                     }}
-                                    className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all font-bold shadow-sm"
+                                    className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-bold shadow-sm"
                                 />
                                 <span className="text-[9px] text-gray-600 block ml-1">Lançaremos automaticamente neste dia todo mês.</span>
                             </div>
@@ -322,10 +322,10 @@ export function RecurringExpenses({ onBack }) {
                                                 className={`relative p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5
                                                 ${isSelected 
                                                     ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.2)]' 
-                                                    : 'bg-[#121212] border-[#222] opacity-60 hover:opacity-100'}`}
+                                                    : 'bg-card border-border opacity-60 hover:opacity-100'}`}
                                             >
                                                 <cat.icon size={18} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
-                                                <span className={`text-[8px] font-black uppercase tracking-tight truncate max-w-full ${isSelected ? 'text-white' : 'text-gray-600'}`}>{cat.label}</span>
+                                                <span className={`text-[8px] font-black uppercase tracking-tight truncate max-w-full ${isSelected ? 'text-foreground' : 'text-gray-600'}`}>{cat.label}</span>
                                             </button>
                                         );
                                     })}
@@ -335,14 +335,14 @@ export function RecurringExpenses({ onBack }) {
                 </div>
 
                 {/* Footer Modal Thumb Zone */}
-                <div className="p-4 pb-8 bg-[#121212] border-t border-[#222] shrink-0 flex gap-3 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-                    <button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1 px-5 py-4 rounded-xl border border-[#333] text-gray-300 font-bold hover:bg-[#222] active:scale-95 transition-all text-center">
+                <div className="p-4 pb-8 bg-card border-t border-border shrink-0 flex gap-3 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                    <button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1 px-5 py-4 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center">
                         Cancelar
                     </button>
                     
                     <button 
                         type="submit" form="recurring-form" disabled={!newName || !newAmount || !newDay}
-                        className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all tracking-wide"
+                        className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-foreground font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all tracking-wide"
                     >
                         Salvar Despesa
                     </button>

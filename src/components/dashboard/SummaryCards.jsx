@@ -1,13 +1,17 @@
 import { SummaryCard } from '../ui/SummaryCard';
+import { useNavigate } from 'react-router-dom';
 
 export function SummaryCards({ summary }) {
+  const navigate = useNavigate();
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {/* Sobra */}
-      <div className={`col-span-2 md:col-span-2 p-5 rounded-2xl border flex justify-between items-center h-28 shadow-lg relative overflow-hidden
+      <div 
+        onClick={() => navigate('/extract', { state: { category: 'all' } })}
+        className={`col-span-2 md:col-span-2 p-5 rounded-2xl border flex justify-between items-center h-28 shadow-lg relative overflow-hidden transition-transform cursor-pointer active:scale-95 hover:brightness-110
         ${summary.balance >= 0 
-          ? 'bg-gradient-to-r from-green-900/20 to-[#0a0a0a] border-green-500/20' 
-          : 'bg-gradient-to-r from-red-900/20 to-[#0a0a0a] border-red-500/20'
+          ? 'bg-gradient-to-r from-green-900/20 to-card-alt border-green-500/20' 
+          : 'bg-gradient-to-r from-red-900/20 to-card-alt border-red-500/20'
         }`}>
         <div className="z-10">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Sobra do Mês</p>
@@ -20,8 +24,8 @@ export function SummaryCards({ summary }) {
         </div>
       </div>
 
-      <SummaryCard title="Entradas" value={summary.income} type="highlight" />
-      <SummaryCard title="Saídas" value={summary.expense} type="danger" />
+      <SummaryCard title="Entradas" value={summary.income} type="highlight" onClick={() => navigate('/extract', { state: { category: 'income' }})} />
+      <SummaryCard title="Saídas" value={summary.expense} type="danger" onClick={() => navigate('/extract', { state: { category: 'expense' }})} />
     </div>
   );
 }
