@@ -95,7 +95,7 @@ export default function Extract() {
     <div className="animate-in fade-in duration-500">
       
       {/* HEADER FIXO */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pt-2 pb-4 space-y-3 border-b border-border">
+      <div className="sticky -top-8 z-20 bg-background/95 backdrop-blur-md pt-8 pb-4 space-y-3 border-b border-border -mx-4 px-4">
         
         {/* Cards de Resumo */}
         <div className="grid grid-cols-2 gap-2">
