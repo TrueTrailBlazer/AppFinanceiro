@@ -174,28 +174,31 @@ export default function Analysis() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500" onClick={() => setActiveTooltip(null)}>
       
-      {/* HEADER */}
-      <div className="flex justify-between items-center px-1 mb-2">
-        <div className="flex flex-col">
-            <h1 className="text-xl font-black text-foreground tracking-tight">ANÁLISE</h1>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inteligência Financeira</p>
+      {/* HEADER + TABS FIXO */}
+      <div className="sticky top-0 z-20 bg-background -mt-8 pt-8 -mx-4 px-4 pb-4 border-b border-border">
+        <div className="flex justify-between items-center px-1 mb-4">
+          <div className="flex flex-col">
+              <h1 className="text-xl font-black text-foreground tracking-tight">ANÁLISE</h1>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inteligência Financeira</p>
+          </div>
         </div>
+
+        {loading ? null : (
+            <div className="flex gap-2 px-1">
+                <button onClick={() => setActiveTab('geral')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'geral' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Geral</button>
+                <button onClick={() => setActiveTab('categories')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'categories' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Categorias</button>
+                <button onClick={() => setActiveTab('expenses')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'expenses' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Despesas</button>
+            </div>
+        )}
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest transition-pulse">Auditando suas contas...</p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Auditando suas contas...</p>
         </div>
       ) : (
         <>
-            {/* TABS MENU */}
-            <div className="flex gap-2 mb-6 px-1">
-                <button onClick={() => setActiveTab('geral')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'geral' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Geral</button>
-                <button onClick={() => setActiveTab('categories')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'categories' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Categorias</button>
-                <button onClick={() => setActiveTab('expenses')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'expenses' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Despesas</button>
-            </div>
-
             {/* ABA GERAL */}
             {activeTab === 'geral' && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 flex flex-col">
