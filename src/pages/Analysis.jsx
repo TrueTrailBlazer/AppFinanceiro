@@ -175,7 +175,7 @@ export default function Analysis() {
     <div className="space-y-6 animate-in fade-in duration-500" onClick={() => setActiveTooltip(null)}>
       
       {/* HEADER + TABS FIXO */}
-      <div className="sticky top-0 z-20 bg-background -mt-8 pt-8 -mx-4 px-4 pb-4 border-b border-border">
+      <div className="sticky top-0 z-30 bg-background -mt-8 pt-8 -mx-4 px-4 pb-4 border-b border-border">
         <div className="flex justify-between items-center px-1 mb-4">
           <div className="flex flex-col">
               <h1 className="text-xl font-black text-foreground tracking-tight">ANÁLISE</h1>
@@ -201,6 +201,7 @@ export default function Analysis() {
         <>
             {/* ABA GERAL */}
             {activeTab === 'geral' && (
+
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 flex flex-col">
                     {/* KPI GRID */}
                     <div className="grid grid-cols-2 gap-3 px-1">
@@ -244,7 +245,7 @@ export default function Analysis() {
                     </div>
 
                     {/* SELETOR DE PERIODO (Thumb-Zone Mapeada no centro da leitura em tela inteira) */}
-                    <div className="flex justify-center my-4 z-40 relative px-1">
+                    <div className="flex justify-center my-4 z-10 relative px-1">
                         <div className="relative w-full">
                             <button
                                 onClick={(e) => { e.stopPropagation(); setIsPeriodOpen(!isPeriodOpen); }}
@@ -265,7 +266,7 @@ export default function Analysis() {
                             </button>
 
                             {isPeriodOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-3 bg-card border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-4 duration-200 z-50">
+                                <div className="absolute top-full left-0 right-0 mt-3 bg-card border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-4 duration-200 z-20">
                                     {periodOptions.map(opt => (
                                         <button
                                         key={opt.val}
