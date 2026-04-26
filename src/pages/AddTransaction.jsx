@@ -281,15 +281,15 @@ export default function AddTransaction() {
               </div>
 
               <div className="flex gap-3">
-                <div className="flex-[1.5] bg-card rounded-xl px-4 py-3 border border-border flex items-center gap-3 relative overflow-hidden group focus-within:border-gray-500 transition-colors">
-                  <Calendar size={18} className="text-gray-500 shrink-0" />
-                  <div className="flex-1 flex flex-col justify-center pointer-events-none">
+                {/* Data Picker Compacto */}
+                <div className="flex-1 bg-card rounded-xl px-4 py-3 border border-border flex items-center gap-2 relative overflow-hidden group focus-within:border-blue-500/50 transition-colors">
+                  <Calendar size={16} className="text-gray-500 shrink-0" />
+                  <div className="flex-1 flex flex-col justify-center pointer-events-none overflow-hidden">
                     <label className="block text-[9px] font-bold text-gray-500 uppercase">Data</label>
-                    <span className="text-sm font-bold text-foreground mt-0.5 capitalize truncate">
-                      {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace(' de ', ' ')}
+                    <span className="text-xs sm:text-sm font-bold text-foreground mt-0.5 capitalize truncate w-full">
+                      {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }).replace(' de ', ' ')}
                     </span>
                   </div>
-                   {/* Input invisível absoluto para pegar todo o clique */}
                   <input
                     type="date" 
                     value={date} 
@@ -410,11 +410,14 @@ export default function AddTransaction() {
         </div>
 
         {/* --- BOTTOM ACTION BAR (THUMB ZONE) --- */}
-        <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex items-center justify-center gap-3 z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
+        <div 
+          className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex items-center justify-center gap-3 z-50 transition-shadow duration-300"
+          style={{ boxShadow: 'var(--nav-shadow, 0 -5px 20px rgba(0,0,0,0.8))' }}
+        >
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold text-sm hover:bg-border active:scale-95 transition-all text-center flex-1 md:flex-none"
+            className="px-5 py-3.5 rounded-xl border border-border-strong text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-border active:scale-95 transition-all text-center flex-1 md:flex-none"
           >
             Cancelar
           </button>
@@ -433,7 +436,7 @@ export default function AddTransaction() {
             type="submit"
             form="transaction-form"
             disabled={loading || !amount || !name}
-            className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-foreground font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+            className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/40 disabled:text-white/90 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Check size={18} /> Salvar</>}
           </button>

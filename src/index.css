@@ -39,8 +39,6 @@ html.light {
   --color-gray-500: #475569; /* Slate-600 */
   --color-gray-600: #334155; /* Slate-700 */
   
-  /* Ajuste de branco puramente hardcoded para contraste em Light Mode */
-  --color-white: #0F172A; /* Faz `text-white` e `border-white` virar escuro no light mode */
   --nav-shadow: 0 -5px 20px rgba(0,0,0,0.06);
 }
 

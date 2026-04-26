@@ -160,19 +160,19 @@ export function RecurringExpenses({ onBack }) {
         <div className="flex-1 overflow-y-auto space-y-4 py-4 px-2 custom-scrollbar">
             {/* Card Resumo */}
             {recurring.length > 0 && (
-                <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden shadow-lg mx-2 mb-2">
-                    <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-foreground"/></div>
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 relative overflow-hidden shadow-lg mx-2 mb-2 border border-blue-500/30">
+                    <div className="absolute -top-4 -right-2 p-4 opacity-10"><Zap size={100} className="text-white"/></div>
                     <div className="relative z-10">
-                        <p className="text-[10px] uppercase font-bold text-blue-200 mb-1 flex items-center gap-1">
+                        <p className="text-[10px] uppercase font-bold text-blue-100 mb-1 flex items-center gap-1">
                             <Coins size={12}/> Total Mensal Recorrente
                         </p>
-                        <h2 className="text-3xl font-bold text-foreground mb-4 tracking-tight">
+                        <h2 className="text-3xl font-bold text-white mb-4 tracking-tight drop-shadow-sm">
                             {totalFixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </h2>
                         <button 
                             onClick={generateMonthExpenses}
                             disabled={isGenerating}
-                            className="w-full bg-white text-blue-900 text-xs font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+                            className="w-full bg-white/10 text-white backdrop-blur-sm border border-white/20 text-xs font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 hover:bg-white/20 transition-all font-bold"
                         >
                             {isGenerating ? 'Processando...' : <><CheckCircle2 size={16}/> Lançar Contas do Mês</>}
                         </button>
@@ -202,13 +202,13 @@ export function RecurringExpenses({ onBack }) {
                         className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border hover:border-border-strong transition-all group cursor-pointer active:scale-[0.98] shadow-sm ml-1 mr-1"
                     >
                         <div className="flex items-center gap-3">
-                            <div className={`p-3 rounded-xl bg-card-hover text-gray-400 border border-border transition-colors group-hover:bg-border`}>
+                            <div className={`p-3 rounded-xl bg-card-hover text-foreground/60 border border-border transition-colors group-hover:bg-border`}>
                                 <CatIcon size={20} />
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <p className="text-sm font-bold text-foreground mb-0.5 truncate">{item.name}</p>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] bg-border text-gray-400 px-2 py-0.5 rounded font-medium border border-border-strong">Dia {item.day}</span>
+                                    <span className="text-[10px] bg-card-alt text-foreground/60 px-2 py-0.5 rounded font-bold border border-border">Dia {item.day}</span>
                                 </div>
                             </div>
                         </div>
@@ -228,10 +228,10 @@ export function RecurringExpenses({ onBack }) {
         </div>
 
         {/* Footer Voltar - Estilo Unificado */}
-        <div className="p-4 pb-8 bg-card border-t border-border shrink-0 w-full shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <div className="p-4 pb-8 bg-card border-t border-border shrink-0 w-full shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
             <button 
                 onClick={onBack} 
-                className="w-full px-5 py-4 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center tracking-wide"
+                className="w-full px-5 py-4 rounded-xl border border-border-strong text-foreground/70 hover:text-foreground font-bold hover:bg-border active:scale-95 transition-all text-center tracking-wide"
             >
                 Voltar
             </button>
@@ -335,14 +335,14 @@ export function RecurringExpenses({ onBack }) {
                 </div>
 
                 {/* Footer Modal Thumb Zone */}
-                <div className="p-4 pb-8 bg-card border-t border-border shrink-0 flex gap-3 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-                    <button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1 px-5 py-4 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center">
+                <div className="p-4 pb-8 bg-card border-t border-border shrink-0 flex gap-3 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+                    <button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1 px-5 py-4 rounded-xl border border-border-strong text-gray-500 dark:text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center">
                         Cancelar
                     </button>
                     
                     <button 
                         type="submit" form="recurring-form" disabled={!newName || !newAmount || !newDay}
-                        className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-foreground font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all tracking-wide"
+                        className="flex-[2] bg-blue-600 disabled:bg-blue-600/40 disabled:text-white/90 hover:bg-blue-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg disabled:shadow-none active:scale-95 transition-all tracking-wide"
                     >
                         Salvar Despesa
                     </button>

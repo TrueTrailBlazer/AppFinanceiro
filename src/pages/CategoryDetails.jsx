@@ -127,7 +127,7 @@ export default function CategoryDetails() {
       </div>
 
       {/* FOOTER VOLTAR - ESTILO IDENTICO A DESPESAS FIXAS (Fica por cima da barra de navegação principal) */}
-      <div className="p-5 pb-10 bg-card border-t border-border shrink-0 w-full shadow-[0_-15px_40px_rgba(0,0,0,0.6)]">
+      <div className="p-5 pb-6 bg-card border-t border-border shrink-0 w-full shadow-[0_-15px_40px_rgba(0,0,0,0.6)]">
         <button 
             onClick={() => navigate(-1)} 
             className="w-full px-5 py-4 rounded-2xl border border-border-strong text-foreground font-black hover:bg-border active:scale-95 transition-all text-center tracking-[0.2em] text-xs uppercase"

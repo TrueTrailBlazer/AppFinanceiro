@@ -89,7 +89,7 @@ export default function Settings() {
 
   // --- MENU PRINCIPAL (CONFIGURAÇÕES) ---
   return (
-    <div className="animate-in fade-in slide-in-from-left-4 duration-300 max-w-lg mx-auto space-y-6 md:pb-8">
+    <div className="animate-in fade-in slide-in-from-left-4 duration-300 max-w-lg mx-auto space-y-6">
       
       <div className="flex items-center justify-between py-6">
           <h1 className="text-2xl font-black text-foreground tracking-tight">Configurações</h1>
@@ -158,7 +158,7 @@ export default function Settings() {
         />
       </div>
 
-      <p className="text-center text-[10px] text-gray-500 font-medium pt-6 uppercase tracking-widest pb-8">Fluxo App • v1.0.3</p>
+      <p className="text-center text-[10px] text-gray-500 font-medium pt-6 uppercase tracking-widest pb-4">Fluxo App • v1.0.3</p>
     </div>
   );
 }

@@ -5,9 +5,9 @@ export function SummaryCard({ title, value, type = 'neutral', onClick }) {
   
   const colors = {
     neutral: 'border-border bg-card text-foreground',
-    highlight: 'border-blue-600/30 bg-blue-900/10 text-blue-400',
-    danger: 'border-red-600/30 bg-red-900/10 text-red-400',
-    success: 'border-green-600/30 bg-green-900/10 text-green-400',
+    highlight: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    danger: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400',
+    success: 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400',
   };
 
   return (

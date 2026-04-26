@@ -7,14 +7,15 @@ import {
   ChevronLeft, ChevronRight, PieChart, Tag, Calendar, ChevronDown, ArrowUpRight
 } from 'lucide-react';
 import { getCategory } from '../utils/constants';
-import { MonthSelector } from '../components/dashboard/MonthSelector';
+import { MonthPickerModal } from '../components/dashboard/MonthPickerModal';
 import { useDate } from '../contexts/DateContext';
 
 export default function Analysis() {
   const { user } = useAuth();
-  const { currentDate } = useDate();
+  const { currentDate, setCurrentDate } = useDate();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(6);
@@ -171,7 +172,7 @@ export default function Analysis() {
   const maxChartValue = data ? Math.max(...data.monthList.map(m => Math.max(m.income, m.expense)), 100) : 100;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-40" onClick={() => setActiveTooltip(null)}>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-8" onClick={() => setActiveTooltip(null)}>
       
       {/* HEADER */}
       <div className="flex justify-between items-center px-1 mb-2">
@@ -279,7 +280,7 @@ export default function Analysis() {
                     </div>
 
                     {/* GRÁFICO DE BARRAS */}
-                    <div className="bg-card-alt p-6 pt-16 rounded-[2.5rem] border border-border shadow-md overflow-visible relative">
+                    <div className="bg-card-alt p-6 pt-16 rounded-[2.5rem] border border-border shadow-md relative">
                         <div className="absolute top-6 left-6 right-6 flex justify-between items-center mb-8">
                             <div className="flex flex-col">
                                 <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
@@ -289,22 +290,34 @@ export default function Analysis() {
                             </div>
                             {period === 12 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">DESLIZE →</span>}
                         </div>
+
+                        {/* Info panel - fora do scroll, nunca corta */}
+                        {selectedMonthIndex !== null && data.monthList[selectedMonthIndex] && (
+                            <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2.5 mb-3 animate-in fade-in duration-200">
+                                <span className="text-[10px] font-black text-foreground uppercase tracking-wider">{data.monthList[selectedMonthIndex].label}</span>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-black text-blue-500">{data.monthList[selectedMonthIndex].income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                    <span className="text-[10px] font-black text-red-500">{data.monthList[selectedMonthIndex].expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                </div>
+                            </div>
+                        )}
                         
                         <div ref={chartScrollRef} className={`${period === 12 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 custom-scrollbar-horizontal snap-x snap-mandatory`}>
-                            <div className={`flex items-end justify-start gap-3 h-56 pt-14 ${period === 12 ? 'min-w-[600px] pr-20' : 'w-full'} relative px-4`}>
+                            <div className={`flex items-end justify-around gap-2 h-52 pt-4 ${period === 12 ? 'min-w-[700px]' : 'w-full'} relative px-2`}>
                                 {data.monthList.map((m, i) => (
                                     <div key={i} 
-                                        className="flex flex-col items-center flex-1 h-full justify-end cursor-default group relative snap-center"
+                                        onClick={(e) => { e.stopPropagation(); setSelectedMonthIndex(selectedMonthIndex === i ? null : i); }} 
+                                        className="flex flex-col items-center flex-1 h-full justify-end cursor-pointer group relative snap-center"
                                     >
                                         <div className="flex gap-1.5 items-end justify-center w-full h-full">
                                             <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
-                                                ${m.isCurrent ? 'bg-blue-500 h-full scale-110 ring-2 ring-blue-500/50 ring-offset-2 ring-offset-background' : 'bg-blue-500/50'}`} 
-                                                style={{ height: `${(m.income / maxChartValue) * 100}%` }}></div>
+                                                ${selectedMonthIndex === i ? 'bg-blue-500 scale-110 ring-2 ring-blue-500/50 ring-offset-2 ring-offset-background' : m.isCurrent ? 'bg-blue-500' : 'bg-blue-500/50'}`} 
+                                                style={{ height: `${Math.max((m.income / maxChartValue) * 100, 2)}%` }}></div>
                                             <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
-                                                ${m.isCurrent ? 'bg-red-500 h-full scale-110 ring-2 ring-red-500/50 ring-offset-2 ring-offset-background' : 'bg-red-500/50'}`} 
-                                                style={{ height: `${(m.expense / maxChartValue) * 100}%` }}></div>
+                                                ${selectedMonthIndex === i ? 'bg-red-500 scale-110 ring-2 ring-red-500/50 ring-offset-2 ring-offset-background' : m.isCurrent ? 'bg-red-500' : 'bg-red-500/50'}`} 
+                                                style={{ height: `${Math.max((m.expense / maxChartValue) * 100, 2)}%` }}></div>
                                         </div>
-                                        <span className={`text-[8px] font-black uppercase mt-4 transition-colors ${m.isCurrent ? 'text-foreground' : 'text-gray-400'}`}>{m.label}</span>
+                                        <span className={`text-[8px] font-black uppercase mt-3 transition-colors ${selectedMonthIndex === i || m.isCurrent ? 'text-foreground' : 'text-gray-400'}`}>{m.label}</span>
                                     </div>
                                 ))}
                             </div>
@@ -373,14 +386,19 @@ export default function Analysis() {
                             </h3>
                             <span className="text-[9px] text-gray-500 font-bold uppercase mt-1">Toque para ver Detalhes</span>
                         </div>
-                        <div className="flex bg-card p-1 rounded-xl border border-border shadow-sm items-center">
-                            {rankingMode === 'month' ? (
-                                <div className="animate-in fade-in zoom-in-95 duration-200">
-                                    <MonthSelector variant="tab" />
-                                </div>
-                            ) : (
-                                <button onClick={(e) => { e.stopPropagation(); setRankingMode('month'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all text-gray-500 hover:text-foreground hover:bg-card-hover`}>Mês</button>
-                            )}
+                        <div className="flex bg-card p-1 rounded-xl border border-border shadow-sm items-center relative z-10 transition-all">
+                            <button 
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    if (rankingMode === 'month') setIsMonthModalOpen(true);
+                                    else setRankingMode('month'); 
+                                }} 
+                                className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all flex items-center gap-1 ${rankingMode === 'month' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-foreground hover:bg-card-hover'}`}
+                            >
+                                {rankingMode === 'month' ? (
+                                    <><span>{currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '')}</span><ChevronDown size={10} strokeWidth={3} /></>
+                                ) : 'Mês'}
+                            </button>
                             <button onClick={(e) => { e.stopPropagation(); setRankingMode('all'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-foreground hover:bg-card-hover'}`}>Total</button>
                         </div>
                     </div>
@@ -485,6 +503,10 @@ export default function Analysis() {
             )}
         </>
       )}
+
+      {/* Modal Independente de Seleção de Mês */}
+      <MonthPickerModal isOpen={isMonthModalOpen} onClose={() => setIsMonthModalOpen(false)} currentDate={currentDate} onSelectDate={setCurrentDate} />
+
     </div>
   );
 }
