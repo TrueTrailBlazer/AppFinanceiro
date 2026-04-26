@@ -91,15 +91,15 @@ export default function CategoryDetails() {
             <p className="text-[10px] font-bold uppercase tracking-widest">Organizando...</p>
           </div>
         ) : transactions.length > 0 ? (
-          <>
+          <div className="divide-y divide-border">
             {transactions.map(t => (
-              <div key={t.id} className="bg-card-alt border border-card-hover rounded-[1.8rem] p-5 flex items-center justify-between group active:scale-[0.98] transition-all relative overflow-hidden">
-                <div className="flex flex-col truncate relative z-10">
-                  <h3 className="text-xs font-black text-foreground uppercase tracking-tight truncate mb-1">
+              <div key={t.id} onClick={() => navigate('/add', { state: { transaction: t } })} className="flex items-center justify-between py-4 px-1 active:bg-card-hover transition-colors cursor-pointer">
+                <div className="flex flex-col truncate">
+                  <h3 className="text-sm font-bold text-foreground truncate mb-1">
                     {t.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-gray-600 font-black uppercase tracking-wider">
+                    <span className="text-[10px] text-gray-500 font-medium">
                       {new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
                     </span>
                     {t.is_paid ? 
@@ -108,20 +108,16 @@ export default function CategoryDetails() {
                     }
                   </div>
                 </div>
-                <div className="text-right shrink-0 ml-4 relative z-10">
-                  <span className="text-base font-black text-foreground italic">
-                    - {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
-                </div>
+                <span className="text-sm font-bold text-foreground shrink-0 ml-4">
+                  - {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
               </div>
             ))}
-            {/* Espaço para o botão de voltar não cobrir o último item */}
-            <div className="h-4" />
-          </>
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-700 gap-4 border border-dashed border-card-hover rounded-[2.5rem]">
-            <Search size={32} className="opacity-10" />
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Nada por aqui</p>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-500 gap-4">
+            <Search size={32} className="opacity-20" />
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Nada por aqui</p>
           </div>
         )}
       </div>

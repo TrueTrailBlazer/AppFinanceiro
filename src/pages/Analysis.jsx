@@ -172,7 +172,7 @@ export default function Analysis() {
   const maxChartValue = data ? Math.max(...data.monthList.map(m => Math.max(m.income, m.expense)), 100) : 100;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-8" onClick={() => setActiveTooltip(null)}>
+    <div className="space-y-6 animate-in fade-in duration-500" onClick={() => setActiveTooltip(null)}>
       
       {/* HEADER */}
       <div className="flex justify-between items-center px-1 mb-2">
@@ -291,16 +291,23 @@ export default function Analysis() {
                             {period === 12 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">DESLIZE →</span>}
                         </div>
 
-                        {/* Info panel - fora do scroll, nunca corta */}
-                        {selectedMonthIndex !== null && data.monthList[selectedMonthIndex] && (
-                            <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2.5 mb-3 animate-in fade-in duration-200">
-                                <span className="text-[10px] font-black text-foreground uppercase tracking-wider">{data.monthList[selectedMonthIndex].label}</span>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-black text-blue-500">{data.monthList[selectedMonthIndex].income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                                    <span className="text-[10px] font-black text-red-500">{data.monthList[selectedMonthIndex].expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        {/* Info panel - altura fixa, sem layout shift */}
+                        <div className="h-9 flex items-center mb-1">
+                            {selectedMonthIndex !== null && data.monthList[selectedMonthIndex] ? (
+                                <div className="flex items-center justify-between w-full bg-card border border-border rounded-xl px-4 py-2 animate-in fade-in duration-150">
+                                    <span className="text-[10px] font-black text-foreground uppercase tracking-wider">{data.monthList[selectedMonthIndex].label}</span>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[10px] font-black text-blue-500">{data.monthList[selectedMonthIndex].income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                        <span className="text-[10px] font-black text-red-500">{data.monthList[selectedMonthIndex].expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="flex items-center gap-3 px-1 text-[9px] text-gray-400 font-bold">
+                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Entrada
+                                    <span className="w-2 h-2 bg-red-500 rounded-full ml-2"></span> Saída
+                                </div>
+                            )}
+                        </div>
                         
                         <div ref={chartScrollRef} className={`${period === 12 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 custom-scrollbar-horizontal snap-x snap-mandatory`}>
                             <div className={`flex items-end justify-around gap-2 h-52 pt-4 ${period === 12 ? 'min-w-[700px]' : 'w-full'} relative px-2`}>
@@ -378,8 +385,8 @@ export default function Analysis() {
 
             {/* ABA CATEGORIAS */}
             {activeTab === 'categories' && (
-                <div className="bg-card-alt p-6 rounded-[2.5rem] border border-border shadow-md animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex justify-between items-center mb-6">
+                <div className="animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex justify-between items-center mb-5 px-1">
                         <div className="flex flex-col">
                             <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
                                 <Tag size={16} className="text-blue-500"/> Gastos por Categoria
@@ -403,7 +410,7 @@ export default function Analysis() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="divide-y divide-border">
                         {data.categoryRanking.length > 0 ? (
                             data.categoryRanking.map(({ cat, amount }) => {
                                 const catInfo = getCategory(cat);
@@ -422,22 +429,26 @@ export default function Analysis() {
                                                 } 
                                             });
                                         }}
-                                        className="p-4 bg-card rounded-3xl border border-border relative overflow-hidden group hover:border-blue-500 transition-all cursor-pointer active:scale-[0.98]"
+                                        className="flex items-center gap-3 py-4 px-1 cursor-pointer active:bg-card-hover transition-colors group"
                                     >
-                                        <div className="absolute bottom-0 left-0 h-1 bg-blue-600/20 group-hover:bg-blue-600 transition-all" style={{ width: `${percent}%` }}></div>
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className={`p-2.5 rounded-2xl ${catInfo.bg} border border-border/10`}>
-                                                <Icon size={16} className={catInfo.color} />
-                                            </div>
-                                            <ArrowUpRight size={14} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                        <div className={`p-2.5 rounded-xl ${catInfo.bg} shrink-0`}>
+                                            <Icon size={18} className={catInfo.color} />
                                         </div>
-                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{catInfo.label}</h4>
-                                        <p className="text-sm font-black text-foreground mt-1">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <h4 className="text-xs font-bold text-foreground uppercase tracking-wide truncate">{catInfo.label}</h4>
+                                                <span className="text-sm font-bold text-foreground shrink-0 ml-3">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                                                <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <ArrowUpRight size={14} className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0" />
                                     </div>
                                 );
                             })
                         ) : (
-                            <div className="col-span-full py-16 text-center text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] opacity-50">Sem movimentação</div>
+                            <div className="py-16 text-center text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] opacity-50">Sem movimentação</div>
                         )}
                     </div>
                 </div>

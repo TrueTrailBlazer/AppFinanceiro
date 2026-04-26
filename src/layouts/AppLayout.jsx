@@ -41,8 +41,8 @@ export function AppLayout() {
       </aside>
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
-      <main id="main-content" className="flex-1 overflow-y-auto pb-28 md:pb-8 relative scroll-smooth bg-background">
-        <div className="w-full md:max-w-4xl mx-auto px-4 py-8 md:p-8">
+      <main id="main-content" className="flex-1 overflow-y-auto pb-20 md:pb-8 relative scroll-smooth bg-background">
+        <div className="w-full md:max-w-4xl mx-auto px-4 py-6 md:p-8">
            <Outlet />
         </div>
       </main>
