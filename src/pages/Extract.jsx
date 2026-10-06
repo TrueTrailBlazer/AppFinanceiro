@@ -2,55 +2,58 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useTransactionsContext } from '../contexts/TransactionContext';
-import { 
-  Search, Calendar, Filter, TrendingUp, 
-  TrendingDown, ArrowUpDown, Building2, 
-  X, ShieldCheck, CheckCircle2 
-} from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { getCategory, CATEGORIES } from '../utils/constants';
-import { MonthSelector } from '../components/dashboard/MonthSelector';
-import { parseCents, formatCents } from '../utils/money';
+import { parseCents, formatCurrency } from '../utils/money';
 import { formatLocalDate } from '../utils/date';
-import { BankBadge, getBankInfo } from '../utils/banks';
+import { BankBadge } from '../utils/banks';
+import { useDate } from '../contexts/DateContext';
+import { MonthPickerModal } from '../components/dashboard/MonthPickerModal';
 
 export default function Extract() {
   const { user } = useAuth();
   const location = useLocation();
+  const { currentDate, setCurrentDate, changeMonth } = useDate();
   const { 
     bankTransactions = [], 
-    connectedBanks = [], 
     loading 
   } = useTransactionsContext();
+
+  const handleExport = () => {
+    if (!bankTransactions.length) return;
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Data,Nome,Categoria,Valor,Tipo,Status\n" + 
+      bankTransactions.map(t => {
+        const val = (t.amount / 100).toFixed(2).replace('.', ',');
+        return `${new Date(t.created_at).toLocaleDateString('pt-BR')},"${t.name}",${t.category},${val},${t.type},${t.is_paid ? 'Pago' : 'Pendente'}`;
+      }).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `extrato-${currentDate.getMonth() + 1}-${currentDate.getFullYear()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   const { showAlert } = useNotifications();
   
   // Filtros
   const initialCategory = location.state?.category || 'all';
-  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'income', 'expense'
-  const [bankFilter, setBankFilter] = useState('all'); // 'all' ou nome do banco
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'income', 'expense', 'pending'
   const [categoryFilter, setCategoryFilter] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState('date'); // 'date', 'amount_desc', 'amount_asc'
+  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
 
-  // Modal de Detalhes da Transação Bancária
+  // Modal de Detalhes
   const [selectedTx, setSelectedTx] = useState(null);
 
-  // Lista base: EXCLUSIVAMENTE movimentações bancárias reais (Open Finance)
+  // Lista base
   const baseList = bankTransactions;
 
-  // Bancos únicos presentes no extrato deste mês
-  const uniqueBanks = useMemo(() => {
-    const set = new Set();
-    for (const t of baseList) {
-      set.add(t.bank_name || 'Mercado Pago');
-    }
-    return Array.from(set);
-  }, [baseList]);
-
-  // Resumo financeiro do extrato bancário
+  // Resumo financeiro
   const summary = useMemo(() => {
     let incomeCents = 0;
     let expenseCents = 0;
@@ -65,31 +68,21 @@ export default function Extract() {
     }
 
     const netCents = incomeCents - expenseCents;
-    return {
-      incomeCents,
-      expenseCents,
-      netCents,
-      count: baseList.length
-    };
+    return { incomeCents, expenseCents, netCents, count: baseList.length };
   }, [baseList]);
 
   // Lista filtrada e ordenada
   const filteredList = useMemo(() => {
     let list = baseList.filter(t => {
-      // 1. Filtro de tipo (Entradas / Saídas)
+      // 1. Filtro de tipo
       if (typeFilter === 'income' && t.type !== 'income') return false;
       if (typeFilter === 'expense' && t.type === 'income') return false;
+      if (typeFilter === 'pending' && (t.is_paid || t.pluggy_transaction_id)) return false;
 
-      // 2. Filtro de banco (se houver mais de um)
-      if (bankFilter !== 'all') {
-        const itemBank = (t.bank_name || 'Mercado Pago').toLowerCase();
-        if (!itemBank.includes(bankFilter.toLowerCase())) return false;
-      }
-
-      // 3. Filtro de categoria
+      // 2. Filtro de categoria
       if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
 
-      // 4. Busca textual por nome/estabelecimento
+      // 3. Busca textual
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const nameMatch = (t.name || '').toLowerCase().includes(query);
@@ -112,9 +105,35 @@ export default function Extract() {
     }
 
     return list;
-  }, [baseList, typeFilter, bankFilter, categoryFilter, searchQuery, sortOrder]);
+  }, [baseList, typeFilter, categoryFilter, searchQuery, sortOrder]);
 
-  // Click na transação
+  // Agrupamento por Data
+  const groupedTransactions = useMemo(() => {
+    if (sortOrder !== 'date') return [{ label: 'Lançamentos', totalCents: null, transactions: filteredList }];
+    
+    const groups = {};
+    filteredList.forEach(t => {
+      const isToday = formatLocalDate(new Date()) === formatLocalDate(t.created_at);
+      const isYesterday = formatLocalDate(new Date(Date.now() - 86400000)) === formatLocalDate(t.created_at);
+      
+      let dateStr = formatLocalDate(t.created_at, { day: '2-digit', month: 'short' }).replace(' de ', ' ');
+      if (isToday) dateStr = 'Hoje, ' + dateStr;
+      else if (isYesterday) dateStr = 'Ontem, ' + dateStr;
+
+      if (!groups[dateStr]) {
+        groups[dateStr] = { label: dateStr, totalCents: 0, transactions: [] };
+      }
+      
+      const cents = parseCents(t.amount);
+      if (t.type === 'income') groups[dateStr].totalCents += cents;
+      else groups[dateStr].totalCents -= cents;
+      
+      groups[dateStr].transactions.push(t);
+    });
+    
+    return Object.values(groups);
+  }, [filteredList, sortOrder]);
+
   const handleItemClick = (transaction) => {
     if (transaction?.is_consolidated) {
       showAlert(`Este card consolida ${transaction.yield_count || ''} rendimentos automáticos gerados neste mês.`, 'info');
@@ -124,286 +143,206 @@ export default function Extract() {
   };
 
   const sortOptions = [
-    { id: 'date', label: 'Mais Recentes', icon: Calendar },
-    { id: 'amount_desc', label: 'Maior Valor', icon: TrendingDown },
-    { id: 'amount_asc', label: 'Menor Valor', icon: TrendingUp }
+    { id: 'date', label: 'Mais Recentes', icon: 'calendar_month' },
+    { id: 'amount_desc', label: 'Maior Valor', icon: 'trending_down' },
+    { id: 'amount_asc', label: 'Menor Valor', icon: 'trending_up' }
   ];
 
   return (
-    <div className="animate-in fade-in duration-300 pb-16">
+    <div className="flex flex-col w-full gap-4 animate-in fade-in duration-500 pt-1">
       
-      {/* HEADER FIXO */}
-      <div className="sticky top-0 z-20 bg-background -mt-8 pt-8 pb-3 space-y-3 border-b border-border -mx-4 px-4">
-        
-        {/* Topo do Header: Título + Badge Open Finance + Seletor de Mês */}
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Extrato Bancário</h1>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <ShieldCheck size={11} /> Open Finance
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5">Movimentações reais registradas nas suas contas conectadas.</p>
-          </div>
-          <MonthSelector />
+      {/* MONTH SELECTOR & ACTION */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div 
+          onClick={() => setIsMonthModalOpen(true)}
+          className="bg-white border border-border-subtle rounded-full px-3 py-1.5 shadow-sm flex items-center gap-2 cursor-pointer active:scale-95 transition-all"
+        >
+          <span className="material-symbols-outlined text-[16px] text-slate-500">calendar_today</span>
+          <span className="text-[13px] font-bold text-slate-900 select-none capitalize">
+            {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+          </span>
+          <span className="material-symbols-outlined text-[16px] text-slate-500">arrow_drop_down</span>
         </div>
 
-        {/* CARDS DE RESUMO DO FLUXO BANCÁRIO REAL */}
-        <div className="grid grid-cols-3 gap-2">
-          {/* Entradas */}
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex flex-col justify-center items-center text-center">
-            <p className="text-[9px] uppercase font-bold text-emerald-400 mb-0.5 flex items-center gap-1">
-              <TrendingUp size={10} /> Entradas
-            </p>
-            <span className="text-xs sm:text-sm font-black text-emerald-400 truncate w-full">
-              {formatCents(summary.incomeCents)}
-            </span>
-          </div>
-
-          {/* Saídas */}
-          <div className="p-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 flex flex-col justify-center items-center text-center">
-            <p className="text-[9px] uppercase font-bold text-rose-400 mb-0.5 flex items-center gap-1">
-              <TrendingDown size={10} /> Saídas
-            </p>
-            <span className="text-xs sm:text-sm font-black text-rose-400 truncate w-full">
-              {formatCents(summary.expenseCents)}
-            </span>
-          </div>
-
-          {/* Resultado Líquido */}
-          <div className={`p-2.5 rounded-xl border flex flex-col justify-center items-center text-center ${
-            summary.netCents >= 0 
-              ? 'bg-emerald-500/10 border-emerald-500/30' 
-              : 'bg-rose-500/10 border-rose-500/30'
-          }`}>
-            <p className="text-[9px] uppercase font-bold text-gray-400 mb-0.5">Resultado</p>
-            <span className={`text-xs sm:text-sm font-black truncate w-full ${
-              summary.netCents >= 0 ? 'text-emerald-400' : 'text-rose-400'
-            }`}>
-              {summary.netCents >= 0 ? '+' : ''}{formatCents(summary.netCents)}
-            </span>
-          </div>
-        </div>
-
-        {/* BARRA DE FERRAMENTAS: TIPO, BANCOS, CATEGORIA, ORDENAÇÃO E BUSCA */}
-        <div className="flex items-center justify-between gap-2">
-          
-          {/* Segmented Control por Tipo */}
-          <div className="flex bg-card p-0.5 rounded-xl border border-border text-xs">
-            <button
-              onClick={() => setTypeFilter('all')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                typeFilter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-foreground'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setTypeFilter('income')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                typeFilter === 'income' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-400 hover:text-foreground'
-              }`}
-            >
-              Entradas
-            </button>
-            <button
-              onClick={() => setTypeFilter('expense')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                typeFilter === 'expense' ? 'bg-rose-600 text-white shadow-sm' : 'text-gray-400 hover:text-foreground'
-              }`}
-            >
-              Saídas
-            </button>
-          </div>
-
-          {/* Botões da Direita: Busca, Filtro de Categoria e Ordenação */}
-          <div className="flex items-center gap-1.5">
-            
-            {/* Toggle de Busca */}
-            <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-2 rounded-xl border transition-all ${
-                isSearchOpen || searchQuery ? 'bg-blue-600 border-blue-600 text-white' : 'bg-card border-border text-gray-400 hover:text-foreground'
-              }`}
-              title="Pesquisar lançamentos"
-            >
-              <Search size={16} />
-            </button>
-
-            {/* Menu de Categoria */}
-            <div className="relative">
-              <button
-                onClick={() => { setIsFilterMenuOpen(!isFilterMenuOpen); setIsSortOpen(false); }}
-                className={`p-2 rounded-xl border transition-all flex items-center gap-1 ${
-                  categoryFilter !== 'all' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-card border-border text-gray-400 hover:text-foreground'
-                }`}
-                title="Filtrar por Categoria"
-              >
-                <Filter size={16} />
-                {categoryFilter !== 'all' && (
-                  <span className="text-[10px] font-bold max-w-[60px] truncate hidden sm:inline">
-                    {getCategory(categoryFilter).label}
-                  </span>
-                )}
-              </button>
-
-              {isFilterMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 max-h-64 overflow-y-auto bg-card border border-border rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 z-50">
-                  <button
-                    onClick={() => { setCategoryFilter('all'); setIsFilterMenuOpen(false); }}
-                    className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
-                      categoryFilter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-card-hover hover:text-foreground'
-                    }`}
-                  >
-                    Todas as Categorias
-                  </button>
-                  {Object.entries(CATEGORIES).map(([key, cat]) => (
-                    <button
-                      key={key}
-                      onClick={() => { setCategoryFilter(key); setIsFilterMenuOpen(false); }}
-                      className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-between ${
-                        categoryFilter === key ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-card-hover hover:text-foreground'
-                      }`}
-                    >
-                      <span>{cat.label}</span>
-                      <cat.icon size={14} className="opacity-60" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Menu de Ordenação */}
-            <div className="relative">
-              <button
-                onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterMenuOpen(false); }}
-                className={`p-2 rounded-xl border transition-all ${
-                  sortOrder !== 'date' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-card border-border text-gray-400 hover:text-foreground'
-                }`}
-                title="Ordenar extrato"
-              >
-                <ArrowUpDown size={16} />
-              </button>
-
-              {isSortOpen && (
-                <div className="absolute top-full right-0 mt-2 w-44 bg-card border border-border rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 z-50">
-                  {sortOptions.map(opt => (
-                    <button
-                      key={opt.id}
-                      onClick={() => { setSortOrder(opt.id); setIsSortOpen(false); }}
-                      className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-between ${
-                        sortOrder === opt.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-card-hover hover:text-foreground'
-                      }`}
-                    >
-                      {opt.label}
-                      <opt.icon size={14} className="opacity-60" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-
-        {/* Input de Busca Expansível */}
-        {isSearchOpen && (
-          <div className="relative animate-in slide-in-from-top-2 duration-200">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por descrição, estabelecimento..."
-              className="w-full bg-card border border-border rounded-xl px-3.5 py-2 text-xs text-foreground placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
-              autoFocus
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-foreground"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        )}
-
+        <button onClick={handleExport} className="bg-white border border-border-subtle rounded-full px-3 py-1.5 shadow-sm flex items-center gap-1.5 text-slate-600 hover:bg-slate-50 transition-colors active:scale-95">
+          <span className="material-symbols-outlined text-[16px]">download</span>
+          <span className="text-[11px] font-bold">Exportar</span>
+        </button>
       </div>
 
-      {/* FEED DE LANÇAMENTOS DO EXTRATO BANCÁRIO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-3">
+      {/* SUMMARY CARD */}
+      <div className="relative overflow-hidden bg-white rounded-2xl p-5 shadow-sm border border-border-subtle">
+        <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-emerald-500/5 pointer-events-none"></div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Balanço do Período</span>
+          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${summary.netCents >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+            <span className="material-symbols-outlined text-[13px]">{summary.netCents >= 0 ? 'trending_up' : 'trending_down'}</span>
+            Open Finance
+          </span>
+        </div>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className={`text-[28px] font-bold tracking-tight ${summary.netCents >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {summary.netCents >= 0 ? '+ ' : '- '}
+            {formatCurrency(Math.abs(summary.netCents))}
+          </span>
+        </div>
+
+        {/* Mini Period Insights Bar */}
+        <div className="grid grid-cols-2 gap-3 mt-4 pt-3.5 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5 uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Entradas
+            </span>
+            <span className="text-sm text-emerald-600 mt-0.5 font-bold">+ {formatCurrency(summary.incomeCents)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5 uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Saídas
+            </span>
+            <span className="text-sm text-rose-600 mt-0.5 font-bold">- {formatCurrency(summary.expenseCents)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SEARCH AND EXTRA FILTERS */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 flex items-center">
+          <span className="material-symbols-outlined absolute left-3.5 text-slate-400 text-[20px] pointer-events-none">search</span>
+          <input 
+            className="w-full bg-white text-slate-900 placeholder:text-slate-400 text-sm rounded-2xl pl-10 pr-9 py-3 shadow-sm border border-border-subtle focus:outline-none focus:border-emerald-500 transition-all" 
+            placeholder="Buscar lançamentos..." 
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+              <span className="material-symbols-outlined text-[18px]">cancel</span>
+            </button>
+          )}
+        </div>
+
+        {/* Categoria Filter Toggle */}
+        <div className="relative shrink-0">
+          <button onClick={() => { setIsFilterMenuOpen(!isFilterMenuOpen); setIsSortOpen(false); }} className={`w-11 h-11 flex items-center justify-center rounded-2xl border shadow-sm transition-colors ${categoryFilter !== 'all' ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-border-subtle text-slate-500 hover:text-slate-900'}`}>
+            <span className="material-symbols-outlined text-[20px]">filter_list</span>
+          </button>
+          {isFilterMenuOpen && (
+            <div className="absolute top-full right-0 mt-2 w-48 max-h-64 overflow-y-auto bg-white border border-border-subtle rounded-xl shadow-xl p-1.5 flex flex-col gap-1 z-50">
+              <button onClick={() => { setCategoryFilter('all'); setIsFilterMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors ${categoryFilter === 'all' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>Todas as Categorias</button>
+              {Object.entries(CATEGORIES).map(([key, cat]) => (
+                <button key={key} onClick={() => { setCategoryFilter(key); setIsFilterMenuOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-between ${categoryFilter === key ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sort Toggle */}
+        <div className="relative shrink-0">
+          <button onClick={() => { setIsSortOpen(!isSortOpen); setIsFilterMenuOpen(false); }} className={`w-11 h-11 flex items-center justify-center rounded-2xl border shadow-sm transition-colors ${sortOrder !== 'date' ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-border-subtle text-slate-500 hover:text-slate-900'}`}>
+            <span className="material-symbols-outlined text-[20px]">swap_vert</span>
+          </button>
+          {isSortOpen && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-border-subtle rounded-xl shadow-xl p-1.5 flex flex-col gap-1 z-50">
+              {sortOptions.map(opt => (
+                <button key={opt.id} onClick={() => { setSortOrder(opt.id); setIsSortOpen(false); }} className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-between ${sortOrder === opt.id ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  {opt.label}
+                  <span className="material-symbols-outlined text-[14px]">{opt.icon}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* FILTER CHIPS */}
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 -mx-4 px-4">
+        <button onClick={() => setTypeFilter('all')} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold shadow-sm transition-all whitespace-nowrap active:scale-95 border ${typeFilter === 'all' ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-slate-600 border-border-subtle hover:text-slate-900'}`} type="button">
+          <span>Todos</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${typeFilter === 'all' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{baseList.length}</span>
+        </button>
+        <button onClick={() => setTypeFilter('income')} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold shadow-sm transition-all whitespace-nowrap active:scale-95 border ${typeFilter === 'income' ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-slate-600 border-border-subtle hover:text-slate-900'}`} type="button">
+          <span className={`w-2 h-2 rounded-full ${typeFilter === 'income' ? 'bg-white' : 'bg-emerald-500'}`}></span>
+          <span>Entradas</span>
+        </button>
+        <button onClick={() => setTypeFilter('expense')} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold shadow-sm transition-all whitespace-nowrap active:scale-95 border ${typeFilter === 'expense' ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-slate-600 border-border-subtle hover:text-slate-900'}`} type="button">
+          <span className={`w-2 h-2 rounded-full ${typeFilter === 'expense' ? 'bg-white' : 'bg-rose-500'}`}></span>
+          <span>Saídas</span>
+        </button>
+      </div>
+
+      {/* TRANSACTIONS FEED */}
+      <div className="flex flex-col gap-5 mt-2 pb-16">
         {loading && baseList.length === 0 ? (
-          <div className="text-center md:col-span-2 py-16 text-xs text-gray-500 animate-pulse">
+          <div className="text-center py-16 text-xs text-slate-500 animate-pulse">
             Carregando extrato bancário...
           </div>
         ) : filteredList.length > 0 ? (
-          filteredList.map(t => {
-            const catData = getCategory(t.category);
-            const CategoryIcon = catData.icon;
-            const isIncome = t.type === 'income';
-            const bankName = t.bank_name || 'Mercado Pago';
-
-            return (
-              <div
-                key={t.id}
-                onClick={() => handleItemClick(t)}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                  isIncome
-                    ? 'bg-card border-border hover:border-emerald-500/40 shadow-sm'
-                    : 'bg-card border-border hover:border-border-strong shadow-sm'
-                }`}
-              >
-                {/* Lado Esquerdo: Ícone da categoria + Nome do lançamento */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`p-2.5 rounded-xl shrink-0 ${isIncome ? 'bg-emerald-500/10' : catData.bg}`}>
-                    <CategoryIcon size={18} className={isIncome ? 'text-emerald-400' : catData.color} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-xs sm:text-[13px] text-foreground truncate leading-tight">
-                      {t.name}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      {/* Tag com Logotipo do Banco */}
-                      <BankBadge bankName={bankName} logoUrl={t.bank_logo_url} />
-
-                      <span className="text-[9px] font-semibold text-gray-400 bg-card-hover border border-border/50 px-1.5 py-0.5 rounded capitalize">
-                        {catData.label}
-                      </span>
-                      <span className="text-[10px] text-gray-500 font-medium">
-                        {formatLocalDate(t.created_at, { day: '2-digit', month: 'short' })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lado Direito: Valor Bancário Liquidado */}
-                <div className="flex flex-col items-end shrink-0 pl-2">
-                  <span className={`text-sm sm:text-[15px] font-black leading-tight ${
-                    isIncome ? 'text-emerald-400' : 'text-foreground'
-                  }`}>
-                    {isIncome ? '+ ' : '- '}
-                    {formatCents(t.amount)}
+          groupedTransactions.map(group => (
+            <div key={group.label} className="flex flex-col gap-2.5">
+              
+              {/* Group Header */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{group.label}</span>
+                {group.totalCents !== null && (
+                  <span className={`text-[11px] font-bold ${group.totalCents >= 0 ? 'text-emerald-500' : 'text-slate-500'}`}>
+                    {group.totalCents >= 0 ? '+ ' : ''}{formatCurrency(group.totalCents)}
                   </span>
-                  <span className="text-[9px] text-gray-500 mt-0.5 flex items-center gap-0.5 font-medium">
-                    <CheckCircle2 size={9} className="text-emerald-500" /> Liquidado
-                  </span>
-                </div>
+                )}
               </div>
-            );
-          })
-        ) : (
-          <div className="py-20 md:col-span-2 flex flex-col items-center justify-center text-gray-500 gap-3 border border-dashed border-border rounded-2xl bg-card/20 text-center px-4">
-            <Building2 size={32} className="text-gray-600" />
-            <div>
-              <p className="text-sm font-bold text-foreground">Nenhuma movimentação encontrada</p>
-              <p className="text-xs text-gray-500 mt-1 max-w-xs">
-                {searchQuery || categoryFilter !== 'all' || typeFilter !== 'all'
-                  ? 'Nenhum resultado corresponde aos filtros selecionados.'
-                  : 'Nenhuma transação bancária registrada para este mês.'}
-              </p>
+
+              {/* Group Items */}
+              <div className="flex flex-col gap-2.5">
+                {group.transactions.map(t => {
+                  const catData = getCategory(t.category);
+                  const isIncome = t.type === 'income';
+                  const bankName = t.bank_name || 'Mercado Pago';
+                  const isPaid = t.is_paid || t.pluggy_transaction_id;
+
+                  // Define icon based on category logic visually
+                  let iconName = 'receipt_long';
+                  if (t.category === 'shopping' || t.name.toLowerCase().includes('mercado')) iconName = 'shopping_cart';
+                  if (t.category === 'home' || t.name.toLowerCase().includes('casa')) iconName = 'home';
+                  if (isIncome) iconName = 'payments';
+                  if (t.category === 'health' || t.name.toLowerCase().includes('farm')) iconName = 'medical_services';
+                  if (t.name.toLowerCase().includes('netflix') || t.name.toLowerCase().includes('spotify')) iconName = 'subscriptions';
+                  if (t.category === 'transport' || t.name.toLowerCase().includes('posto') || t.name.toLowerCase().includes('uber')) iconName = 'local_gas_station';
+
+                  return (
+                    <div key={t.id} onClick={() => handleItemClick(t)} className="flex items-center justify-between p-3.5 bg-white rounded-2xl shadow-sm border border-border-subtle hover:border-slate-300 transition-colors cursor-pointer active:scale-[0.98]">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'}`}>
+                          <span className="material-symbols-outlined text-[22px]">{iconName}</span>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[14px] leading-tight text-slate-900 truncate font-bold">{t.name}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-[11px] text-slate-500 capitalize">{catData.label}</span>
+                            <span className="text-slate-300 text-[10px]">•</span>
+                            <span className="text-[11px] text-slate-500">{new Date(t.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0 pl-2">
+                        <span className={`text-[14px] font-bold ${isIncome ? 'text-emerald-600' : 'text-slate-900'}`}>
+                          {isIncome ? '+ ' : '- '}{formatCurrency(t.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="py-16 flex flex-col items-center justify-center text-center px-4">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200">
+              <span className="material-symbols-outlined text-[28px]">search_off</span>
+            </div>
+            <span className="text-[16px] text-slate-900 font-bold">Nenhum lançamento encontrado</span>
+            <p className="text-sm text-slate-500 mt-1 max-w-[240px]">Tente ajustar os filtros ou digitar um termo diferente de busca.</p>
           </div>
         )}
       </div>
@@ -411,78 +350,73 @@ export default function Extract() {
       {/* MODAL DE DETALHES DA TRANSAÇÃO BANCÁRIA */}
       {selectedTx && (
         <div 
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setSelectedTx(null)}
         >
           <div 
-            className="w-full max-w-md bg-card border border-border rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-white border border-border-subtle rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header do Modal com Logo do Banco */}
-            <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <BankBadge bankName={selectedTx.bank_name || 'Mercado Pago'} logoUrl={selectedTx.bank_logo_url} className="text-xs py-1 px-2.5" />
+                <BankBadge bankName={selectedTx.bank_name || 'Mercado Pago'} logoUrl={selectedTx.bank_logo_url} className="text-xs py-1 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold flex items-center gap-1.5" />
                 <div>
-                  <h3 className="font-bold text-sm text-foreground">Detalhes Bancários</h3>
-                  <p className="text-[10px] text-gray-500">Transação Open Finance</p>
+                  <h3 className="font-bold text-sm text-slate-900">Detalhes Bancários</h3>
+                  <p className="text-[10px] font-semibold text-slate-500">Transação Open Finance</p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedTx(null)}
-                className="p-1.5 rounded-full text-gray-400 hover:text-foreground hover:bg-card-hover transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
-                <X size={18} />
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            {/* Valor e Descrição */}
             <div className="text-center py-2 space-y-1">
-              <span className={`text-2xl font-black ${
-                selectedTx.type === 'income' ? 'text-emerald-400' : 'text-foreground'
-              }`}>
+              <span className={`text-[32px] font-black tracking-tight ${selectedTx.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
                 {selectedTx.type === 'income' ? '+ ' : '- '}
-                {formatCents(selectedTx.amount)}
+                {formatCurrency(selectedTx.amount)}
               </span>
-              <p className="font-bold text-sm text-foreground max-w-sm mx-auto">
+              <p className="font-bold text-[15px] text-slate-700 max-w-sm mx-auto">
                 {selectedTx.name}
               </p>
             </div>
 
-            {/* Dados Técnicos da Transação */}
-            <div className="bg-background rounded-2xl p-3 border border-border space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b border-border/50">
-                <span className="text-gray-400">Instituição Bancária:</span>
-                <span className="font-bold text-foreground">
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3 text-xs">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <span className="text-slate-500 font-semibold">Instituição Bancária:</span>
+                <span className="font-bold text-slate-900">
                   {selectedTx.bank_name || 'Mercado Pago'}
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-border/50">
-                <span className="text-gray-400">Tipo de Fluxo:</span>
-                <span className={`font-bold ${selectedTx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <span className="text-slate-500 font-semibold">Tipo de Fluxo:</span>
+                <span className={`font-bold ${selectedTx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {selectedTx.type === 'income' ? 'Crédito (Entrada)' : 'Débito (Saída)'}
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-border/50">
-                <span className="text-gray-400">Categoria Mapeada:</span>
-                <span className="font-bold text-foreground capitalize">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <span className="text-slate-500 font-semibold">Categoria Mapeada:</span>
+                <span className="font-bold text-slate-900 capitalize">
                   {getCategory(selectedTx.category).label}
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-border/50">
-                <span className="text-gray-400">Data e Horário:</span>
-                <span className="font-bold text-foreground">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <span className="text-slate-500 font-semibold">Data e Horário:</span>
+                <span className="font-bold text-slate-900">
                   {formatLocalDate(selectedTx.created_at, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-border/50">
-                <span className="text-gray-400">Status Bancário:</span>
-                <span className="font-bold text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 size={12} /> Confirmado / Liquidado
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                <span className="text-slate-500 font-semibold">Status Bancário:</span>
+                <span className="font-bold text-emerald-600 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">check_circle</span> Confirmado
                 </span>
               </div>
-              <div className="flex justify-between py-1 text-[10px]">
-                <span className="text-gray-500">ID Open Finance:</span>
-                <span className="font-mono text-gray-500 truncate max-w-[180px]">
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-slate-500 font-semibold">ID Open Finance:</span>
+                <span className="font-mono text-[10px] text-slate-400 truncate max-w-[150px]">
                   {selectedTx.pluggy_transaction_id || 'N/A'}
                 </span>
               </div>
@@ -490,13 +424,15 @@ export default function Extract() {
 
             <button
               onClick={() => setSelectedTx(null)}
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-md active:scale-95"
+              className="w-full py-3.5 mt-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm transition-all shadow-md active:scale-95"
             >
               Fechar Detalhes
             </button>
           </div>
         </div>
       )}
+
+      <MonthPickerModal isOpen={isMonthModalOpen} onClose={() => setIsMonthModalOpen(false)} currentDate={currentDate} onSelectDate={setCurrentDate} />
 
     </div>
   );

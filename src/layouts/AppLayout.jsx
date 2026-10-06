@@ -1,115 +1,127 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Plus, Layers, BarChart3, Settings, CalendarCheck } from 'lucide-react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDate } from '../contexts/DateContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { monthTitle, changeMonth } = useDate();
+  const { user } = useAuth();
 
-  const isActive = (path) => location.pathname === path
-    ? "text-blue-500"
-    : "text-gray-500 hover:text-gray-300";
+  const isActive = (path) => location.pathname === path;
+
+  const getUserName = () => {
+    if (!user) return 'Visitante';
+    const meta = user.user_metadata || {};
+    const name = meta.first_name || meta.name || meta.full_name?.split(' ')[0] || user.email?.split('@')[0];
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Visitante';
+  };
+
+  // Touch Handlers for month navigation
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const minSwipeDistance = 75;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      changeMonth(1);
+    }
+    if (isRightSwipe) {
+      changeMonth(-1);
+    }
+  };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background text-foreground md:flex-row overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-surface text-on-surface font-sans overflow-hidden antialiased selection:bg-primary selection:text-white">
 
-      {/* --- HEADER MOBILE (Topo Fixo com Logo e Configurações) --- */}
-      <header className="md:hidden flex items-center justify-between px-5 py-3.5 bg-card/90 backdrop-blur-md border-b border-border z-40 shrink-0">
-        <Link to="/" className="flex items-center gap-2 active:scale-95 transition-transform">
-          <span className="text-xl font-extrabold bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent tracking-tight">
-            Fluxo
-          </span>
-        </Link>
-        
-        <Link 
-          to="/settings" 
-          aria-label="Configurações"
-          className={`p-2 rounded-xl border border-border/70 bg-card/60 hover:bg-card-hover active:scale-90 transition-all flex items-center justify-center ${
-            location.pathname === '/settings' 
-              ? 'text-blue-500 border-blue-500/40 bg-blue-500/10 shadow-sm shadow-blue-500/20' 
-              : 'text-gray-400 hover:text-foreground'
-          }`}
-        >
-          <Settings size={19} />
-        </Link>
+      {/* --- HEADER MOBILE (Topo Fixo) --- */}
+      <header className="fixed top-0 w-full z-40 pt-safe bg-white/90 backdrop-blur-md border-b border-border-subtle">
+        <div className="h-16 px-4 flex items-center justify-between">
+          
+          <div className="flex items-center gap-2">
+            {location.pathname === '/' ? (
+              <h1 className="text-lg font-bold text-slate-900 tracking-tight">
+                Olá, {getUserName()} 👋
+              </h1>
+            ) : (
+              <h1 className="text-lg font-bold text-slate-900 tracking-tight">
+                {location.pathname === '/bills' ? 'Contas a Pagar' : 
+                 location.pathname === '/extract' ? 'Extrato Bancário' : 
+                 location.pathname === '/analysis' ? 'Análise' : 'App Financeiro'}
+              </h1>
+            )}
+          </div>
+
+          {/* Settings Action Button */}
+          <button onClick={() => navigate('/settings')} aria-label="Configurações" className="w-10 h-10 rounded-full bg-white border border-border-subtle flex items-center justify-center text-on-surface-variant hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-sm" type="button">
+            <span className="material-symbols-outlined text-[20px]">settings</span>
+          </button>
+        </div>
       </header>
 
-      {/* --- SIDEBAR (PC / Desktop) --- */}
-      <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 justify-between shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-8">
-            Fluxo
-          </h1>
-
-          {/* BOTÃO DE ADICIONAR (PC) */}
-          <Link to="/add" className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-foreground text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 active:scale-95 mb-6">
-            <Plus size={18} /> Nova Transação
-          </Link>
-
-          <nav className="space-y-2">
-            <Link to="/" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/')}`}>
-              <Home size={20} /> Visão Mensal
-            </Link>
-            <Link to="/bills" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/bills')}`}>
-              <CalendarCheck size={20} /> A Pagar
-            </Link>
-            <Link to="/extract" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/extract')}`}>
-              <Layers size={20} /> Extrato
-            </Link>
-            <Link to="/analysis" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-white/5 ${isActive('/analysis')}`}>
-              <BarChart3 size={20} /> Análise
-            </Link>
-            <Link to="/settings" className={`flex items-center gap-3 p-3 rounded-lg font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${isActive('/settings')}`}>
-              <Settings size={20} /> Configurações
-            </Link>
-          </nav>
-        </div>
-      </aside>
-
       {/* --- CONTEÚDO PRINCIPAL --- */}
-      <main id="main-content" className="flex-1 overflow-y-auto pb-24 md:pb-8 relative scroll-smooth bg-background">
-        <div className="w-full md:max-w-4xl mx-auto px-4 py-6 md:p-8">
+      <main 
+        id="main-content" 
+        className="flex-1 flex flex-col relative w-full pt-[4.75rem] pb-24 overflow-y-auto scroll-smooth"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEndEvent}
+      >
+        <div className="w-full md:max-w-4xl mx-auto px-4">
           <Outlet />
         </div>
       </main>
 
-      {/* --- MENU MOBILE (Barra Inferior Reorganizada) --- */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border px-1 pb-4 pt-3 grid grid-cols-5 items-center justify-items-center z-50 transition-shadow duration-300"
-        style={{ boxShadow: 'var(--nav-shadow, 0 -5px 20px rgba(0,0,0,0.8))' }}
-      >
-
-        {/* 1. Home */}
-        <Link to="/" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/')}`}>
-          <Home size={22} />
-          <span className="text-[9px] font-medium leading-none">Home</span>
-        </Link>
-
-        {/* 2. A Pagar (NOVO) */}
-        <Link to="/bills" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/bills')}`}>
-          <CalendarCheck size={22} />
-          <span className="text-[9px] font-medium leading-none">A Pagar</span>
-        </Link>
-
-        {/* 3. Botão Central Adicionar */}
-        <div className="relative -top-5 flex justify-center w-full">
-          <Link to="/add">
-            <div className="bg-blue-600 rounded-full p-3.5 shadow-[0_0_15px_rgba(37,99,235,0.4)] border-[4px] border-background active:scale-90 transition-transform flex items-center justify-center">
-              <Plus size={22} color="white" className="stroke-[3px]" />
-            </div>
+      {/* --- MENU MOBILE (Barra Inferior) --- */}
+      <nav className="fixed bottom-0 w-full z-50 pb-safe bg-white/95 backdrop-blur-md border-t border-border-subtle">
+        <div className="flex justify-between items-center h-16 px-6">
+          
+          {/* 1. Home */}
+          <Link to="/" className={`flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-11 transition-colors ${isActive('/') ? 'text-primary font-bold' : 'text-slate-400 hover:text-slate-700'}`}>
+            <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: isActive('/') ? "'FILL' 1" : "'FILL' 0" }}>home</span>
+            <span className="text-[11px]">Home</span>
           </Link>
+          
+          {/* 2. A Pagar */}
+          <Link to="/bills" className={`flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-11 transition-colors ${isActive('/bills') ? 'text-primary font-bold' : 'text-slate-400 hover:text-slate-700'}`}>
+            <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: isActive('/bills') ? "'FILL' 1" : "'FILL' 0" }}>calendar_today</span>
+            <span className="text-[11px] font-medium">A pagar</span>
+          </Link>
+          
+          {/* 3. Botão Central Adicionar */}
+          <Link to="/add" aria-label="Add Transaction" className="flex items-center justify-center w-12 h-12 -mt-5 rounded-full bg-primary text-white shadow-lg shadow-emerald-600/30 hover:bg-primary-dark transition-all transform active:scale-95">
+            <span className="material-symbols-outlined text-[26px]">add</span>
+          </Link>
+          
+          {/* 4. Extrato Bancário */}
+          <Link to="/extract" className={`flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-11 transition-colors ${isActive('/extract') ? 'text-primary font-bold' : 'text-slate-400 hover:text-slate-700'}`}>
+            <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: isActive('/extract') ? "'FILL' 1" : "'FILL' 0" }}>receipt_long</span>
+            <span className="text-[11px] font-medium">Extrato</span>
+          </Link>
+          
+          {/* 5. Análise */}
+          <Link to="/analysis" className={`flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-11 transition-colors ${isActive('/analysis') ? 'text-primary font-bold' : 'text-slate-400 hover:text-slate-700'}`}>
+            <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: isActive('/analysis') ? "'FILL' 1" : "'FILL' 0" }}>analytics</span>
+            <span className="text-[11px] font-medium">Análise</span>
+          </Link>
+
         </div>
-
-        {/* 4. Extrato Bancário */}
-        <Link to="/extract" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/extract')}`}>
-          <Layers size={22} />
-          <span className="text-[9px] font-medium leading-none">Extrato</span>
-        </Link>
-
-        {/* 5. Análise */}
-        <Link to="/analysis" className={`flex flex-col items-center gap-1 w-full active:scale-95 transition-transform ${isActive('/analysis')}`}>
-          <BarChart3 size={22} />
-          <span className="text-[9px] font-medium leading-none">Análise</span>
-        </Link>
-
       </nav>
 
     </div>

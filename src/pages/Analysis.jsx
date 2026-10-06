@@ -1,45 +1,22 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchAllUserTransactions } from '../services/transactions';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  TrendingUp, TrendingDown, Wallet, HelpCircle,
-  ChevronLeft, ChevronRight, PieChart, Tag, Calendar, ChevronDown, ArrowUpRight
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useDate } from '../contexts/DateContext';
+import { parseCents, formatCurrency } from '../utils/money';
+import { formatLocalDate } from '../utils/date';
 import { getCategory } from '../utils/constants';
 import { MonthPickerModal } from '../components/dashboard/MonthPickerModal';
-import { useDate } from '../contexts/DateContext';
-import { parseCents, fromCents, formatCents } from '../utils/money';
-import { formatLocalDate } from '../utils/date';
 
 export default function Analysis() {
   const { user } = useAuth();
   const { currentDate, setCurrentDate } = useDate();
   const navigate = useNavigate();
-  const location = useLocation();
+
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState(6);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
-  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
-  const [rankingMode, setRankingMode] = useState('month'); // 'month' or 'all'
-  const [activeTooltip, setActiveTooltip] = useState(null); // 'saldo' or 'eficiencia'
-  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('analysis_tab') || 'geral');
-  const [expandedExpense, setExpandedExpense] = useState(null);
-
-  useEffect(() => {
-    sessionStorage.setItem('analysis_tab', activeTab);
-  }, [activeTab]);
-
-  const chartScrollRef = useRef(null);
-
-  const periodOptions = [
-    { val: 3, label: '3 Meses' },
-    { val: 6, label: '6 Meses' },
-    { val: 12, label: '1 Ano' }
-  ];
-  const activePeriodLabel = periodOptions.find(p => p.val === period)?.label;
+  const [periodMode, setPeriodMode] = useState('month'); // 'month' or 'year'
 
   useEffect(() => {
     if (!user) return;
@@ -57,467 +34,301 @@ export default function Analysis() {
     fetchAll();
   }, [user]);
 
-  // Efeito para rolar o gráfico para o final (mês atual) ao carregar ou mudar o período
-  useEffect(() => {
-    if (chartScrollRef.current && !loading) {
-        chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
-    }
-  }, [loading, period]);
-
-  // --- Processamento ---
   const data = useMemo(() => {
     if (!transactions || transactions.length === 0) return null;
 
-    const months = {};
-    const now = new Date();
-    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}`;
-    
-    for (let i = period - 1; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
-        const label = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.','');
-        months[key] = { label, income: 0, expense: 0, isCurrent: key === currentMonthKey, key };
-    }
-
-    transactions.forEach(t => {
-        const d = new Date(t.created_at);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
-        if (months[key]) {
-            const val = parseCents(t.amount);
-            if (t.type === 'income') months[key].income += val;
-            else months[key].expense += val;
-        }
+    // Filtragem baseada no Period Mode
+    const filteredTx = transactions.filter(t => {
+      const d = new Date(t.created_at);
+      if (periodMode === 'month') {
+        return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
+      } else {
+        return d.getFullYear() === currentDate.getFullYear();
+      }
     });
 
-    const monthList = Object.values(months);
+    const expensesOnly = filteredTx.filter(t => t.type !== 'income');
 
-    // 2. Top Maiores Gastos (UNIFICADOS)
-    const uniqueExpensesMap = new Map();
-    transactions
-        .filter(t => t.type !== 'income')
-        .forEach(t => {
-            const cleanName = t.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
-            if (!uniqueExpensesMap.has(cleanName) || parseCents(t.amount) > parseCents(uniqueExpensesMap.get(cleanName).amount)) {
-                uniqueExpensesMap.set(cleanName, t);
-            }
-        });
+    const totalExpenseCents = expensesOnly.reduce((acc, t) => acc + parseCents(t.amount), 0);
 
-    const topExpensesList = Array.from(uniqueExpensesMap.values())
-        .sort((a, b) => parseCents(b.amount) - parseCents(a.amount))
-        .slice(0, 5);
-
-    const maxTopExpenseValue = Math.max(...topExpensesList.map(t => parseCents(t.amount)), 1);
-
-    // 3. KPIs
-    const totalSaved = transactions.reduce((acc, t) => acc + (t.type === 'income' ? parseCents(t.amount) : -parseCents(t.amount)), 0);
-    
-    let savingsRateSum = 0;
-    let validMonths = 0;
-    monthList.forEach(m => {
-        if(m.income > 0) {
-            savingsRateSum += ((m.income - m.expense) / m.income);
-            validMonths++;
-        }
-    });
-    const avgSavingsRate = validMonths > 0 ? (savingsRateSum / validMonths) * 100 : 0;
-
-    // 4. Ranking por Categoria
-    let filteredForRanking = transactions.filter(t => t.type !== 'income');
-    let selectedMonthKeyForRanking = null;
-    let selectedMonthLabelForRanking = null;
-
-    if (rankingMode === 'month') {
-        // Usa a data global selecionada pelo MonthSelector para a aba Categorias
-        const targetDate = currentDate;
-        
-        selectedMonthKeyForRanking = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-        selectedMonthLabelForRanking = targetDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-        
-        filteredForRanking = filteredForRanking.filter(t => {
-            const d = new Date(t.created_at);
-            return d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear();
-        });
-    }
-
+    // Categories Breakdown
     const catTotals = {};
-    filteredForRanking.forEach(t => {
-        catTotals[t.category] = (catTotals[t.category] || 0) + parseCents(t.amount);
+    expensesOnly.forEach(t => {
+      catTotals[t.category] = (catTotals[t.category] || 0) + parseCents(t.amount);
     });
 
     const categoryRanking = Object.entries(catTotals)
-        .map(([cat, amount]) => ({ cat, amount }))
-        .sort((a, b) => b.amount - a.amount);
+      .map(([cat, amount]) => ({ cat, amount }))
+      .sort((a, b) => b.amount - a.amount);
 
-    const maxCatValue = Math.max(...categoryRanking.map(c => c.amount), 1);
+    // Top Expenses
+    const uniqueExpensesMap = new Map();
+    expensesOnly.forEach(t => {
+      const cleanName = t.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
+      if (!uniqueExpensesMap.has(cleanName) || parseCents(t.amount) > parseCents(uniqueExpensesMap.get(cleanName).amount)) {
+        uniqueExpensesMap.set(cleanName, t);
+      }
+    });
 
-    return { monthList, topExpensesList, maxTopExpenseValue, totalSaved, avgSavingsRate, categoryRanking, maxCatValue, selectedMonthKeyForRanking, selectedMonthLabelForRanking };
-  }, [transactions, period, rankingMode, currentDate]);
+    const topExpensesList = Array.from(uniqueExpensesMap.values())
+      .sort((a, b) => parseCents(b.amount) - parseCents(a.amount))
+      .slice(0, 5);
 
-  if (!loading && (!data || transactions.length === 0)) {
-      return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500 animate-in fade-in duration-700">
-              <div className="p-6 bg-card rounded-full mb-4 border border-border">
-                  <PieChart size={32} className="opacity-20" />
-              </div>
-              <p className="text-sm font-bold uppercase tracking-widest opacity-40">Sem dados para análise</p>
-              <p className="text-xs mt-1">Adicione lançamentos para liberar os gráficos.</p>
-          </div>
-      );
-  }
+    // Comparativo (Se Mensal)
+    let comparison = null;
+    if (periodMode === 'month') {
+      const prevMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      const prevMonthTx = transactions.filter(t => {
+        const d = new Date(t.created_at);
+        return d.getMonth() === prevMonthDate.getMonth() && d.getFullYear() === prevMonthDate.getFullYear() && t.type !== 'income';
+      });
+      const prevTotalExpense = prevMonthTx.reduce((acc, t) => acc + parseCents(t.amount), 0);
 
-  const maxChartValue = data ? Math.max(...data.monthList.map(m => Math.max(m.income, m.expense)), 100) : 100;
+      if (prevTotalExpense > 0) {
+        const diff = prevTotalExpense - totalExpenseCents;
+        comparison = {
+          isSavings: diff >= 0,
+          value: Math.abs(diff),
+          percent: Math.round((Math.abs(diff) / prevTotalExpense) * 100)
+        };
+      }
+    }
+
+    return { totalExpenseCents, categoryRanking, topExpensesList, comparison, totalItems: expensesOnly.length };
+  }, [transactions, currentDate, periodMode]);
+
+  const svgRadius = 54;
+  const svgCircumference = 2 * Math.PI * svgRadius;
+  const donutColors = ['#047857', '#10b981', '#34d399', '#6ee7b7', '#94a3b8'];
+  const donutTailwindBg = ['bg-emerald-700', 'bg-emerald-500', 'bg-emerald-400', 'bg-emerald-300', 'bg-slate-400'];
+
+  let currentOffset = 0;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500" onClick={() => setActiveTooltip(null)}>
+    <div className="flex flex-col w-full gap-4 animate-in fade-in duration-500 pt-1 pb-24">
       
-      {/* HEADER + TABS FIXO */}
-      <div className="sticky top-0 z-30 bg-background -mt-8 pt-8 -mx-4 px-4 pb-4 border-b border-border">
-        <div className="flex justify-between items-center px-1 mb-4">
-          <div className="flex flex-col">
-              <h1 className="text-xl font-black text-foreground tracking-tight">ANÁLISE</h1>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inteligência Financeira</p>
-          </div>
+      {/* MONTH SELECTOR & PERIOD SWITCHER (Header replacement) */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div 
+          onClick={() => setIsMonthModalOpen(true)}
+          className="bg-white border border-border-subtle rounded-full px-3 py-1.5 shadow-sm flex items-center gap-2 cursor-pointer active:scale-95 transition-all"
+        >
+          <span className="material-symbols-outlined text-[16px] text-slate-500">calendar_today</span>
+          <span className="text-[13px] font-bold text-slate-900 select-none capitalize">
+            {periodMode === 'month' 
+              ? currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+              : currentDate.getFullYear()}
+          </span>
+          <span className="material-symbols-outlined text-[16px] text-slate-500">arrow_drop_down</span>
         </div>
 
-        {loading ? null : (
-            <div className="flex gap-2 px-1">
-                <button onClick={() => setActiveTab('geral')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'geral' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Geral</button>
-                <button onClick={() => setActiveTab('categories')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'categories' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Categorias</button>
-                <button onClick={() => setActiveTab('expenses')} className={`flex-1 py-3.5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-sm border ${activeTab === 'expenses' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' : 'bg-card border-border text-gray-500 hover:text-foreground active:scale-95'}`}>Despesas</button>
-            </div>
-        )}
+        <div className="flex items-center bg-slate-100 p-1 rounded-full text-[11px] font-semibold text-slate-500 border border-border-subtle">
+          <button 
+            onClick={() => setPeriodMode('month')} 
+            className={`px-3 py-1 rounded-full transition-all ${periodMode === 'month' ? 'bg-white text-emerald-700 shadow-sm font-bold' : 'hover:text-slate-900'}`}
+          >
+            Mensal
+          </button>
+          <button 
+            onClick={() => setPeriodMode('year')} 
+            className={`px-3 py-1 rounded-full transition-all ${periodMode === 'year' ? 'bg-white text-emerald-700 shadow-sm font-bold' : 'hover:text-slate-900'}`}
+          >
+            Anual
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Auditando suas contas...</p>
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Calculando métricas...</p>
+        </div>
+      ) : !data || data.totalExpenseCents === 0 ? (
+        <div className="text-center py-16 px-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200 mx-auto">
+            <span className="material-symbols-outlined text-[28px]">pie_chart</span>
+          </div>
+          <p className="text-sm font-bold text-slate-900">Sem dados para análise</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-[240px] mx-auto">
+            Não há despesas registradas neste período para gerar os gráficos.
+          </p>
         </div>
       ) : (
         <>
-            {/* ABA GERAL */}
-            {activeTab === 'geral' && (
-
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 flex flex-col">
-                    {/* KPI GRID */}
-                    <div className="grid grid-cols-2 gap-3 px-1">
-                        <div 
-                            onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'saldo' ? null : 'saldo'); }}
-                            className="bg-card p-4 sm:p-5 rounded-[2rem] border border-border relative group overflow-hidden cursor-pointer active:scale-95 transition-all"
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Saldo Total</p>
-                                <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'saldo' ? 'text-blue-500' : 'text-gray-500'}`} />
-                            </div>
-                            <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.totalSaved >= 0 ? 'text-foreground' : 'text-red-500'}`}>
-                                {formatCents(data.totalSaved)}
-                            </h3>
-                            
-                            {activeTooltip === 'saldo' && (
-                                <div className="absolute inset-0 bg-blue-600 p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
-                                    <p className="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight text-center">Toda a sobra acumulada no período selecionado.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div 
-                            onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'eficiencia' ? null : 'eficiencia'); }}
-                            className="bg-card p-4 sm:p-5 rounded-[2rem] border border-border relative group overflow-hidden cursor-pointer active:scale-95 transition-all"
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest">Eficiência</p>
-                                <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'eficiencia' ? 'text-green-500' : 'text-gray-500'}`} />
-                            </div>
-                            <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.avgSavingsRate > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {data.avgSavingsRate.toFixed(1)}%
-                            </h3>
-
-                            {activeTooltip === 'eficiencia' && (
-                                <div className="absolute inset-0 bg-green-600 p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
-                                    <p className="text-[10px] font-bold text-white uppercase tracking-tighter leading-tight text-center">O quanto você consegue salvar do seu ganho mensal.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* SELETOR DE PERIODO (Thumb-Zone Mapeada no centro da leitura em tela inteira) */}
-                    <div className="flex justify-center my-4 z-10 relative px-1">
-                        <div className="relative w-full">
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setIsPeriodOpen(!isPeriodOpen); }}
-                                className={`flex items-center justify-between w-full px-5 py-4 rounded-[1.5rem] border transition-all active:scale-95 shadow-sm ${
-                                isPeriodOpen ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/30' : 'bg-card border-border text-foreground hover:bg-card-hover hover:border-blue-500/50'
-                                }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-xl ${isPeriodOpen ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-500'}`}>
-                                        <Calendar size={18} />
-                                    </div>
-                                    <div className="flex flex-col items-start leading-none text-left">
-                                        <span className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: isPeriodOpen ? 'rgba(255,255,255,0.7)' : 'var(--color-gray-500)' }}>Analisar Fluxo de:</span>
-                                        <span className="text-sm font-black uppercase tracking-wider">{activePeriodLabel}</span>
-                                    </div>
-                                </div>
-                                <ChevronDown size={18} className={`transition-transform duration-300 ${isPeriodOpen ? 'rotate-180 text-white' : 'text-gray-400'}`} />
-                            </button>
-
-                            {isPeriodOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-3 bg-card border border-border rounded-2xl shadow-xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-4 duration-200 z-20">
-                                    {periodOptions.map(opt => (
-                                        <button
-                                        key={opt.val}
-                                        onClick={(e) => { e.stopPropagation(); setPeriod(opt.val); setSelectedMonthIndex(null); setIsPeriodOpen(false); }}
-                                        className={`text-left px-5 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                            period === opt.val ? 'bg-blue-600 text-white' : 'text-foreground hover:bg-card-hover hover:text-blue-500'
-                                        }`}
-                                        >
-                                        {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* GRÁFICO DE BARRAS */}
-                    <div className="bg-card-alt p-6 pt-16 rounded-[2.5rem] border border-border shadow-md relative">
-                        <div className="absolute top-6 left-6 right-6 flex justify-between items-center mb-8">
-                            <div className="flex flex-col">
-                                <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
-                                    <TrendingUp size={16} className="text-blue-500"/> Fluxo Mensal
-                                </h3>
-                                <span className="text-[9px] text-gray-500 font-bold uppercase">Toque na barra para ver valores</span>
-                            </div>
-                            {period === 12 && <span className="text-[8px] text-blue-500 font-black bg-blue-500/10 px-2 py-1 rounded-full animate-pulse tracking-widest">DESLIZE →</span>}
-                        </div>
-
-                        {/* Info panel - altura fixa, sem layout shift */}
-                        <div className="h-9 flex items-center mb-1">
-                            {selectedMonthIndex !== null && data.monthList[selectedMonthIndex] ? (
-                                <div className="flex items-center justify-between w-full bg-card border border-border rounded-xl px-4 py-2 animate-in fade-in duration-150">
-                                    <span className="text-[10px] font-black text-foreground uppercase tracking-wider">{data.monthList[selectedMonthIndex].label}</span>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-[10px] font-black text-blue-500">{formatCents(data.monthList[selectedMonthIndex].income)}</span>
-                                        <span className="text-[10px] font-black text-red-500">{formatCents(data.monthList[selectedMonthIndex].expense)}</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3 px-1 text-[9px] text-gray-400 font-bold">
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Entrada
-                                    <span className="w-2 h-2 bg-red-500 rounded-full ml-2"></span> Saída
-                                </div>
-                            )}
-                        </div>
-                        
-                        <div ref={chartScrollRef} className={`${period === 12 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 custom-scrollbar-horizontal snap-x snap-mandatory`}>
-                            <div className={`flex items-end justify-around gap-2 h-52 pt-4 ${period === 12 ? 'min-w-[700px]' : 'w-full'} relative px-2`}>
-                                {data.monthList.map((m, i) => (
-                                    <div key={i} 
-                                        onClick={(e) => { e.stopPropagation(); setSelectedMonthIndex(selectedMonthIndex === i ? null : i); }} 
-                                        className="flex flex-col items-center flex-1 h-full justify-end cursor-pointer group relative snap-center"
-                                    >
-                                        <div className="flex gap-1.5 items-end justify-center w-full h-full">
-                                            <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
-                                                ${selectedMonthIndex === i ? 'bg-blue-500 scale-110 ring-2 ring-blue-500/50 ring-offset-2 ring-offset-background' : m.isCurrent ? 'bg-blue-500' : 'bg-blue-500/50'}`} 
-                                                style={{ height: `${Math.max((m.income / maxChartValue) * 100, 2)}%` }}></div>
-                                            <div className={`w-3 md:w-4 rounded-t-lg transition-all duration-500 
-                                                ${selectedMonthIndex === i ? 'bg-red-500 scale-110 ring-2 ring-red-500/50 ring-offset-2 ring-offset-background' : m.isCurrent ? 'bg-red-500' : 'bg-red-500/50'}`} 
-                                                style={{ height: `${Math.max((m.expense / maxChartValue) * 100, 2)}%` }}></div>
-                                        </div>
-                                        <span className={`text-[8px] font-black uppercase mt-3 transition-colors ${selectedMonthIndex === i || m.isCurrent ? 'text-foreground' : 'text-gray-400'}`}>{m.label}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* DESTAQUES DO PERÍODO (PREENCHIMENTO DO VAZIO) */}
-                    {(data.categoryRanking.length > 0 || data.topExpensesList.length > 0) && (
-                        <div className="flex flex-col gap-3 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
-                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 mt-2">Destaques do Período</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* Maior Categoria */}
-                                {data.categoryRanking.length > 0 && (() => {
-                                    const topCat = data.categoryRanking[0];
-                                    const catInfo = getCategory(topCat.cat);
-                                    const Icon = catInfo.icon;
-                                    return (
-                                        <div onClick={() => setActiveTab('categories')} className="bg-card p-4 rounded-[1.5rem] border border-border relative overflow-hidden flex flex-col justify-between min-h-[110px] cursor-pointer active:scale-95 transition-all group">
-                                            <div className="flex items-start justify-between">
-                                                <div className={`p-2 rounded-xl ${catInfo.bg} border border-border/10`}>
-                                                    <Icon size={14} className={catInfo.color} />
-                                                </div>
-                                                <span className="text-[8px] uppercase font-black text-gray-400 bg-card-hover px-2 py-1 rounded-md">Categoria Top</span>
-                                            </div>
-                                            <div className="mt-3">
-                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{catInfo.label}</p>
-                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{formatCents(topCat.amount)}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Maior Despesa */}
-                                {data.topExpensesList.length > 0 && (() => {
-                                    const topExp = data.topExpensesList[0];
-                                    const expCatInfo = getCategory(topExp.category);
-                                    return (
-                                        <div onClick={() => setActiveTab('expenses')} className="bg-card p-4 rounded-[1.5rem] border border-border relative overflow-hidden flex flex-col justify-between min-h-[110px] cursor-pointer active:scale-95 transition-all group">
-                                            <div className="flex items-start justify-between">
-                                                <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                                                    <TrendingDown size={14} className="text-red-500" />
-                                                </div>
-                                                <span className="text-[8px] uppercase font-black text-gray-400 bg-card-hover px-2 py-1 rounded-md">Maior Custo</span>
-                                            </div>
-                                            <div className="mt-3 flex flex-col">
-                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{topExp.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</p>
-                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{formatCents(topExp.amount)}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        </div>
-                    )}
-
+          {/* COMPARISON MICRO-BANNER */}
+          {data.comparison && (
+            <div className={`rounded-2xl p-4 shadow-sm flex items-center gap-3 border ${data.comparison.isSavings ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-rose-50 border-rose-100 text-rose-800'}`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${data.comparison.isSavings ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+                <span className="material-symbols-outlined text-[20px]">{data.comparison.isSavings ? 'trending_down' : 'trending_up'}</span>
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[12px] font-bold">{data.comparison.isSavings ? `Economia de ${data.comparison.percent}%` : `Gasto ${data.comparison.percent}% maior`}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
+                  <span className="text-[11px] opacity-80 truncate">vs. Mês Passado</span>
                 </div>
-            )}
+                <p className="text-[11px] opacity-90 leading-tight mt-0.5">
+                  Você gastou {formatCurrency(data.comparison.value)} {data.comparison.isSavings ? 'a menos' : 'a mais'}.
+                </p>
+              </div>
+            </div>
+          )}
 
-            {/* ABA CATEGORIAS */}
-            {activeTab === 'categories' && (
-                <div className="animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex justify-between items-center mb-5 px-1">
-                        <div className="flex flex-col">
-                            <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
-                                <Tag size={16} className="text-blue-500"/> Gastos por Categoria
-                            </h3>
-                            <span className="text-[9px] text-gray-500 font-bold uppercase mt-1">Toque para ver Detalhes</span>
-                        </div>
-                        <div className="flex bg-card p-1 rounded-xl border border-border shadow-sm items-center relative z-10 transition-all">
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    if (rankingMode === 'month') setIsMonthModalOpen(true);
-                                    else setRankingMode('month'); 
-                                }} 
-                                className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all flex items-center gap-1 ${rankingMode === 'month' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-foreground hover:bg-card-hover'}`}
-                            >
-                                {rankingMode === 'month' ? (
-                                    <><span>{currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '')}</span><ChevronDown size={10} strokeWidth={3} /></>
-                                ) : 'Mês'}
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setRankingMode('all'); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${rankingMode === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-foreground hover:bg-card-hover'}`}>Total</button>
-                        </div>
-                    </div>
+          {/* PRIMARY EXPENSE BREAKDOWN CARD WITH DONUT */}
+          <div className="bg-white border border-border-subtle rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-500 tracking-wider uppercase">Total de Despesas</span>
+                <h2 className="text-2xl font-black text-slate-900 mt-0.5">{formatCurrency(data.totalExpenseCents)}</h2>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+                {data.totalItems} lançamentos
+              </span>
+            </div>
 
-                    <div className="divide-y divide-border">
-                        {data.categoryRanking.length > 0 ? (
-                            data.categoryRanking.map(({ cat, amount }) => {
-                                const catInfo = getCategory(cat);
-                                const Icon = catInfo.icon;
-                                const percent = (amount / data.maxCatValue) * 100;
-                                return (
-                                    <div 
-                                        key={cat} 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate('/category-details', { 
-                                                state: { 
-                                                    category: cat, 
-                                                    monthKey: rankingMode === 'month' ? data.selectedMonthKeyForRanking : null,
-                                                    monthLabel: rankingMode === 'month' ? data.selectedMonthLabelForRanking : 'Todo o Período'
-                                                } 
-                                            });
-                                        }}
-                                        className="flex items-center gap-3 py-4 px-1 cursor-pointer active:bg-card-hover transition-colors group"
-                                    >
-                                        <div className={`p-2.5 rounded-xl ${catInfo.bg} shrink-0`}>
-                                            <Icon size={18} className={catInfo.color} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <h4 className="text-xs font-bold text-foreground uppercase tracking-wide truncate">{catInfo.label}</h4>
-                                                <span className="text-sm font-bold text-foreground shrink-0 ml-3">{formatCents(amount)}</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
-                                                <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
-                                            </div>
-                                        </div>
-                                        <ArrowUpRight size={14} className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0" />
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <div className="py-16 text-center text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] opacity-50">Sem movimentação</div>
-                        )}
-                    </div>
+            <div className="flex items-center justify-center relative py-2">
+              <div className="relative w-44 h-44 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" fill="none" r="54" stroke="#f1f5f9" strokeWidth="16"></circle>
+                  {data.categoryRanking.map((cat, index) => {
+                    const colorIndex = index >= donutColors.length ? donutColors.length - 1 : index;
+                    const strokeColor = donutColors[colorIndex];
+                    const catFraction = cat.amount / data.totalExpenseCents;
+                    const dashLength = catFraction * svgCircumference;
+                    const offset = currentOffset;
+                    currentOffset += dashLength;
+
+                    return (
+                      <circle 
+                        key={cat.cat}
+                        cx="70" cy="70" fill="none" r="54" 
+                        stroke={strokeColor} 
+                        strokeWidth="16"
+                        strokeLinecap="round"
+                        strokeDasharray={`${dashLength} ${svgCircumference}`}
+                        strokeDashoffset={-offset}
+                        className="transition-all duration-1000 ease-out"
+                      ></circle>
+                    );
+                  })}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                  <span className="material-symbols-outlined text-[20px] text-emerald-600">pie_chart</span>
+                  <span className="text-[10px] font-semibold text-slate-500 mt-0.5">Maior gasto</span>
+                  <span className="text-[22px] font-black text-slate-900 leading-none mt-1">
+                    {Math.round((data.categoryRanking[0]?.amount / data.totalExpenseCents) * 100)}%
+                  </span>
                 </div>
-            )}
+              </div>
+            </div>
 
-            {/* ABA MAIORES DESPESAS */}
-            {activeTab === 'expenses' && (
-                <div className="bg-card-alt p-6 rounded-[2.5rem] border border-border shadow-md animate-in fade-in slide-in-from-bottom-2">
-                    <h3 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2 mb-8">
-                        <TrendingDown size={18} className="text-red-500" /> Maiores Despesas Únicas
-                    </h3>
-                    <div className="space-y-3">
-                        {data.topExpensesList.length > 0 ? data.topExpensesList.map(item => {
-                            const catInfo = getCategory(item.category);
-                            const Icon = catInfo.icon;
-                            const isExpanded = expandedExpense === item.id;
-                            
-                            return (
-                                <div key={item.id} onClick={() => setExpandedExpense(isExpanded ? null : item.id)} className={`relative flex flex-col p-4 bg-card rounded-[1.5rem] border transition-all cursor-pointer ${isExpanded ? 'border-blue-500 shadow-md ring-1 ring-blue-500/20' : 'border-border hover:border-blue-500 hover:shadow-sm'}`}>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4 truncate">
-                                            <div className={`p-3 rounded-2xl ${catInfo.bg} text-blue-500 border border-border/10`}><Icon size={18} className={catInfo.color} /></div>
-                                            <div className="flex flex-col truncate">
-                                                <span className="text-sm font-black text-foreground truncate tracking-tight mb-0.5 max-w-[130px] sm:max-w-[180px]">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
-                                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{catInfo.label}</span>
-                                            </div>
-                                        </div>
-                                        <span className="text-base font-black text-foreground shrink-0 ml-4">
-                                            {formatCents(item.amount)}
-                                        </span>
-                                    </div>
+            <div className="w-full flex h-2 rounded-full overflow-hidden bg-slate-100 gap-0.5 mt-2">
+              {data.categoryRanking.map((cat, index) => {
+                const colorIndex = index >= donutTailwindBg.length ? donutTailwindBg.length - 1 : index;
+                const bgClass = donutTailwindBg[colorIndex];
+                const widthPercent = (cat.amount / data.totalExpenseCents) * 100;
+                return <div key={cat.cat} className={`h-full ${bgClass}`} style={{ width: `${widthPercent}%` }}></div>;
+              })}
+            </div>
+          </div>
 
-                                    {/* Accordion Context */}
-                                    {isExpanded && (
-                                        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
-                                            <div className="flex justify-between items-center text-[11px] text-gray-500">
-                                                <span className="font-bold uppercase tracking-wider">Data do Registro:</span>
-                                                <span className="text-foreground font-black bg-card-hover px-2 py-1 rounded-md border border-border">
-                                                    {formatLocalDate(item.created_at, { day: '2-digit', month: 'long' })}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[11px] text-gray-500">
-                                                <span className="font-bold uppercase tracking-wider">Status:</span>
-                                                <span className={`font-black px-2 py-1 rounded-md ${item.is_paid ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                    {item.is_paid ? 'Pago' : 'Pendente'}
-                                                </span>
-                                            </div>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); navigate('/add', { state: { transaction: item } })}} 
-                                                className="mt-2 py-2 w-full rounded-xl bg-blue-600/10 border border-blue-500/20 text-[10px] font-black text-blue-500 hover:bg-blue-600/20 uppercase tracking-widest active:scale-95 transition-all"
-                                            >
-                                                Editar Despesa
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        }) : (
-                             <div className="py-16 text-center text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] opacity-50">Sem movimentação</div>
-                        )}
+          {/* CATEGORY PROPORTION BREAKDOWN LIST */}
+          <div className="bg-white border border-border-subtle rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[16px] font-bold text-slate-900">Categorias</h3>
+              <span className="text-[11px] font-bold text-slate-500">{data.categoryRanking.length} grupos</span>
+            </div>
+            <div className="flex flex-col gap-4 mt-1">
+              {data.categoryRanking.map((cat, index) => {
+                const catInfo = getCategory(cat.cat);
+                const colorIndex = index >= donutTailwindBg.length ? donutTailwindBg.length - 1 : index;
+                const bgClass = donutTailwindBg[colorIndex];
+                const percent = Math.round((cat.amount / data.totalExpenseCents) * 100);
+
+                return (
+                  <div key={cat.cat} onClick={() => navigate('/category-details', { state: { category: cat.cat } })} className="flex flex-col gap-1.5 cursor-pointer group">
+                    <div className="flex items-center justify-between text-slate-900">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${bgClass} shrink-0`}></span>
+                        <span className="text-[13px] font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">{catInfo.label}</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[13px] font-black text-slate-900">{formatCurrency(cat.amount)}</span>
+                        <span className="text-[11px] font-bold text-slate-400 w-8 text-right">{percent}%</span>
+                      </div>
                     </div>
-                </div>
-            )}
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${bgClass} rounded-full transition-all duration-1000`} style={{ width: `${percent}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* TOP EXPENSES LIST */}
+          <div className="bg-white border border-border-subtle rounded-3xl p-5 shadow-sm flex flex-col gap-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-[16px] font-bold text-slate-900">Maiores Despesas</h3>
+                <p className="text-[11px] font-semibold text-slate-500 mt-0.5">Lançamentos de maior impacto</p>
+              </div>
+            </div>
+            <div className="flex flex-col mt-2">
+              {data.topExpensesList.map((item, index) => {
+                const catInfo = getCategory(item.category);
+                
+                // Adaptação dos ícones dinâmicos
+                let iconName = 'receipt_long';
+                if (item.category === 'home' || item.name.toLowerCase().includes('condomínio') || item.name.toLowerCase().includes('aluguel')) iconName = 'home_work';
+                if (item.category === 'utilities' || item.name.toLowerCase().includes('energia') || item.name.toLowerCase().includes('luz')) iconName = 'bolt';
+                if (item.category === 'utilities' || item.name.toLowerCase().includes('internet')) iconName = 'wifi';
+                if (item.category === 'food' || item.name.toLowerCase().includes('supermercado') || item.name.toLowerCase().includes('mercado')) iconName = 'shopping_cart';
+                if (item.category === 'transport' || item.name.toLowerCase().includes('manutenção') || item.name.toLowerCase().includes('uber')) iconName = 'directions_car';
+                if (item.name.toLowerCase().includes('cartão') || item.name.toLowerCase().includes('fatura')) iconName = 'credit_card';
+                if (item.category === 'health' || item.name.toLowerCase().includes('academia') || item.name.toLowerCase().includes('smart fit')) iconName = 'fitness_center';
+
+                return (
+                  <div key={item.id || index} className="flex items-center justify-between py-3 hover:bg-slate-50 px-2 rounded-2xl transition-colors cursor-pointer" onClick={() => navigate('/add', { state: { transaction: item } })}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">{iconName}</span>
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[13px] font-bold text-slate-900 truncate">{item.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</span>
+                        <span className="text-[11px] font-medium text-slate-500 mt-0.5">
+                          {catInfo.label} • {formatLocalDate(item.created_at, { day: '2-digit', month: 'short' })}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end shrink-0 pl-2">
+                      <span className="text-[13px] font-black text-rose-600">- {formatCurrency(item.amount)}</span>
+                      <span className={`text-[10px] px-2 py-0.5 mt-1 rounded-full font-bold ${item.is_paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {item.is_paid ? 'Pago' : 'Pendente'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* EDUCATIONAL TIP */}
+          <div className="bg-white border border-border-subtle rounded-3xl p-5 shadow-sm flex items-start gap-4">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+              <span className="material-symbols-outlined text-emerald-600 text-[22px]">lightbulb</span>
+            </div>
+            <div className="flex flex-col gap-1 min-w-0">
+              <h4 className="text-[13px] font-bold text-slate-900">Dica do Planejador</h4>
+              <p className="text-[12px] text-slate-600 leading-snug">
+                Os gastos com <span className="font-bold">{getCategory(data.categoryRanking[0]?.cat)?.label}</span> e <span className="font-bold">{getCategory(data.categoryRanking[1]?.cat)?.label}</span> representam a maior fatia do seu orçamento. Fique de olho para não ultrapassar 50% em gastos essenciais.
+              </p>
+            </div>
+          </div>
         </>
       )}
 
-      {/* Modal Independente de Seleção de Mês */}
       <MonthPickerModal isOpen={isMonthModalOpen} onClose={() => setIsMonthModalOpen(false)} currentDate={currentDate} onSelectDate={setCurrentDate} />
-
     </div>
   );
 }

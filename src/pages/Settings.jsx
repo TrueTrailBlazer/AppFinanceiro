@@ -93,84 +93,151 @@ export default function Settings() {
     );
   }
 
-  // --- MENU PRINCIPAL (CONFIGURAÇÕES) ---
+  const userName = user?.user_metadata?.first_name || user?.user_metadata?.name || user?.user_metadata?.full_name || 'Visitante';
+  const userEmail = user?.email || 'email@exemplo.com';
+
   return (
-    <div className="animate-in fade-in slide-in-from-left-4 duration-300 max-w-lg mx-auto space-y-6">
+    <div className="flex flex-col w-full gap-4 animate-in fade-in duration-500 pt-1 pb-6">
       
-      <div className="flex items-center justify-between py-6">
-          <h1 className="text-2xl font-black text-foreground tracking-tight">Configurações</h1>
-      </div>
-
-      <div className="space-y-1">
-        <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Conta e Preferências</h3>
-        <div className="flex flex-col shadow-sm">
-            <MenuItem 
-                icon={User} 
-                label="Meu Perfil" 
-                subLabel="Edite seu nome, foto e dados"
-                onClick={() => setCurrentView('profile')}
-            />
-            <MenuItem 
-                icon={Shield} 
-                label="Segurança" 
-                subLabel="Alterar senha e privacidade"
-                onClick={() => setCurrentView('security')}
-            />
-            <MenuItem 
-                icon={isLightMode ? Sun : Moon} 
-                label="Tema Visual" 
-                subLabel={isLightMode ? 'Modo Claro ativado' : 'Modo Escuro ativado'}
-                onClick={toggleTheme}
-                customRight={
-                    <div className={`w-10 h-6 rounded-full border border-border relative flex items-center px-1 shrink-0 transition-colors ${isLightMode ? 'bg-blue-100 border-blue-300' : 'bg-background'}`}>
-                        <div className={`w-4 h-4 rounded-full transition-transform ${isLightMode ? 'bg-blue-500 translate-x-4' : 'bg-gray-500 translate-x-0'}`} />
-                    </div>
-                }
-            />
+      {/* Perfil do Usuário Minimalista */}
+      <div className="w-full bg-white rounded-3xl p-5 shadow-sm border border-border-subtle flex items-center justify-between">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative w-14 h-14 rounded-full overflow-hidden bg-slate-100 shrink-0 border border-border-subtle flex items-center justify-center">
+             <span className="material-symbols-outlined text-[32px] text-slate-400">person</span>
+             <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-600 rounded-full border-2 border-white"></div>
+          </div>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[18px] font-bold text-slate-900 truncate">{userName}</span>
+            </div>
+            <span className="text-[12px] font-medium text-slate-500 truncate">{userEmail}</span>
+            <div className="mt-1 flex items-center">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold">
+                <span className="material-symbols-outlined text-[13px]" style={{fontVariationSettings: "'FILL' 1"}}>verified</span>
+                Plano Pessoal
+              </span>
+            </div>
+          </div>
         </div>
+        <button onClick={() => setCurrentView('profile')} aria-label="Editar Perfil" className="w-10 h-10 rounded-xl bg-slate-50 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors active:scale-95 shrink-0" type="button">
+          <span className="material-symbols-outlined text-[20px]">edit</span>
+        </button>
       </div>
 
-      <div className="space-y-1">
-        <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Gestão e Ferramentas</h3>
-        <div className="flex flex-col shadow-sm">
-            <MenuItem 
-                icon={Building2} 
-                label="Contas Bancárias" 
-                subLabel="Sincronização automática via Open Finance (Pluggy)"
-                onClick={() => setCurrentView('banks')}
-            />
-            <MenuItem 
-                icon={Zap} 
-                label="Despesas Fixas" 
-                subLabel="Gerencie suas contas recorrentes"
-                onClick={() => setCurrentView('recurring')}
-            />
-            <MenuItem 
-                icon={Wallet} 
-                label="Metas Financeiras" 
-                subLabel="Planeje seu futuro"
-                onClick={() => setCurrentView('goals')}
-            />
-            <MenuItem 
-                icon={FileSpreadsheet} 
-                label="Importar Extrato" 
-                subLabel="Ferramenta em manutenção"
-                onClick={() => setCurrentView('csv')}
-            />
-        </div>
+      {/* Menu de Navegação / Hub de Configurações */}
+      <div className="w-full bg-white rounded-3xl p-2 shadow-sm border border-border-subtle divide-y divide-slate-50">
+        
+        {/* 1. Preferências da Conta */}
+        <button onClick={() => setCurrentView('profile')} className="w-full py-3.5 px-3 flex items-center justify-between text-left rounded-2xl transition-colors hover:bg-slate-50 active:bg-slate-100">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-emerald-700 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">tune</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-slate-900 truncate">Preferências da Conta</p>
+              <p className="text-[12px] font-medium text-slate-500 truncate">Moeda padrão (BRL), ciclo contábil</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-slate-400 shrink-0 pl-2">
+            <span className="text-[12px] font-bold text-emerald-700">BRL</span>
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </div>
+        </button>
+
+        {/* 2. Contas Bancárias (Pluggy) */}
+        <button onClick={() => setCurrentView('banks')} className="w-full py-3.5 px-3 flex items-center justify-between text-left rounded-2xl transition-colors hover:bg-slate-50 active:bg-slate-100">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-emerald-700 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">account_balance</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-slate-900 truncate">Contas Bancárias</p>
+              <p className="text-[12px] font-medium text-slate-500 truncate">Sincronização via Open Finance</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400 shrink-0 pl-2">
+            <span className="material-symbols-outlined text-emerald-600 text-[18px]" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </div>
+        </button>
+
+        {/* 3. Segurança & Acesso */}
+        <button onClick={() => setCurrentView('security')} className="w-full py-3.5 px-3 flex items-center justify-between text-left rounded-2xl transition-colors hover:bg-slate-50 active:bg-slate-100">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-emerald-700 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">security</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-slate-900 truncate">Segurança & Acesso</p>
+              <p className="text-[12px] font-medium text-slate-500 truncate">Alteração de senha e privacidade</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-slate-400 shrink-0 pl-2">
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </div>
+        </button>
+
+        {/* 4. Gerenciar Categorias & Recorrentes */}
+        <button onClick={() => setCurrentView('recurring')} className="w-full py-3.5 px-3 flex items-center justify-between text-left rounded-2xl transition-colors hover:bg-slate-50 active:bg-slate-100">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-emerald-700 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">category</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-slate-900 truncate">Despesas Fixas</p>
+              <p className="text-[12px] font-medium text-slate-500 truncate">Gerenciar assinaturas e contas mensais</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 pl-2">
+            <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+          </div>
+        </button>
+
+        {/* 5. Metas Financeiras */}
+        <button onClick={() => setCurrentView('goals')} className="w-full py-3.5 px-3 flex items-center justify-between text-left rounded-2xl transition-colors hover:bg-slate-50 active:bg-slate-100">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-emerald-700 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">flag</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-slate-900 truncate">Metas Financeiras</p>
+              <p className="text-[12px] font-medium text-slate-500 truncate">Planeje seu futuro</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400 shrink-0 pl-2">
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </div>
+        </button>
+
+        {/* 6. Aparência & Geral */}
+        <button onClick={toggleTheme} className="w-full py-3.5 px-3 flex items-center justify-between text-left rounded-2xl transition-colors hover:bg-slate-50 active:bg-slate-100">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-emerald-700 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">palette</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-bold text-slate-900 truncate">Aparência & Geral</p>
+              <p className="text-[12px] font-medium text-slate-500 truncate">Tema {isLightMode ? 'Claro' : 'Escuro'} e versão</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-slate-400 shrink-0 pl-2">
+             <div className={`w-10 h-6 rounded-full border relative flex items-center px-1 shrink-0 transition-colors ${!isLightMode ? 'bg-emerald-100 border-emerald-300' : 'bg-slate-200 border-slate-300'}`}>
+                <div className={`w-4 h-4 rounded-full transition-transform ${!isLightMode ? 'bg-emerald-600 translate-x-4' : 'bg-white translate-x-0'}`} />
+             </div>
+          </div>
+        </button>
       </div>
 
-      <div className="pt-4 px-1">
-        <MenuItem 
-            icon={LogOut} 
-            label="Sair da Conta" 
-            danger={true}
-            onClick={handleLogout}
-            customRight={<div/>}
-        />
+      {/* Ação Sutil de Sair */}
+      <div className="pt-2 pb-6 px-1 flex flex-col items-center">
+        <button onClick={handleLogout} className="w-full py-3.5 px-4 rounded-2xl bg-white text-rose-600 border border-border-subtle font-bold text-[16px] flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] hover:bg-rose-50 hover:border-rose-100" type="button">
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          Sair da Conta
+        </button>
+        <p className="mt-4 text-[11px] font-bold text-slate-400 text-center uppercase tracking-widest">
+          App Financeiro • v1.0.4
+        </p>
       </div>
-
-      <p className="text-center text-[10px] text-gray-500 font-medium pt-6 uppercase tracking-widest pb-4">Fluxo App • v1.0.3</p>
     </div>
   );
 }

@@ -92,16 +92,16 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
       <div className="absolute inset-0 z-0" onClick={onClose} />
 
       <div 
-        className="relative z-10 w-full max-w-sm bg-card border border-border rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+        className="relative z-10 w-full max-w-sm bg-white border border-border-subtle rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         
         {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-border">
-          <h3 className="font-bold text-foreground">Selecionar Mês</h3>
-          <button onClick={onClose} className="p-2 bg-card-hover rounded-full text-gray-400 hover:text-foreground transition-colors active:scale-95">
+        <div className="flex justify-between items-center p-5 border-b border-border-subtle">
+          <h3 className="font-bold text-slate-900 text-lg">Selecionar Mês</h3>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors active:scale-95">
             <X size={18} />
           </button>
         </div>
@@ -110,18 +110,18 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
         <div 
           className="flex items-center justify-between p-6"
         >
-          <button onClick={() => setYear(y => y - 1)} className="p-3 bg-card-hover rounded-xl hover:bg-border-strong transition-colors active:scale-95">
-             <ChevronLeft size={20} className="text-gray-300"/>
+          <button onClick={() => setYear(y => y - 1)} className="p-3 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors active:scale-95">
+             <ChevronLeft size={20} className="text-slate-600"/>
           </button>
           
           <div className="flex-1 flex justify-center items-center overflow-hidden relative">
-             <span className="text-2xl font-black text-foreground px-8 animate-in fade-in slide-in-from-bottom-2 duration-300 select-none" key={year}>
+             <span className="text-2xl font-black text-slate-900 px-8 animate-in fade-in slide-in-from-bottom-2 duration-300 select-none" key={year}>
                {year}
              </span>
           </div>
 
-          <button onClick={() => setYear(y => y + 1)} className="p-3 bg-card-hover rounded-xl hover:bg-border-strong transition-colors active:scale-95">
-             <ChevronRight size={20} className="text-gray-300"/>
+          <button onClick={() => setYear(y => y + 1)} className="p-3 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors active:scale-95">
+             <ChevronRight size={20} className="text-slate-600"/>
           </button>
         </div>
 
@@ -135,12 +135,12 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
               <button
                 key={i}
                 onClick={() => handleSelectMonth(i)}
-                className={`py-3 rounded-xl font-bold text-sm transition-all active:scale-95 ${
+                className={`py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 border ${
                   isCurrentMonth 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20' 
                     : hasData
-                      ? 'bg-card-hover text-foreground hover:bg-border border border-border hover:border-border-strong'
-                      : 'bg-background text-gray-500 hover:bg-card hover:text-gray-400 border border-border'
+                      ? 'bg-slate-50 text-slate-900 border-border-subtle hover:bg-slate-100'
+                      : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-500 border-transparent'
                 }`}
               >
                 {m}

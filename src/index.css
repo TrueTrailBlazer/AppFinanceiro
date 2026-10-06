@@ -1,66 +1,64 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: var(--bg);
-  --color-card: var(--card);
-  --color-card-hover: var(--card-hover);
-  --color-card-alt: var(--card-alt);
-  --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
-  --color-foreground: var(--foreground);
-  --color-primary: #3B82F6;
-}
-
-:root {
-  /* TEMA ESCURO (padrão antigo do app) */
-  --bg: #050505;
-  --card: #121212;
-  --card-hover: #1a1a1a;
-  --card-alt: #0c0c0c;
-  --border: #222222;
-  --border-strong: #333333;
-  --foreground: #ffffff;
-  --nav-shadow: 0 -5px 20px rgba(0,0,0,0.8);
-}
-
-html.light {
-  /* TEMA CLARO PREMIUM - Ajustado para contraste real */
-  --bg: #EEF2F6;
-  --card: #FFFFFF;
-  --card-hover: #F8FAFC;
-  --card-alt: #FAFAFA;
-  --border: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --foreground: #0F172A;
+  --color-surface-container-low: #f4f6f8;
+  --color-surface: #f8fafc;
+  --color-on-primary: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-border-subtle: #e2e8f0;
+  --color-primary: #059669;
+  --color-primary-dark: #047857;
+  --color-primary-light: #ecfdf5;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #64748b;
+  --color-outline: #94a3b8;
+  --color-expense-red: #e11d48;
+  --color-income-green: #059669;
+  --color-status-paid-bg: #ecfdf5;
+  --color-status-paid-text: #047857;
+  --color-status-pending-bg: #fef3c7;
+  --color-status-pending-text: #b45309;
   
-  /* Substituir os cinzas do Tailwind apenas no modo Light para legibilidade (Escurecendo eles) */
-  --color-gray-300: #94A3B8; /* Slate-400 */
-  --color-gray-400: #64748B; /* Slate-500 */
-  --color-gray-500: #475569; /* Slate-600 */
-  --color-gray-600: #334155; /* Slate-700 */
+  --font-sans: "Plus Jakarta Sans", sans-serif;
   
-  --nav-shadow: 0 -5px 20px rgba(0,0,0,0.06);
+  /* Legacy app variables for compatibility with other pages */
+  --color-background: var(--color-surface);
+  --color-card: #ffffff;
+  --color-card-hover: #f8fafc;
+  --color-card-alt: #f1f5f9;
+  --color-border: var(--color-border-subtle);
+  --color-border-strong: #cbd5e1;
+  --color-foreground: var(--color-on-surface);
 }
 
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  background-color: var(--bg);
-  color: var(--foreground);
-}
-
-/* Esconder barra de rolagem mas permitir rolar (opcional, fica mais bonito) */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--foreground);
-  opacity: 0.5;
+@layer base {
+  html, body {
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+  }
+  body {
+    overscroll-behavior-y: none;
+    min-height: max(884px, 100dvh);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+  
+  /* Esconder barra de rolagem mas permitir rolar */
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }
