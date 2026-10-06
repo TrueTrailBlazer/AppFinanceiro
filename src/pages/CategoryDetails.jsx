@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, Tag, TrendingDown, Search } from 'lucide-react';
 import { getCategory } from '../utils/constants';
+import { formatCents, parseCents } from '../utils/money';
+import { formatLocalDate } from '../utils/date';
+import { fetchTransactionsByCategory } from '../services/transactions';
 
 export default function CategoryDetails() {
   const { user } = useAuth();
@@ -24,14 +26,7 @@ export default function CategoryDetails() {
     const fetchCategoryData = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('category', category)
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
+        const data = await fetchTransactionsByCategory(user.id, category);
 
         if (data && monthKey) {
             const filtered = data.filter(t => {
@@ -54,7 +49,7 @@ export default function CategoryDetails() {
   }, [user, category, monthKey, navigate]);
 
   const catInfo = useMemo(() => getCategory(category), [category]);
-  const totalAmount = useMemo(() => transactions.reduce((acc, t) => acc + Number(t.amount), 0), [transactions]);
+  const totalAmountCents = useMemo(() => transactions.reduce((acc, t) => acc + parseCents(t.amount), 0), [transactions]);
 
   if (!category) return null;
 
@@ -78,7 +73,7 @@ export default function CategoryDetails() {
         <div className="bg-card-alt rounded-2xl p-4 border border-card-hover flex justify-between items-center shadow-inner">
             <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Gasto no Mês</p>
             <span className="text-xl font-black text-foreground italic">
-                {totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {formatCents(totalAmountCents)}
             </span>
         </div>
       </div>
@@ -100,7 +95,7 @@ export default function CategoryDetails() {
                   </h3>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-gray-500 font-medium">
-                      {new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                      {formatLocalDate(t.created_at, { day: '2-digit', month: 'long' })}
                     </span>
                     {t.is_paid ? 
                       <span className="text-[8px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full font-bold">PAGO</span> :
@@ -109,7 +104,7 @@ export default function CategoryDetails() {
                   </div>
                 </div>
                 <span className="text-sm font-bold text-foreground shrink-0 ml-4">
-                  - {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  - {formatCents(t.amount)}
                 </span>
               </div>
             ))}

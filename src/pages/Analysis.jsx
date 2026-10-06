@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchAllUserTransactions } from '../services/transactions';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   TrendingUp, TrendingDown, Wallet, HelpCircle,
@@ -9,6 +9,8 @@ import {
 import { getCategory } from '../utils/constants';
 import { MonthPickerModal } from '../components/dashboard/MonthPickerModal';
 import { useDate } from '../contexts/DateContext';
+import { parseCents, fromCents, formatCents } from '../utils/money';
+import { formatLocalDate } from '../utils/date';
 
 export default function Analysis() {
   const { user } = useAuth();
@@ -44,13 +46,7 @@ export default function Analysis() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: true });
-        
-        if (error) throw error;
+        const data = await fetchAllUserTransactions(user.id, true);
         if (data) setTransactions(data);
       } catch (err) {
         console.error("Erro ao buscar dados:", err);
@@ -87,7 +83,7 @@ export default function Analysis() {
         const d = new Date(t.created_at);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
         if (months[key]) {
-            const val = Number(t.amount);
+            const val = parseCents(t.amount);
             if (t.type === 'income') months[key].income += val;
             else months[key].expense += val;
         }
@@ -101,19 +97,19 @@ export default function Analysis() {
         .filter(t => t.type !== 'income')
         .forEach(t => {
             const cleanName = t.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
-            if (!uniqueExpensesMap.has(cleanName) || Number(t.amount) > Number(uniqueExpensesMap.get(cleanName).amount)) {
+            if (!uniqueExpensesMap.has(cleanName) || parseCents(t.amount) > parseCents(uniqueExpensesMap.get(cleanName).amount)) {
                 uniqueExpensesMap.set(cleanName, t);
             }
         });
 
     const topExpensesList = Array.from(uniqueExpensesMap.values())
-        .sort((a, b) => Number(b.amount) - Number(a.amount))
+        .sort((a, b) => parseCents(b.amount) - parseCents(a.amount))
         .slice(0, 5);
 
-    const maxTopExpenseValue = Math.max(...topExpensesList.map(t => Number(t.amount)), 1);
+    const maxTopExpenseValue = Math.max(...topExpensesList.map(t => parseCents(t.amount)), 1);
 
     // 3. KPIs
-    const totalSaved = transactions.reduce((acc, t) => acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount)), 0);
+    const totalSaved = transactions.reduce((acc, t) => acc + (t.type === 'income' ? parseCents(t.amount) : -parseCents(t.amount)), 0);
     
     let savingsRateSum = 0;
     let validMonths = 0;
@@ -145,7 +141,7 @@ export default function Analysis() {
 
     const catTotals = {};
     filteredForRanking.forEach(t => {
-        catTotals[t.category] = (catTotals[t.category] || 0) + Number(t.amount);
+        catTotals[t.category] = (catTotals[t.category] || 0) + parseCents(t.amount);
     });
 
     const categoryRanking = Object.entries(catTotals)
@@ -214,7 +210,7 @@ export default function Analysis() {
                                 <HelpCircle size={16} className={`transition-colors ${activeTooltip === 'saldo' ? 'text-blue-500' : 'text-gray-500'}`} />
                             </div>
                             <h3 className={`text-base sm:text-lg font-black mt-2 tracking-tight truncate ${data.totalSaved >= 0 ? 'text-foreground' : 'text-red-500'}`}>
-                                {data.totalSaved.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {formatCents(data.totalSaved)}
                             </h3>
                             
                             {activeTooltip === 'saldo' && (
@@ -301,8 +297,8 @@ export default function Analysis() {
                                 <div className="flex items-center justify-between w-full bg-card border border-border rounded-xl px-4 py-2 animate-in fade-in duration-150">
                                     <span className="text-[10px] font-black text-foreground uppercase tracking-wider">{data.monthList[selectedMonthIndex].label}</span>
                                     <div className="flex items-center gap-4">
-                                        <span className="text-[10px] font-black text-blue-500">{data.monthList[selectedMonthIndex].income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                                        <span className="text-[10px] font-black text-red-500">{data.monthList[selectedMonthIndex].expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                        <span className="text-[10px] font-black text-blue-500">{formatCents(data.monthList[selectedMonthIndex].income)}</span>
+                                        <span className="text-[10px] font-black text-red-500">{formatCents(data.monthList[selectedMonthIndex].expense)}</span>
                                     </div>
                                 </div>
                             ) : (
@@ -355,7 +351,7 @@ export default function Analysis() {
                                             </div>
                                             <div className="mt-3">
                                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{catInfo.label}</p>
-                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{topCat.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{formatCents(topCat.amount)}</p>
                                             </div>
                                         </div>
                                     );
@@ -375,7 +371,7 @@ export default function Analysis() {
                                             </div>
                                             <div className="mt-3 flex flex-col">
                                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{topExp.name.replace(/\s*\(\d+\/\d+\)\s*$/, '')}</p>
-                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{Number(topExp.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                                <p className="text-sm font-black text-foreground mt-0.5 truncate">{formatCents(topExp.amount)}</p>
                                             </div>
                                         </div>
                                     );
@@ -441,7 +437,7 @@ export default function Analysis() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1.5">
                                                 <h4 className="text-xs font-bold text-foreground uppercase tracking-wide truncate">{catInfo.label}</h4>
-                                                <span className="text-sm font-bold text-foreground shrink-0 ml-3">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                                <span className="text-sm font-bold text-foreground shrink-0 ml-3">{formatCents(amount)}</span>
                                             </div>
                                             <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
                                                 <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
@@ -481,7 +477,7 @@ export default function Analysis() {
                                             </div>
                                         </div>
                                         <span className="text-base font-black text-foreground shrink-0 ml-4">
-                                            {Number(item.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            {formatCents(item.amount)}
                                         </span>
                                     </div>
 
@@ -491,7 +487,7 @@ export default function Analysis() {
                                             <div className="flex justify-between items-center text-[11px] text-gray-500">
                                                 <span className="font-bold uppercase tracking-wider">Data do Registro:</span>
                                                 <span className="text-foreground font-black bg-card-hover px-2 py-1 rounded-md border border-border">
-                                                    {new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                                                    {formatLocalDate(item.created_at, { day: '2-digit', month: 'long' })}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center text-[11px] text-gray-500">

@@ -13,11 +13,13 @@ import ScrollToTop from './components/router/ScrollToTop.jsx';
 // Páginas
 import Login from './pages/Login.jsx';
 import Home from './pages/Home.jsx';
+import Bills from './pages/Bills.jsx';
 import AddTransaction from './pages/AddTransaction.jsx';
 import Extract from './pages/Extract.jsx';
 import Settings from './pages/Settings.jsx';
 import Analysis from './pages/Analysis.jsx';
 import CategoryDetails from './pages/CategoryDetails.jsx';
+import Dossier from './pages/Dossier.jsx';
 
 
 export default function App() {
@@ -41,6 +43,8 @@ export default function App() {
             {/* Rotas Privadas (App) */}
             <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
               <Route path="/" element={<Home />} />
+              <Route path="/bills" element={<Bills />} />
+              <Route path="/dossier" element={<Dossier />} />
               <Route path="/add" element={<AddTransaction />} />
               <Route path="/extract" element={<Extract />} />
               <Route path="/analysis" element={<Analysis />} />

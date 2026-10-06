@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../services/supabase';
+import { createBatchTransactions } from '../../services/transactions';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Plus, Trash2, Zap, CheckCircle2, ArrowLeft, Calendar, Coins, X, Check, Type } from 'lucide-react';
 import { getCategory, CATEGORIES } from '../../utils/constants';
 import { useNavigate } from 'react-router-dom';
+import { parseCents, formatCents } from '../../utils/money';
 
 export function RecurringExpenses({ onBack }) {
   const { user } = useAuth();
@@ -24,11 +26,8 @@ export function RecurringExpenses({ onBack }) {
   const [newCategory, setNewCategory] = useState('bills'); 
   const [newDay, setNewDay] = useState('5');
 
-  useEffect(() => {
-    if (user) fetchRecurring();
-  }, [user]);
-
-  const fetchRecurring = async () => {
+  const fetchRecurring = useCallback(async () => {
+    if (!user) return;
     const { data } = await supabase
       .from('recurring_expenses')
       .select('*')
@@ -36,7 +35,11 @@ export function RecurringExpenses({ onBack }) {
       .order('day', { ascending: true });
     if (data) setRecurring(data);
     setLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchRecurring();
+  }, [fetchRecurring]);
 
   const handleSaveRecurring = async (e) => {
     e.preventDefault();
@@ -45,7 +48,7 @@ export function RecurringExpenses({ onBack }) {
     const expenseData = {
       user_id: user.id,
       name: newName,
-      amount: parseFloat(newAmount) || 0,
+      amount: parseCents(newAmount),
       category: newCategory,
       day: parseInt(newDay) || 1
     };
@@ -116,11 +119,13 @@ export function RecurringExpenses({ onBack }) {
     const currentYear = today.getFullYear();
 
     const transactionsToCreate = recurring.map(item => {
-      const date = new Date(currentYear, currentMonth, item.day, 12, 0, 0);
+      const maxDayInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const safeDay = Math.min(parseInt(item.day, 10) || 1, maxDayInMonth);
+      const date = new Date(currentYear, currentMonth, safeDay, 12, 0, 0);
       return {
         user_id: user.id,
         name: item.name,
-        amount: item.amount,
+        amount: parseCents(item.amount), // Inteiro estrito em centavos
         type: 'variable',
         category: item.category,
         is_paid: false,
@@ -128,17 +133,18 @@ export function RecurringExpenses({ onBack }) {
       };
     });
 
-    const { error } = await supabase.from('transactions').insert(transactionsToCreate);
-    setIsGenerating(false);
-    
-    if (error) showAlert('Erro: ' + error.message, 'error');
-    else {
+    try {
+      await createBatchTransactions(transactionsToCreate);
       showAlert('Lançamentos gerados com sucesso!', 'success');
       navigate('/');
+    } catch (error) {
+      showAlert('Erro: ' + (error.message || 'Falha ao gerar despesas fixas'), 'error');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + Number(item.amount), 0), [recurring]);
+  const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + parseCents(item.amount), 0), [recurring]);
 
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-start h-[100dvh] overflow-hidden animate-in fade-in duration-300">
@@ -167,7 +173,7 @@ export function RecurringExpenses({ onBack }) {
                             <Coins size={12}/> Total Mensal Recorrente
                         </p>
                         <h2 className="text-3xl font-bold text-white mb-4 tracking-tight drop-shadow-sm">
-                            {totalFixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            {formatCents(totalFixed)}
                         </h2>
                         <button 
                             onClick={generateMonthExpenses}
@@ -213,7 +219,7 @@ export function RecurringExpenses({ onBack }) {
                             </div>
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="text-sm font-black text-foreground">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-sm font-black text-foreground">{formatCents(item.amount)}</span>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
                                 className="text-gray-700 hover:text-red-500 transition-colors p-1"

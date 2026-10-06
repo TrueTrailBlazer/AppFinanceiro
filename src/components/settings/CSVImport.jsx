@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
-import { supabase } from '../../services/supabase';
+import { createBatchTransactions, deleteBatchTransactions, generateUUID } from '../../services/transactions';
+import { parseCents, formatCents } from '../../utils/money';
+import { addMonthsSafe } from '../../utils/date';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { 
@@ -159,7 +161,7 @@ export function CSVImport({ onBack }) {
         rawAmount = rawAmount.replace(',', '.');
       }
       
-      const amount = Math.abs(parseFloat(rawAmount)) || 0;
+      const amount = parseCents(Math.abs(parseFloat(rawAmount)) || 0);
       const type = isNegative ? 'variable' : 'income';
       const baseDate = parseDateBR(row[currentMapping.date]);
 
@@ -174,19 +176,25 @@ export function CSVImport({ onBack }) {
       const inst = detectInstallments(rawName);
       if (inst && type !== 'income') {
         const baseName = rawName.replace(/(?:\(|\[|parcela\s+)?\d+\s*(?:\/|de)\s*\d+(?:\)|\])?/i, '').trim();
+        const installmentGroupId = generateUUID();
         for (let i = 1; i <= inst.total; i++) {
-          const transactionDate = new Date(baseDate);
-          transactionDate.setMonth(baseDate.getMonth() + (i - inst.current));
+          const transactionDate = addMonthsSafe(baseDate, i - inst.current);
           allTransactions.push({
             name: `${baseName} (${i}/${inst.total})`,
-            amount, type, category,
+            amount, 
+            type, 
+            category,
             is_paid: i <= inst.current, 
             created_at: transactionDate.toISOString(),
+            installment_group_id: installmentGroupId
           });
         }
       } else {
         allTransactions.push({
-          name: rawName, amount, type, category,
+          name: rawName, 
+          amount, 
+          type, 
+          category,
           is_paid: true,
           created_at: baseDate.toISOString(),
         });
@@ -204,17 +212,15 @@ export function CSVImport({ onBack }) {
   const handleImport = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('transactions').insert(
+      const data = await createBatchTransactions(
         transactions.map(t => ({ ...t, user_id: user.id }))
-      ).select('id');
+      );
       
-      if (error) throw error;
-      
-      setLastInsertedIds(data.map(d => d.id));
+      setLastInsertedIds((data || []).map(d => d.id));
       setImportCompleted(true);
       showAlert(`${transactions.length} lançamentos processados com sucesso!`, 'success');
     } catch (error) {
-      showAlert('Erro ao importar: ' + error.message, 'error');
+      showAlert('Erro ao importar: ' + (error.message || 'Falha ao importar'), 'error');
     } finally {
       setLoading(false);
     }
@@ -226,13 +232,12 @@ export function CSVImport({ onBack }) {
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('transactions').delete().in('id', lastInsertedIds);
-      if (error) throw error;
+      await deleteBatchTransactions(lastInsertedIds);
       
       showAlert('Importação desfeita com sucesso!', 'success');
       onBack();
     } catch (error) {
-      showAlert('Erro ao desfazer: ' + error.message, 'error');
+      showAlert('Erro ao desfazer: ' + (error.message || 'Falha ao desfazer'), 'error');
     } finally {
       setLoading(false);
     }
@@ -368,7 +373,7 @@ export function CSVImport({ onBack }) {
                                 </div>
                             </div>
                             <span className={`text-[13px] font-bold shrink-0 ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-foreground'}`}>
-                                {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {formatCents(t.amount)}
                             </span>
                         </div>
                     );

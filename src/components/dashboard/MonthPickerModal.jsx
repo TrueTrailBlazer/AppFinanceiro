@@ -1,7 +1,7 @@
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { supabase } from '../../services/supabase';
+import { fetchActiveMonthsInYear } from '../../services/transactions';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate }) {
@@ -49,22 +49,22 @@ export function MonthPickerModal({ isOpen, onClose, currentDate, onSelectDate })
     if (!isOpen || !user) return;
 
     const fetchMonthsWithData = async () => {
-      const startOfYear = new Date(year, 0, 1).toISOString();
-      const endOfYear = new Date(year, 11, 31, 23, 59, 59).toISOString();
+      try {
+        const startOfYear = new Date(year, 0, 1).toISOString();
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59).toISOString();
 
-      const { data } = await supabase
-        .from('transactions')
-        .select('created_at')
-        .eq('user_id', user.id)
-        .gte('created_at', startOfYear)
-        .lte('created_at', endOfYear);
+        const data = await fetchActiveMonthsInYear(user.id, startOfYear, endOfYear);
 
-      if (data) {
-        const activeMonths = new Set(
-          data.map(t => new Date(t.created_at).getMonth())
-        );
-        setMonthsWithData(activeMonths);
-      } else {
+        if (data) {
+          const activeMonths = new Set(
+            data.map(t => new Date(t.created_at).getMonth())
+          );
+          setMonthsWithData(activeMonths);
+        } else {
+          setMonthsWithData(new Set());
+        }
+      } catch (err) {
+        console.error('Erro ao buscar meses ativos:', err);
         setMonthsWithData(new Set());
       }
     };

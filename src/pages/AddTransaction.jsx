@@ -1,10 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { Check, Trash2, Calendar, Tag, Type, CheckCircle2, XCircle } from 'lucide-react';
 import { CATEGORIES } from '../utils/constants';
+import { getLocalDateString, parseLocalDate, addMonthsPreservingDay, formatLocalDate } from '../utils/date';
+import { parseCents, formatCents, splitInstallments } from '../utils/money';
+import { 
+  createTransaction, 
+  createBatchTransactions, 
+  updateTransaction, 
+  updateFutureInstallments, 
+  deleteTransaction, 
+  deleteFutureInstallments,
+  generateUUID 
+} from '../services/transactions';
 
 export default function AddTransaction() {
   const { user } = useAuth();
@@ -14,12 +24,12 @@ export default function AddTransaction() {
   const { showAlert, showConfirm } = useNotifications();
 
   const [loading, setLoading] = useState(false);
-  const [amount, setAmount] = useState('');
+  const [amountCents, setAmountCents] = useState(0);
   const [displayAmount, setDisplayAmount] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState('variable');
   const [category, setCategory] = useState('others');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => getLocalDateString());
   const [isPaid, setIsPaid] = useState(false);
 
   // Installment states
@@ -42,13 +52,9 @@ export default function AddTransaction() {
 
   useEffect(() => {
     if (editingTransaction) {
-      const initialAmount = Number(editingTransaction.amount).toFixed(2);
-      setAmount(initialAmount);
-      
-      const numValue = parseFloat(initialAmount);
-      setDisplayAmount(
-        new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numValue)
-      );
+      const cents = parseCents(editingTransaction.amount);
+      setAmountCents(cents);
+      setDisplayAmount(cents > 0 ? formatCents(cents, false) : '');
 
       setName(editingTransaction.name);
       setType(editingTransaction.type);
@@ -57,115 +63,94 @@ export default function AddTransaction() {
 
       if (editingTransaction.created_at) {
         const dbDate = new Date(editingTransaction.created_at);
-        setDate(dbDate.toISOString().split('T')[0]);
+        setDate(getLocalDateString(dbDate));
       }
     }
   }, [editingTransaction]);
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!amount || !name) return;
+    if (!amountCents || !name) return;
     setLoading(true);
 
     const now = new Date();
-    const baseDate = new Date(date);
-    baseDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
-    const baseAmount = parseFloat(Number(amount).toFixed(2));
+    const baseDate = parseLocalDate(date, now);
+    const originalLocalDate = editingTransaction ? getLocalDateString(new Date(editingTransaction.created_at)) : null;
+    const isDateChanged = date !== originalLocalDate;
 
     try {
       if (editingTransaction) {
         if (instInfo && applyToFuture) {
-          const { data: futureTxs } = await supabase.from('transactions')
-            .select('id, name, created_at')
-            .eq('user_id', user.id)
-            .like('name', `${instInfo.baseName} (%/${instInfo.total})`)
-            .gte('created_at', editingTransaction.created_at);
-
-          if (futureTxs && futureTxs.length > 0) {
-            const baseNameInput = name.replace(/\s\(\d+\/\d+\)$/, '');
-
-            for (const fTx of futureTxs) {
-              const txInstInfo = getInstallmentInfo(fTx.name);
-              let newName = fTx.name;
-              if (txInstInfo) {
-                newName = `${baseNameInput} (${txInstInfo.current}/${instInfo.total})`;
-              }
-              const updateData = {
-                name: newName,
-                amount: baseAmount,
-                type,
-                category,
-              };
-              if (fTx.id === editingTransaction.id) {
-                updateData.is_paid = isPaid; // Atualiza status apenas da atual, as futuras preservam ou seguem
-                if (date !== new Date(editingTransaction.created_at).toISOString().split('T')[0]) {
-                  updateData.created_at = baseDate.toISOString();
-                }
-              }
-              await supabase.from('transactions').update(updateData).eq('id', fTx.id);
-            }
-          }
+          const baseNameInput = name.replace(/\s\(\d+\/\d+\)$/, '');
+          await updateFutureInstallments(
+            user.id,
+            editingTransaction,
+            instInfo,
+            baseNameInput,
+            amountCents,
+            type,
+            category,
+            isPaid,
+            baseDate.toISOString(),
+            isDateChanged
+          );
         } else {
           const transactionData = {
             user_id: user.id,
             name,
-            amount: baseAmount,
+            amount: amountCents, // Inteiro estrito em centavos
             type,
             category,
             is_paid: isPaid
           };
-          if (date !== new Date(editingTransaction.created_at).toISOString().split('T')[0]) {
+          if (isDateChanged) {
             transactionData.created_at = baseDate.toISOString();
           }
-          const { error } = await supabase.from('transactions').update(transactionData).eq('id', editingTransaction.id);
-          if (error) throw error;
+          await updateTransaction(editingTransaction.id, transactionData);
         }
       } else {
         if (isInstallment && installmentsCount > 1 && type !== 'income') {
-          const txs = [];
-          let pieceAmount = baseAmount;
+          const count = parseInt(installmentsCount, 10) || 2;
+          const startAt = parseInt(currentInstallment, 10) || 1;
+          const installmentGroupId = generateUUID();
+          
+          let pieces = [];
           if (installmentType === 'divide_total') {
-            const count = parseInt(installmentsCount) || 2;
-            pieceAmount = parseFloat((baseAmount / count).toFixed(2));
+            pieces = splitInstallments(amountCents, count);
+          } else {
+            pieces = Array(count).fill(amountCents);
           }
 
-          const count = parseInt(installmentsCount) || 2;
-          const startAt = parseInt(currentInstallment) || 1;
-          
+          const txs = [];
           for (let i = 1; i <= count; i++) {
-            const stepDate = new Date(baseDate);
-            // Ajusta a data para que a parcela 'startAt' seja na 'baseDate'
-            stepDate.setMonth(stepDate.getMonth() + (i - startAt));
+            const stepDate = addMonthsPreservingDay(baseDate, i - startAt);
 
             const txName = `${name} (${i}/${count})`;
-            // Parcelas anteriores à atual e a atual são marcadas como pagas se as parcelas futuras forem pendentes
-            // Ou segue o estado do botão 'isPaid' para a parcela atual
             const txIsPaid = i < startAt ? true : (i === startAt ? isPaid : false);
 
             txs.push({
               user_id: user.id,
               name: txName,
-              amount: pieceAmount,
+              amount: pieces[i - 1], // Inteiro estrito em centavos
               type,
               category,
               is_paid: txIsPaid,
-              created_at: stepDate.toISOString()
+              created_at: stepDate.toISOString(),
+              installment_group_id: installmentGroupId // Chave relacional
             });
           }
-          const { error } = await supabase.from('transactions').insert(txs);
-          if (error) throw error;
+          await createBatchTransactions(txs);
         } else {
           const transactionData = {
             user_id: user.id,
             name,
-            amount: baseAmount,
+            amount: amountCents, // Inteiro estrito em centavos
             type,
             category,
             is_paid: isPaid,
             created_at: baseDate.toISOString()
           };
-          const { error } = await supabase.from('transactions').insert([transactionData]);
-          if (error) throw error;
+          await createTransaction(transactionData);
         }
       }
       navigate(-1);
@@ -185,15 +170,9 @@ export default function AddTransaction() {
       setLoading(true);
       try {
         if (instInfo && applyToFuture) {
-          const { error } = await supabase.from('transactions')
-            .delete()
-            .eq('user_id', user.id)
-            .like('name', `${instInfo.baseName} (%/${instInfo.total})`)
-            .gte('created_at', editingTransaction.created_at);
-          if (error) throw error;
+          await deleteFutureInstallments(user.id, editingTransaction, instInfo);
         } else {
-          const { error } = await supabase.from('transactions').delete().eq('id', editingTransaction.id);
-          if (error) throw error;
+          await deleteTransaction(editingTransaction.id);
         }
         navigate(-1);
       } catch (error) {
@@ -223,23 +202,20 @@ export default function AddTransaction() {
             <div className="relative bg-card-hover rounded-xl p-3 border border-border focus-within:border-blue-500/50 shadow-inner">
               <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1 block">Valor da Transação</label>
               <div className="flex items-center">
-                <span className={`text-xl mr-2 font-medium ${amount ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
+                <span className={`text-xl mr-2 font-medium ${amountCents > 0 ? 'text-blue-500' : 'text-gray-600'}`}>R$</span>
                 <input
                   type="text" inputMode="numeric" autoFocus={!editingTransaction}
                   value={displayAmount} 
                   onChange={e => {
-                    let val = e.target.value.replace(/\D/g, '');
-                    if (!val) {
+                    const rawValue = e.target.value.replace(/\D/g, '');
+                    if (!rawValue) {
                       setDisplayAmount('');
-                      setAmount('');
+                      setAmountCents(0);
                       return;
                     }
-                    const numValue = parseInt(val, 10);
-                    const floatValue = (numValue / 100).toFixed(2);
-                    setAmount(floatValue);
-                    setDisplayAmount(
-                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numValue / 100)
-                    );
+                    const cents = parseInt(rawValue, 10);
+                    setAmountCents(cents);
+                    setDisplayAmount(formatCents(cents, false));
                   }}
                   placeholder="0,00"
                   className="w-full bg-transparent text-4xl font-bold text-foreground placeholder-gray-800 outline-none"
@@ -287,7 +263,7 @@ export default function AddTransaction() {
                   <div className="flex-1 flex flex-col justify-center pointer-events-none overflow-hidden">
                     <label className="block text-[9px] font-bold text-gray-500 uppercase">Data</label>
                     <span className="text-xs sm:text-sm font-bold text-foreground mt-0.5 capitalize truncate w-full">
-                      {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }).replace(' de ', ' ')}
+                      {formatLocalDate(parseLocalDate(date), { day: '2-digit', month: 'short', year: '2-digit' }).replace(' de ', ' ')}
                     </span>
                   </div>
                   <input
@@ -435,7 +411,7 @@ export default function AddTransaction() {
           <button
             type="submit"
             form="transaction-form"
-            disabled={loading || !amount || !name}
+            disabled={loading || !amountCents || !name}
             className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/40 disabled:text-white/90 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Check size={18} /> Salvar</>}

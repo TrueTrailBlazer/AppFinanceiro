@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -28,11 +28,8 @@ export function FinancialGoals({ onBack }) {
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [contributeAmount, setContributeAmount] = useState('');
 
-    useEffect(() => {
-        if (user) fetchGoals();
-    }, [user]);
-
-    const fetchGoals = async () => {
+    const fetchGoals = useCallback(async () => {
+        if (!user) return;
         const { data, error } = await supabase
             .from('financial_goals')
             .select('*')
@@ -42,10 +39,14 @@ export function FinancialGoals({ onBack }) {
         if (error) {
             showAlert('Erro ao buscar metas', 'error');
         } else {
-            setGoals(data);
+            setGoals(data || []);
         }
         setLoading(false);
-    };
+    }, [user, showAlert]);
+
+    useEffect(() => {
+        fetchGoals();
+    }, [fetchGoals]);
 
     const handleSaveGoal = async (e) => {
         e.preventDefault();

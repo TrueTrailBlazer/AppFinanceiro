@@ -1,11 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { User, Zap, LogOut, ChevronRight, Shield, Wallet, FileSpreadsheet, Moon, Sun, ArrowLeft, Hammer } from 'lucide-react';
+import { User, Zap, LogOut, ChevronRight, Shield, Wallet, FileSpreadsheet, Moon, Sun, ArrowLeft, Hammer, Building2 } from 'lucide-react';
 import { RecurringExpenses } from '../components/settings/RecurringExpenses';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
 import { ProfileSettings } from '../components/settings/ProfileSettings';
 import { FinancialGoals } from '../components/settings/FinancialGoals';
+import { BankConnections } from '../components/settings/BankConnections';
+
+function MenuItem({ icon: Icon, label, subLabel, onClick, color = "text-foreground", danger = false, customRight }) {
+  return (
+    <button 
+      onClick={onClick} 
+      className={`w-full flex items-center justify-between p-4 bg-card border border-border hover:bg-card-hover transition-all group first:rounded-t-2xl last:rounded-b-2xl border-b-0 last:border-b active:scale-[0.99]`}
+    >
+      <div className="flex items-center gap-4">
+        <div className={`p-2.5 rounded-xl transition-colors ${danger ? 'bg-red-500/10 text-red-500' : 'bg-card-alt text-gray-500 group-hover:text-blue-500 group-hover:bg-blue-500/10'}`}>
+          <Icon size={20} />
+        </div>
+        <div className="text-left">
+          <p className={`font-semibold text-sm ${danger ? 'text-red-500' : 'text-foreground'}`}>{label}</p>
+          {subLabel && <p className="text-[10px] text-gray-500 mt-0.5">{subLabel}</p>}
+        </div>
+      </div>
+      {customRight ? customRight : (!danger && <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-400" />)}
+    </button>
+  );
+}
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -35,24 +56,6 @@ export default function Settings() {
     }
   };
 
-  const MenuItem = ({ icon: Icon, label, subLabel, onClick, color = "text-foreground", danger = false, customRight }) => (
-    <button 
-      onClick={onClick} 
-      className={`w-full flex items-center justify-between p-4 bg-card border border-border hover:bg-card-hover transition-all group first:rounded-t-2xl last:rounded-b-2xl border-b-0 last:border-b active:scale-[0.99]`}
-    >
-      <div className="flex items-center gap-4">
-        <div className={`p-2.5 rounded-xl transition-colors ${danger ? 'bg-red-500/10 text-red-500' : 'bg-card-alt text-gray-500 group-hover:text-blue-500 group-hover:bg-blue-500/10'}`}>
-          <Icon size={20} />
-        </div>
-        <div className="text-left">
-          <p className={`font-semibold text-sm ${danger ? 'text-red-500' : 'text-foreground'}`}>{label}</p>
-          {subLabel && <p className="text-[10px] text-gray-500 mt-0.5">{subLabel}</p>}
-        </div>
-      </div>
-      {customRight ? customRight : (!danger && <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-400" />)}
-    </button>
-  );
-
   if (currentView === 'profile') {
     return <ProfileSettings onBack={() => setCurrentView('menu')} />;
   }
@@ -64,6 +67,9 @@ export default function Settings() {
   }
   if (currentView === 'recurring') {
     return <RecurringExpenses onBack={() => setCurrentView('menu')} />;
+  }
+  if (currentView === 'banks') {
+    return <BankConnections onBack={() => setCurrentView('menu')} />;
   }
   
   if (currentView === 'csv') {
@@ -127,6 +133,12 @@ export default function Settings() {
       <div className="space-y-1">
         <h3 className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Gestão e Ferramentas</h3>
         <div className="flex flex-col shadow-sm">
+            <MenuItem 
+                icon={Building2} 
+                label="Contas Bancárias" 
+                subLabel="Sincronização automática via Open Finance (Pluggy)"
+                onClick={() => setCurrentView('banks')}
+            />
             <MenuItem 
                 icon={Zap} 
                 label="Despesas Fixas" 

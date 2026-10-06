@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { getCategory } from '../../utils/constants';
+import { formatCents } from '../../utils/money';
+import { formatLocalDate } from '../../utils/date';
 
 export function TransactionList({ transactions, loading, recentTransactions, handleEdit }) {
   return (
@@ -32,13 +34,13 @@ export function TransactionList({ transactions, loading, recentTransactions, han
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-[10px] text-gray-500 capitalize">{catData.label}</p>
                       <span className="text-[8px] text-gray-700">•</span>
-                      <p className="text-[10px] text-gray-500 capitalize">{new Date(t.created_at).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}</p>
+                      <p className="text-[10px] text-gray-500 capitalize">{formatLocalDate(t.created_at, {day: '2-digit', month: 'short'})}</p>
                     </div>
                   </div>
                 </div>
                 <span className={`font-bold text-sm whitespace-nowrap ml-2 ${t.type === 'income' ? 'text-green-400' : 'text-foreground'}`}>
                   {t.type === 'income' ? '+ ' : '- '}
-                  {Number(t.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  {formatCents(t.amount)}
                 </span>
               </div>
             );
