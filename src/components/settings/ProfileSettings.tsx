@@ -1,0 +1,228 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '../../services/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { Camera, User, Loader2, Save } from 'lucide-react';
+
+export interface ProfileSettingsProps {
+  onBack: () => void;
+}
+
+export function ProfileSettings({ onBack }: ProfileSettingsProps) {
+  const { user, setUser } = useAuth();
+  const { showAlert, showConfirm } = useNotifications();
+
+  const [name, setName] = useState<string>(
+    (user?.user_metadata?.display_name as string | undefined) ||
+    (user?.user_metadata?.first_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    (typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : '') ||
+    ''
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>((user?.user_metadata?.avatar_url as string | undefined) || '');
+  const [pendingDelete, setPendingDelete] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Liberação de memória alocada para Blob URL temporário
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // Limite de 2MB
+        showAlert('Imagem muito grande. Máximo 2MB.', 'warning');
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user) return;
+    setLoading(true);
+
+    try {
+      let avatar_url = (user.user_metadata?.avatar_url as string | undefined) || '';
+
+      // Se o usuário clicou para deletar a foto, limpamos a URL
+      if (pendingDelete) {
+        avatar_url = '';
+      }
+
+      // 1. Upload da imagem se houver novo arquivo
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // Pegar URL Pública
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+        avatar_url = publicUrl;
+      }
+
+      // 2. Atualizar metadados do usuário
+      const { data: { user: updatedUser }, error: updateError } = await supabase.auth.updateUser({
+        data: {
+          display_name: name,
+          name: name,
+          first_name: name.trim().split(' ')[0],
+          avatar_url: avatar_url,
+        },
+      });
+
+      if (updateError) throw updateError;
+
+      // 3. Atualizar contexto local para refletir na UI sem refresh
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
+
+      showAlert('Perfil atualizado com sucesso!', 'success');
+      onBack(); // Volta para o menu
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      showAlert('Erro ao atualizar: ' + errMsg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    const confirmed = await showConfirm('Deseja remover sua foto de perfil?', 'Remover Foto');
+    if (!confirmed) return;
+    
+    setAvatarPreview('');
+    setAvatarFile(null);
+    setPendingDelete(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
+      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl md:border md:border-border md:shadow-2xl overflow-hidden relative">
+        {/* Header */}
+        <div className="px-5 py-5 border-b border-border text-center bg-card shrink-0">
+          <h2 className="text-lg font-bold text-foreground">Editar Perfil</h2>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <form id="profile-form" onSubmit={handleSave} className="space-y-8 flex flex-col items-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative group">
+                <div className="w-32 h-32 rounded-full bg-card border-2 border-border overflow-hidden flex items-center justify-center relative shadow-2xl">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={48} className="text-gray-600" />
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Alterar foto"
+                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Camera className="text-foreground" size={24} />
+                  </button>
+                </div>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Tirar foto"
+                  className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-foreground shadow-lg active:scale-90 transition-transform md:hidden"
+                >
+                  <Camera size={16} />
+                </button>
+              </div>
+
+              {avatarPreview && (
+                <button
+                  type="button"
+                  onClick={handleDeletePhoto}
+                  className="text-[10px] font-bold text-red-500 uppercase tracking-wider hover:text-red-400 py-1 px-3 rounded-lg hover:bg-red-500/10 active:scale-95 transition-all"
+                >
+                  Remover Foto
+                </button>
+              )}
+            </div>
+
+            {/* Campos */}
+            <div className="w-full space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Seu Nome</label>
+                <div className="relative bg-card-hover rounded-xl border border-border focus-within:border-blue-500/50 transition-colors">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <User size={16} className="text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Como devemos te chamar?"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm text-foreground outline-none font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5 opacity-50">
+                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Email (Não editável)</label>
+                <input
+                  type="text"
+                  disabled
+                  value={user?.email || ''}
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-sm text-gray-600 cursor-not-allowed"
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer Action Bar */}
+        <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex-1 px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="profile-form"
+            disabled={loading || !name}
+            className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Salvar Alterações</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

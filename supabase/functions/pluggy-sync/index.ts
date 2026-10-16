@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -16,7 +16,7 @@ function mapCategory(pluggyCategory: string = '', description: string = ''): str
   return 'others';
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -57,7 +57,20 @@ serve(async (req) => {
       });
     }
 
-    // 1. Autenticação na Pluggy
+    // 1. Autenticação na Pluggy e prevenção de IDOR
+    const { data: existingItem } = await supabaseClient
+      .from('pluggy_items')
+      .select('user_id')
+      .eq('item_id', itemId)
+      .single();
+
+    if (existingItem && existingItem.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Acesso negado ao item' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const clientId = Deno.env.get('PLUGGY_CLIENT_ID');
     const clientSecret = Deno.env.get('PLUGGY_CLIENT_SECRET');
 
@@ -104,7 +117,7 @@ serve(async (req) => {
     const fromDateIso = ninetyDaysAgo.toISOString().split('T')[0];
 
     for (const acc of accounts || []) {
-      const txUrl = `https://api.pluggy.ai/v2/transactions?accountId=${acc.id}`;
+      const txUrl = `https://api.pluggy.ai/v2/transactions?accountId=${acc.id}&from=${fromDateIso}`;
       const txRes = await fetch(txUrl, { headers: pluggyHeaders });
 
       if (!txRes.ok) {
@@ -144,18 +157,19 @@ serve(async (req) => {
               is_paid: true,
               created_at: tx.date || new Date().toISOString(),
               pluggy_transaction_id: tx.id,
-              bank_name: itemData.connector?.name || 'Mercado Pago',
+              bank_name: itemData.connector?.name || 'Banco Conectado',
               bank_logo_url: itemData.connector?.imageUrl || null,
             };
           });
 
         if (transactionsToUpsert.length > 0) {
-          const { error: upsertErr } = await supabaseClient
+          const { error: upsertErr, data: insertedData } = await supabaseClient
             .from('transactions')
-            .upsert(transactionsToUpsert, { onConflict: 'pluggy_transaction_id', ignoreDuplicates: true });
+            .upsert(transactionsToUpsert, { onConflict: 'pluggy_transaction_id', ignoreDuplicates: true })
+            .select();
 
           if (!upsertErr) {
-            totalImported += transactionsToUpsert.length;
+            totalImported += insertedData?.length || 0;
 
             // --- ETAPA 5: CONCILIAÇÃO INTELIGENTE ---
             // Busca contas pendentes do usuário para tentar dar baixa automática

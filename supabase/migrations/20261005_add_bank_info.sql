@@ -6,4 +6,4 @@ ALTER TABLE transactions
 -- Atualiza todas as transações importadas existentes com 'Mercado Pago'
 UPDATE transactions 
 SET bank_name = 'Mercado Pago'
-WHERE (pluggy_transaction_id IS NOT NULL OR id LIKE 'consolidated-yield%') AND bank_name IS NULL;
+WHERE pluggy_transaction_id IS NOT NULL AND bank_name IS NULL;

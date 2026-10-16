@@ -1,9 +1,8 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
 };
 
 function mapCategory(pluggyCategory: string = '', description: string = ''): string {
@@ -16,12 +15,22 @@ function mapCategory(pluggyCategory: string = '', description: string = ''): str
   return 'others';
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const webhookSecret = Deno.env.get('PLUGGY_WEBHOOK_SECRET');
+    const headerSecret = req.headers.get('x-webhook-secret');
+    if (!webhookSecret || !headerSecret || headerSecret !== webhookSecret) {
+      console.error('[Pluggy Webhook] Acesso não autorizado: Header x-webhook-secret inválido ou segredo do webhook não configurado no servidor.');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const payload = await req.json().catch(() => null);
     if (!payload || !payload.itemId) {
       return new Response(JSON.stringify({ message: 'Evento ignorado: payload sem itemId' }), {
@@ -74,8 +83,9 @@ serve(async (req) => {
 
     // 3. Atualiza status do item
     const itemRes = await fetch(`https://api.pluggy.ai/items/${itemId}`, { headers: pluggyHeaders });
+    let itemData: any = {};
     if (itemRes.ok) {
-      const itemData = await itemRes.json();
+      itemData = await itemRes.json();
       await supabaseClient
         .from('pluggy_items')
         .update({
@@ -96,7 +106,7 @@ serve(async (req) => {
       const fromDateIso = thirtyDaysAgo.toISOString().split('T')[0];
 
       for (const acc of accounts || []) {
-        const txUrl = `https://api.pluggy.ai/v2/transactions?accountId=${acc.id}`;
+        const txUrl = `https://api.pluggy.ai/v2/transactions?accountId=${acc.id}&from=${fromDateIso}`;
         const txRes = await fetch(txUrl, { headers: pluggyHeaders });
 
         if (!txRes.ok) {
@@ -136,7 +146,7 @@ serve(async (req) => {
                 is_paid: true,
                 created_at: tx.date || new Date().toISOString(),
                 pluggy_transaction_id: tx.id,
-                bank_name: itemData.connector?.name || 'Mercado Pago',
+                bank_name: itemData.connector?.name || 'Banco Conectado',
                 bank_logo_url: itemData.connector?.imageUrl || null,
               };
             });

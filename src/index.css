@@ -1,37 +1,81 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface-container-low: #f4f6f8;
-  --color-surface: #f8fafc;
-  --color-on-primary: #ffffff;
-  --color-surface-container-lowest: #ffffff;
-  --color-border-subtle: #e2e8f0;
-  --color-primary: #059669;
-  --color-primary-dark: #047857;
-  --color-primary-light: #ecfdf5;
-  --color-on-surface: #0f172a;
-  --color-on-surface-variant: #64748b;
-  --color-outline: #94a3b8;
+  --color-surface-container-low: var(--sys-surface-container-low);
+  --color-surface: var(--sys-surface);
+  --color-on-primary: var(--sys-on-primary);
+  --color-surface-container-lowest: var(--sys-surface-container-lowest);
+  --color-border-subtle: var(--sys-border-subtle);
+  --color-primary: var(--sys-primary);
+  --color-primary-dark: var(--sys-primary-dark);
+  --color-primary-light: var(--sys-primary-light);
+  --color-on-surface: var(--sys-on-surface);
+  --color-on-surface-variant: var(--sys-on-surface-variant);
+  --color-outline: var(--sys-outline);
   --color-expense-red: #e11d48;
   --color-income-green: #059669;
-  --color-status-paid-bg: #ecfdf5;
-  --color-status-paid-text: #047857;
-  --color-status-pending-bg: #fef3c7;
-  --color-status-pending-text: #b45309;
+  --color-status-paid-bg: var(--sys-status-paid-bg);
+  --color-status-paid-text: var(--sys-status-paid-text);
+  --color-status-pending-bg: var(--sys-status-pending-bg);
+  --color-status-pending-text: var(--sys-status-pending-text);
   
   --font-sans: "Plus Jakarta Sans", sans-serif;
   
   /* Legacy app variables for compatibility with other pages */
-  --color-background: var(--color-surface);
-  --color-card: #ffffff;
-  --color-card-hover: #f8fafc;
-  --color-card-alt: #f1f5f9;
-  --color-border: var(--color-border-subtle);
-  --color-border-strong: #cbd5e1;
-  --color-foreground: var(--color-on-surface);
+  --color-background: var(--sys-surface);
+  --color-card: var(--sys-card);
+  --color-card-hover: var(--sys-card-hover);
+  --color-card-alt: var(--sys-card-alt);
+  --color-border: var(--sys-border-subtle);
+  --color-border-strong: var(--sys-border-strong);
+  --color-foreground: var(--sys-on-surface);
 }
 
 @layer base {
+  :root {
+    --sys-surface-container-low: #f4f6f8;
+    --sys-surface: #f8fafc;
+    --sys-on-primary: #ffffff;
+    --sys-surface-container-lowest: #ffffff;
+    --sys-border-subtle: #e2e8f0;
+    --sys-primary: #059669;
+    --sys-primary-dark: #047857;
+    --sys-primary-light: #ecfdf5;
+    --sys-on-surface: #0f172a;
+    --sys-on-surface-variant: #64748b;
+    --sys-outline: #94a3b8;
+    --sys-card: #ffffff;
+    --sys-card-hover: #f8fafc;
+    --sys-card-alt: #f1f5f9;
+    --sys-border-strong: #cbd5e1;
+    --sys-status-paid-bg: #ecfdf5;
+    --sys-status-paid-text: #047857;
+    --sys-status-pending-bg: #fef3c7;
+    --sys-status-pending-text: #b45309;
+  }
+
+  .dark {
+    --sys-surface-container-low: #0f172a;
+    --sys-surface: #020617;
+    --sys-on-primary: #ffffff;
+    --sys-surface-container-lowest: #020617;
+    --sys-border-subtle: #1e293b;
+    --sys-primary: #10b981;
+    --sys-primary-dark: #059669;
+    --sys-primary-light: #022c22;
+    --sys-on-surface: #f8fafc;
+    --sys-on-surface-variant: #94a3b8;
+    --sys-outline: #475569;
+    --sys-card: #0f172a;
+    --sys-card-hover: #1e293b;
+    --sys-card-alt: #1e293b;
+    --sys-border-strong: #334155;
+    --sys-status-paid-bg: #022c22;
+    --sys-status-paid-text: #34d399;
+    --sys-status-pending-bg: #451a03;
+    --sys-status-pending-text: #fbbf24;
+  }
+
   html, body {
     min-height: 100%;
     margin: 0;
