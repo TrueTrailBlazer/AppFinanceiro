@@ -121,7 +121,11 @@ export function BankConnections({ onBack }: BankConnectionsProps) {
     try {
       const result = await syncPluggyItem(itemId);
       const total = (result?.totalTransactions as number | undefined) ?? 0;
-      showAlert(`Sincronização de ${safeName} concluída! ${total} novas transações adicionadas.`, 'success');
+      if (total > 0) {
+        showAlert(`Sincronização de ${safeName} concluída! ${total} novas transações adicionadas.`, 'success');
+      } else {
+        showAlert(`Sincronização de ${safeName} concluída! Nenhuma nova movimentação encontrada (seu extrato já está em dia).`, 'info');
+      }
       await loadItems();
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);

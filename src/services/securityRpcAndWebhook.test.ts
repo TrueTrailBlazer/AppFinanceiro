@@ -6,6 +6,7 @@ describe('Security & Correctness Verification (P0 Requirements)', () => {
   const migrations = [
     path.resolve(process.cwd(), 'supabase/migrations/20261007200000_analysis_rpc.sql'),
     path.resolve(process.cwd(), 'supabase/migrations/20261007200001_analysis_rpc.sql'),
+    path.resolve(process.cwd(), 'supabase/migrations/20261019120000_fix_analysis_cofrinho_and_cleanup.sql'),
   ];
 
   migrations.forEach((migrationPath) => {
@@ -52,6 +53,16 @@ describe('Security & Correctness Verification (P0 Requirements)', () => {
     it('deve retornar 401 Unauthorized quando o segredo for inválido ou ausente', () => {
       expect(webhookContent).toMatch(/status:\s*401/);
       expect(webhookContent).toMatch(/error:\s*['"]Unauthorized['"]/);
+    });
+
+    it('deve utilizar dateFrom e não o parâmetro obsoleto from ao consultar a API v2 da Pluggy', () => {
+      expect(webhookContent).toMatch(/dateFrom=\$\{fromDateIso\}/);
+      expect(webhookContent).not.toMatch(/\?accountId=\$\{acc\.id\}&from=/);
+    });
+
+    it('deve filtrar movimentações de cofrinho e dinheiro reservado', () => {
+      expect(webhookContent).toMatch(/desc\.includes\(['"]dinheiro reservado['"]\)/);
+      expect(webhookContent).toMatch(/desc\.includes\(['"]reserva programada['"]\)/);
     });
   });
 });

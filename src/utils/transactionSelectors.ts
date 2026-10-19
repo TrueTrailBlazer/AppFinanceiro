@@ -10,8 +10,24 @@ import type {
 export type { BankSummary, PlannedSummary, OverallSummary };
 
 /**
+ * Identifica movimentações internas de cofrinho / reserva bancária (ex: Mercado Pago)
+ * que não devem ser contabilizadas como despesa nem como receita no fluxo de caixa.
+ */
+export function isInternalReserveTransaction(name: string = ''): boolean {
+  const n = name.toLowerCase();
+  return (
+    n.includes('dinheiro retirado') ||
+    n.includes('dinheiro reservado') ||
+    n.includes('saldo reservado') ||
+    n.includes('dinheiro guardado') ||
+    n.includes('reserva programada') ||
+    n.includes('saldo_reservado')
+  );
+}
+
+/**
  * Normaliza e consolida as transações do mês:
- * - Descarta transferências internas do cofrinho ("dinheiro retirado", "saldo reservado")
+ * - Descarta transferências internas do cofrinho / reservas ("dinheiro reservado", "saldo reservado", "dinheiro retirado", etc.)
  * - Consolida múltiplos rendimentos ("rendimento") em um único lançamento somado
  * - Ordena cronologicamente por created_at decrescente
  */
@@ -23,12 +39,12 @@ export function consolidateMonthlyTransactions(
   const otherTxs: (TransactionRow | DisplayTransaction)[] = [];
 
   for (const t of rawTransactions) {
-    const name = (t.name || '').toLowerCase();
-    // Não contabiliza retiradas/transferências do cofrinho
-    if (name.includes('dinheiro retirado') || name.includes('saldo reservado')) {
+    const name = t.name || '';
+    // Não contabiliza movimentações internas de cofrinho / reservas
+    if (isInternalReserveTransaction(name)) {
       continue;
     }
-    if (name.includes('rendimento')) {
+    if (name.toLowerCase().includes('rendimento')) {
       yieldTxs.push(t);
     } else {
       otherTxs.push(t);

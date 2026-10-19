@@ -7,11 +7,26 @@ const corsHeaders = {
 
 function mapCategory(pluggyCategory: string = '', description: string = ''): string {
   const cat = (pluggyCategory + ' ' + description).toLowerCase();
+  if (
+    cat.includes('contas') ||
+    cat.includes('servi') ||
+    cat.includes('boleto') ||
+    cat.includes('luz') ||
+    cat.includes('agua') ||
+    cat.includes('aluguel') ||
+    cat.includes('emprestimo') ||
+    cat.includes('empréstimo') ||
+    cat.includes('parcela') ||
+    cat.includes('financiamento') ||
+    cat.includes('tarifa') ||
+    cat.includes('imposto')
+  ) {
+    return 'bills';
+  }
   if (cat.includes('food') || cat.includes('aliment') || cat.includes('restaurante') || cat.includes('refei') || cat.includes('ifood')) return 'food';
   if (cat.includes('transp') || cat.includes('uber') || cat.includes('99') || cat.includes('combust') || cat.includes('posto')) return 'transport';
   if (cat.includes('mercado') || cat.includes('compra') || cat.includes('shopping') || cat.includes('loja') || cat.includes('amazon')) return 'shopping';
   if (cat.includes('lazer') || cat.includes('entreten') || cat.includes('netflix') || cat.includes('spotify') || cat.includes('cinema')) return 'entertainment';
-  if (cat.includes('contas') || cat.includes('servi') || cat.includes('boleto') || cat.includes('luz') || cat.includes('agua') || cat.includes('aluguel')) return 'bills';
   return 'others';
 }
 
@@ -106,17 +121,25 @@ Deno.serve(async (req) => {
       const fromDateIso = thirtyDaysAgo.toISOString().split('T')[0];
 
       for (const acc of accounts || []) {
-        const txUrl = `https://api.pluggy.ai/v2/transactions?accountId=${acc.id}&from=${fromDateIso}`;
-        const txRes = await fetch(txUrl, { headers: pluggyHeaders });
+        let nextCursor: string | null = null;
+        let pageCount = 0;
+        const MAX_PAGES = 5;
 
-        if (!txRes.ok) {
-          const errText = await txRes.text();
-          console.error(`[Pluggy Webhook] Falha ao buscar transações da conta ${acc.id}:`, errText);
-          continue;
-        }
+        do {
+          let txUrl = `https://api.pluggy.ai/v2/transactions?accountId=${acc.id}&dateFrom=${fromDateIso}`;
+          if (nextCursor) {
+            txUrl += nextCursor.startsWith('?') || nextCursor.startsWith('&') ? nextCursor : `&${nextCursor}`;
+          }
+          const txRes = await fetch(txUrl, { headers: pluggyHeaders });
 
-        const txData = await txRes.json();
-        const rawTransactions = txData.results || [];
+          if (!txRes.ok) {
+            const errText = await txRes.text();
+            console.error(`[Pluggy Webhook] Falha ao buscar transações da conta ${acc.id}:`, errText);
+            break;
+          }
+
+          const txData = await txRes.json();
+          const rawTransactions = txData.results || [];
 
           const transactionsToUpsert = rawTransactions
             .filter((tx: any) => {
@@ -125,8 +148,11 @@ Deno.serve(async (req) => {
               if (
                 opType.includes('saldo_reservado') ||
                 desc.includes('dinheiro retirado') ||
+                desc.includes('dinheiro reservado') ||
                 desc.includes('saldo reservado') ||
-                desc.includes('dinheiro guardado')
+                desc.includes('dinheiro guardado') ||
+                desc.includes('reserva programada') ||
+                desc.includes('cofrinho')
               ) {
                 return false;
               }
@@ -145,6 +171,7 @@ Deno.serve(async (req) => {
                 category: mapCategory(tx.category, tx.description),
                 is_paid: true,
                 created_at: tx.date || new Date().toISOString(),
+                due_date: tx.date || new Date().toISOString(),
                 pluggy_transaction_id: tx.id,
                 bank_name: itemData.connector?.name || 'Banco Conectado',
                 bank_logo_url: itemData.connector?.imageUrl || null,
@@ -156,7 +183,11 @@ Deno.serve(async (req) => {
               .from('transactions')
               .upsert(transactionsToUpsert, { onConflict: 'pluggy_transaction_id', ignoreDuplicates: true });
           }
-        }
+
+          nextCursor = txData.next || null;
+          pageCount++;
+        } while (nextCursor && pageCount < MAX_PAGES);
+      }
 
       await supabaseClient
         .from('pluggy_items')

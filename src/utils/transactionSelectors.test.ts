@@ -15,14 +15,18 @@ describe('transactionSelectors - consolidateMonthlyTransactions', () => {
     const raw: Partial<TransactionRow>[] = [
       { id: 1, name: 'Dinheiro retirado', amount: 10000, type: 'income', created_at: '2026-10-01T10:00:00Z' },
       { id: 2, name: 'Saldo reservado', amount: 5000, type: 'expense', created_at: '2026-10-02T10:00:00Z' },
-      { id: 3, name: 'Rendimento Nubank', amount: 150, type: 'income', created_at: '2026-10-03T10:00:00Z' },
-      { id: 4, name: 'Rendimento Inter', amount: 250, type: 'income', created_at: '2026-10-04T10:00:00Z' },
-      { id: 5, name: 'Supermercado', amount: 20000, type: 'expense', created_at: '2026-10-05T10:00:00Z' },
+      { id: 3, name: 'Dinheiro reservado Dinheiro', amount: 239976, type: 'variable', created_at: '2026-10-02T11:00:00Z' },
+      { id: 4, name: 'Dinheiro reservado Cofrinho com meu amorzinho', amount: 20000, type: 'variable', created_at: '2026-10-02T12:00:00Z' },
+      { id: 5, name: 'Reserva programada Cofrinho com meu amorzinho', amount: 20000, type: 'variable', created_at: '2026-10-02T13:00:00Z' },
+      { id: 6, name: 'Dinheiro guardado Reserva', amount: 15000, type: 'variable', created_at: '2026-10-02T14:00:00Z' },
+      { id: 7, name: 'Rendimento Nubank', amount: 150, type: 'income', created_at: '2026-10-03T10:00:00Z' },
+      { id: 8, name: 'Rendimento Inter', amount: 250, type: 'income', created_at: '2026-10-04T10:00:00Z' },
+      { id: 9, name: 'Supermercado', amount: 20000, type: 'expense', created_at: '2026-10-05T10:00:00Z' },
     ];
 
     const result = consolidateMonthlyTransactions(raw as TransactionRow[], '2026-9');
     
-    // Deve conter apenas 2 itens: Supermercado e Rendimentos consolidado
+    // Deve conter apenas 2 itens: Supermercado e Rendimentos consolidado (todos os 6 de cofrinho descartados)
     expect(result).toHaveLength(2);
     
     const consolidatedYield = result.find(t => t.is_consolidated);
