@@ -47,7 +47,7 @@ export interface TransactionContextType {
   currentDate: Date;
   monthTitle: string;
   changeMonth: (direction: number) => void;
-  refreshData: () => void;
+  refreshData: () => Promise<void>;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
@@ -209,9 +209,9 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
   const isActuallyLoading = Boolean(!cache[monthKey] && loading);
 
-  const refreshData = useCallback(() => {
-    fetchMonthData(true);
-    loadBanks();
+  const refreshData = useCallback(async () => {
+    await fetchMonthData(true);
+    await loadBanks();
   }, [fetchMonthData, loadBanks]);
 
   const value = useMemo<TransactionContextType>(() => ({

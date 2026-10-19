@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDate } from '../contexts/DateContext';
+import { useTransactionsContext } from '../contexts/TransactionContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { getLocalDateString, parseLocalDate, addMonthsPreservingDay } from '../utils/date';
@@ -33,6 +34,7 @@ import type {
 export default function AddTransaction() {
   const { user } = useAuth();
   const { currentDate } = useDate();
+  const { refreshData } = useTransactionsContext();
   const navigate = useNavigate();
   const location = useLocation();
   const editingTransaction = (location.state as { transaction?: TransactionRow | DisplayTransaction } | undefined)?.transaction;
@@ -194,6 +196,11 @@ export default function AddTransaction() {
           await createTransaction(transactionData);
         }
       }
+      try {
+        await refreshData();
+      } catch {
+        // Ignora eventual falha no refresh local
+      }
       navigate(-1);
     } catch (error) {
       console.error('[AddTransaction] Erro detalhado ao salvar:', error);
@@ -217,6 +224,11 @@ export default function AddTransaction() {
           await deleteFutureInstallments(user.id, editingTransaction, instInfo);
         } else {
           await deleteTransaction(user.id, Number(editingTransaction.id));
+        }
+        try {
+          await refreshData();
+        } catch {
+          // Ignora
         }
         navigate(-1);
       } catch (error) {

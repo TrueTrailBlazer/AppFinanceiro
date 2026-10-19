@@ -36,14 +36,7 @@ export default function TransactionDateAndStatus({
             <input
               type="date" 
               value={date} 
-              onChange={e => {
-                const newDate = e.target.value;
-                setDate(newDate);
-                // Se a data de vencimento ainda for idêntica ou não definida, sincroniza automaticamente
-                if (setDueDate && (!dueDate || dueDate === date)) {
-                  setDueDate(newDate);
-                }
-              }}
+              onChange={e => setDate(e.target.value)}
               className="text-sm font-bold text-slate-900 bg-transparent outline-none mt-0.5 cursor-pointer"
             />
             {!isIncome && (
@@ -75,7 +68,7 @@ export default function TransactionDateAndStatus({
               </div>
               <input
                 type="date" 
-                value={dueDate || date} 
+                value={dueDate ?? ''} 
                 onChange={e => setDueDate(e.target.value)}
                 className="text-sm font-bold text-slate-900 bg-transparent outline-none mt-0.5 cursor-pointer"
               />

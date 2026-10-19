@@ -3,8 +3,6 @@
 -- Criação de tabelas essenciais, índices, RLS e provisionamento do Supabase Storage
 -- ==============================================================================
 
-BEGIN;
-
 -- ------------------------------------------------------------------------------
 -- 1. TABELA DE TRANSAÇÕES FINANCEIRAS (transactions)
 -- ------------------------------------------------------------------------------
@@ -25,6 +23,10 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     notes TEXT NULL,
     due_date TIMESTAMPTZ NULL
 );
+
+-- Garante existência das colunas caso a tabela já tenha sido criada previamente
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS due_date TIMESTAMPTZ NULL;
 
 -- Constraint única para idempotência de transações do Open Finance
 DO $$
@@ -202,4 +204,3 @@ CREATE POLICY "Usuários removem sua foto de perfil"
     ON storage.objects FOR DELETE TO authenticated
     USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
-COMMIT;
