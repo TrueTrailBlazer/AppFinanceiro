@@ -158,8 +158,30 @@ export async function fetchActiveMonthsInYear(
   return data || [];
 }
 
+function isMissingColumnError(error: unknown, columnName: string): boolean {
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { code?: string; message?: string };
+    const col = columnName.toLowerCase();
+    if (err.code === '42703' && err.message?.toLowerCase().includes(col)) return true;
+    if (typeof err.message === 'string') {
+      const lower = err.message.toLowerCase();
+      if (lower.includes(col) && (lower.includes('column') || lower.includes('schema cache'))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function sanitizeTransactionData<T extends Record<string, unknown>>(data: T, removeNotes: boolean, removeDueDate: boolean): T {
+  const sanitized = { ...data };
+  if (removeNotes) delete sanitized.notes;
+  if (removeDueDate) delete sanitized.due_date;
+  return sanitized;
+}
+
 /**
- * Cria uma transação individual.
+ * Cria uma transação individual com fallback para colunas pendentes de migration.
  */
 export async function createTransaction(transactionData: TransactionInsert): Promise<TransactionRow[]> {
   const { data, error } = await supabase
@@ -167,7 +189,22 @@ export async function createTransaction(transactionData: TransactionInsert): Pro
     .insert([transactionData])
     .select();
 
-  if (error) throw error;
+  if (error) {
+    const missingNotes = isMissingColumnError(error, 'notes') && 'notes' in transactionData;
+    const missingDueDate = isMissingColumnError(error, 'due_date') && 'due_date' in transactionData;
+
+    if (missingNotes || missingDueDate) {
+      console.warn(`[transactions] Coluna ausente no banco (${missingNotes ? 'notes ' : ''}${missingDueDate ? 'due_date' : ''}). Salvando com fallback resiliente.`);
+      const fallbackData = sanitizeTransactionData(transactionData as Record<string, unknown>, missingNotes, missingDueDate);
+      const { data: retryData, error: retryError } = await supabase
+        .from('transactions')
+        .insert([fallbackData as TransactionInsert])
+        .select();
+      if (retryError) throw retryError;
+      return retryData || [];
+    }
+    throw error;
+  }
   return data || [];
 }
 
@@ -180,7 +217,24 @@ export async function createBatchTransactions(transactionsList: TransactionInser
     .insert(transactionsList)
     .select();
 
-  if (error) throw error;
+  if (error) {
+    const missingNotes = isMissingColumnError(error, 'notes');
+    const missingDueDate = isMissingColumnError(error, 'due_date');
+
+    if (missingNotes || missingDueDate) {
+      console.warn(`[transactions] Coluna ausente no banco (${missingNotes ? 'notes ' : ''}${missingDueDate ? 'due_date' : ''}). Salvando lote com fallback resiliente.`);
+      const fallbackList = transactionsList.map(tx =>
+        sanitizeTransactionData(tx as Record<string, unknown>, missingNotes, missingDueDate) as TransactionInsert
+      );
+      const { data: retryData, error: retryError } = await supabase
+        .from('transactions')
+        .insert(fallbackList)
+        .select();
+      if (retryError) throw retryError;
+      return retryData || [];
+    }
+    throw error;
+  }
   return data || [];
 }
 
@@ -199,7 +253,24 @@ export async function updateTransaction(
     .eq('user_id', userId)
     .select();
 
-  if (error) throw error;
+  if (error) {
+    const missingNotes = isMissingColumnError(error, 'notes') && 'notes' in updateData;
+    const missingDueDate = isMissingColumnError(error, 'due_date') && 'due_date' in updateData;
+
+    if (missingNotes || missingDueDate) {
+      console.warn(`[transactions] Coluna ausente no banco (${missingNotes ? 'notes ' : ''}${missingDueDate ? 'due_date' : ''}). Atualizando com fallback resiliente.`);
+      const fallbackData = sanitizeTransactionData(updateData as Record<string, unknown>, missingNotes, missingDueDate);
+      const { data: retryData, error: retryError } = await supabase
+        .from('transactions')
+        .update(fallbackData as TransactionUpdate)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select();
+      if (retryError) throw retryError;
+      return retryData || [];
+    }
+    throw error;
+  }
   return data || [];
 }
 
@@ -316,7 +387,9 @@ export async function updateFutureInstallments(
   isPaid: boolean,
   baseDateIso: string,
   isDateChanged: boolean,
-  notes?: string | null
+  notes?: string | null,
+  dueDateIso?: string | null,
+  isDueDateChanged?: boolean
 ): Promise<void> {
   const futureTxs = await fetchFutureInstallments(userId, editingTransaction, instInfo);
   if (!futureTxs || futureTxs.length === 0) return;
@@ -348,6 +421,9 @@ export async function updateFutureInstallments(
       updateData.is_paid = isPaid;
       if (isDateChanged) {
         updateData.created_at = baseDateIso;
+      }
+      if (isDueDateChanged) {
+        updateData.due_date = dueDateIso;
       }
     }
 

@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     bank_name TEXT NULL,
     bank_logo_url TEXT NULL,
     receipt_url TEXT NULL,
-    notes TEXT NULL
+    notes TEXT NULL,
+    due_date TIMESTAMPTZ NULL
 );
 
 -- Constraint única para idempotência de transações do Open Finance
@@ -39,6 +40,9 @@ END $$;
 -- Índices de consulta de alto rendimento para transactions
 CREATE INDEX IF NOT EXISTS idx_transactions_user_created 
     ON public.transactions(user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_due_date 
+    ON public.transactions(due_date);
 
 CREATE INDEX IF NOT EXISTS idx_transactions_installment_group 
     ON public.transactions(installment_group_id) 

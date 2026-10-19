@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 
@@ -55,11 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signOut = async (): Promise<void> => {
+  const signOut = useCallback(async (): Promise<void> => {
     await supabase.auth.signOut();
-  };
+  }, []);
 
-  const value: AuthContextType = { session, user, setUser, loading, signOut };
+  const value: AuthContextType = useMemo(
+    () => ({ session, user, setUser, loading, signOut }),
+    [session, user, loading, signOut]
+  );
 
   return (
     <AuthContext.Provider value={value}>

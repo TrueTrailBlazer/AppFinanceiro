@@ -71,7 +71,7 @@ export default function Bills() {
       return true;
     }).sort((a, b) => {
       if (a.is_paid !== b.is_paid) return a.is_paid ? 1 : -1;
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(a.due_date || a.created_at).getTime() - new Date(b.due_date || b.created_at).getTime();
     });
   }, [bills, activeFilter]);
 
@@ -94,7 +94,7 @@ export default function Bills() {
         groups.paid.items.push(bill);
         groups.paid.total += cents;
       } else {
-        const dueDate = new Date(bill.created_at);
+        const dueDate = new Date(bill.due_date || bill.created_at);
         dueDate.setHours(0, 0, 0, 0);
 
         if (dueDate < today) {

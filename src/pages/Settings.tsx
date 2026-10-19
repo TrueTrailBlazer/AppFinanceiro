@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { RecurringExpenses } from '../components/settings/RecurringExpenses';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
@@ -11,10 +12,29 @@ type SettingsView = 'menu' | 'profile' | 'recurring' | 'security' | 'goals' | 'c
 
 export default function Settings() {
   const { user, signOut } = useAuth();
-  const [currentView, setCurrentView] = useState<SettingsView>('menu');
+  const [isRecovery, setIsRecovery] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery');
+  });
+  const [currentView, setCurrentView] = useState<SettingsView>(() => {
+    if (typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery'))) {
+      return 'security';
+    }
+    return 'menu';
+  });
   const [isLightMode, setIsLightMode] = useState<boolean>(() => 
     typeof document !== 'undefined' ? !document.documentElement.classList.contains('dark') : true
   );
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setCurrentView('security');
+        setIsRecovery(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -40,7 +60,7 @@ export default function Settings() {
     return <ProfileSettings onBack={() => setCurrentView('menu')} />;
   }
   if (currentView === 'security') {
-    return <SecuritySettings onBack={() => setCurrentView('menu')} />;
+    return <SecuritySettings onBack={() => { setCurrentView('menu'); setIsRecovery(false); }} isRecovery={isRecovery} />;
   }
   if (currentView === 'goals') {
     return <FinancialGoals onBack={() => setCurrentView('menu')} />;

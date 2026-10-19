@@ -31,9 +31,10 @@ export type FinancialGoalUpdate = TablesUpdate<'financial_goals'>;
  * (ex: rendimentos consolidados, cujo `id` é uma string como "consolidated-yield-2026-9").
  * `is_consolidated` e `yield_count` NÃO existem na tabela; são apenas campos de cliente.
  */
-export interface DisplayTransaction extends Omit<TransactionRow, 'id' | 'notes'> {
+export interface DisplayTransaction extends Omit<TransactionRow, 'id' | 'notes' | 'due_date'> {
   id: TransactionRow['id'] | string;
   notes?: string | null;
+  due_date?: string | null;
   is_consolidated?: boolean;
   yield_count?: number;
 }

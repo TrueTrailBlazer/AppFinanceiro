@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createTransaction,
   createBatchTransactions,
+  updateTransaction,
   deleteBatchTransactions,
   fetchFutureInstallments,
   deleteFutureInstallments,
@@ -48,7 +49,8 @@ describe('transactions service', () => {
         installment_group_id: null,
         pluggy_transaction_id: null,
         receipt_url: null,
-        notes: null
+        notes: null,
+        due_date: null
       };
 
       const selectMock = vi.fn().mockResolvedValue({ data: [mockRow], error: null });
@@ -253,7 +255,8 @@ describe('transactions service', () => {
         bank_logo_url: null,
         pluggy_transaction_id: null,
         receipt_url: null,
-        notes: null
+        notes: null,
+        due_date: null
       };
 
       await deleteFutureInstallments('user-1', editingTx, { baseName: 'Carro', current: 2, total: 12 });
@@ -344,5 +347,134 @@ describe('transactions service', () => {
       expect(insertMock).toHaveBeenCalledWith([txWithNotes]);
       expect(result[0].notes).toBe('Pago adiantado com desconto de R$ 50');
     });
+
+    it('deve executar fallback resiliente e salvar sem notes se o banco acusar ausência da coluna (código 42703)', async () => {
+      const txWithNotes: TransactionInsert = {
+        user_id: 'user-1',
+        name: 'Internet Fibra',
+        amount: 12000,
+        type: 'fixed',
+        category: 'utilities',
+        notes: 'Vencimento todo dia 10',
+      };
+
+      const selectFailure = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '42703', message: 'column transactions.notes does not exist' }
+      });
+      const selectSuccess = vi.fn().mockResolvedValue({
+        data: [{ id: 1001, user_id: 'user-1', name: 'Internet Fibra', amount: 12000, type: 'fixed', category: 'utilities' }],
+        error: null
+      });
+
+      const insertMock = vi.fn()
+        .mockReturnValueOnce({ select: selectFailure })
+        .mockReturnValueOnce({ select: selectSuccess });
+
+      vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any);
+
+      const result = await createTransaction(txWithNotes);
+
+      expect(insertMock).toHaveBeenCalledTimes(2);
+      // Segunda chamada deve ter o campo notes removido para salvar com sucesso
+      expect(insertMock).toHaveBeenNthCalledWith(2, [{
+        user_id: 'user-1',
+        name: 'Internet Fibra',
+        amount: 12000,
+        type: 'fixed',
+        category: 'utilities',
+      }]);
+      expect(result[0].id).toBe(1001);
+    });
+  });
+
+  describe('Campo de Vencimento (due_date) e Competência', () => {
+    it('deve incluir due_date ao criar uma transação', async () => {
+      const txWithDueDate: TransactionInsert = {
+        user_id: 'user-1',
+        name: 'Energia Elétrica Outubro',
+        amount: 25000,
+        type: 'fixed',
+        category: 'utilities',
+        created_at: '2026-10-15T12:00:00.000Z',
+        due_date: '2026-11-05T00:00:00.000Z',
+      };
+
+      const selectMock = vi.fn().mockResolvedValue({
+        data: [{ id: 2001, ...txWithDueDate }],
+        error: null,
+      });
+      const insertMock = vi.fn().mockReturnValue({ select: selectMock });
+      vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any);
+
+      const result = await createTransaction(txWithDueDate);
+
+      expect(supabase.from).toHaveBeenCalledWith('transactions');
+      expect(insertMock).toHaveBeenCalledWith([txWithDueDate]);
+      expect(result[0].due_date).toBe('2026-11-05T00:00:00.000Z');
+      expect(result[0].created_at).toBe('2026-10-15T12:00:00.000Z');
+    });
+
+    it('deve executar fallback resiliente e salvar sem due_date se o banco acusar ausência da coluna (código 42703)', async () => {
+      const txWithDueDate: TransactionInsert = {
+        user_id: 'user-1',
+        name: 'Condomínio',
+        amount: 45000,
+        type: 'fixed',
+        category: 'home',
+        due_date: '2026-11-10T00:00:00.000Z',
+      };
+
+      const selectFailure = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: '42703', message: 'column transactions.due_date does not exist' }
+      });
+      const selectSuccess = vi.fn().mockResolvedValue({
+        data: [{ id: 2002, user_id: 'user-1', name: 'Condomínio', amount: 45000, type: 'fixed', category: 'home' }],
+        error: null
+      });
+
+      const insertMock = vi.fn()
+        .mockReturnValueOnce({ select: selectFailure })
+        .mockReturnValueOnce({ select: selectSuccess });
+
+      vi.mocked(supabase.from).mockReturnValue({ insert: insertMock } as any);
+
+      const result = await createTransaction(txWithDueDate);
+
+      expect(insertMock).toHaveBeenCalledTimes(2);
+      // Segunda chamada deve ter o campo due_date removido para salvar com sucesso
+      expect(insertMock).toHaveBeenNthCalledWith(2, [{
+        user_id: 'user-1',
+        name: 'Condomínio',
+        amount: 45000,
+        type: 'fixed',
+        category: 'home',
+      }]);
+      expect(result[0].id).toBe(2002);
+    });
+
+    it('deve atualizar transação com due_date corretamente', async () => {
+      const selectMock = vi.fn().mockResolvedValue({
+        data: [{ id: 2001, user_id: 'user-1', name: 'Energia', amount: 25000, due_date: '2026-11-08T00:00:00.000Z' }],
+        error: null,
+      });
+      const eqUserMock = vi.fn().mockReturnValue({ select: selectMock });
+      const eqIdMock = vi.fn().mockReturnValue({ eq: eqUserMock });
+      const updateMock = vi.fn().mockReturnValue({ eq: eqIdMock });
+
+      vi.mocked(supabase.from).mockReturnValue({ update: updateMock } as any);
+
+      const result = await updateTransaction('user-1', 2001, {
+        due_date: '2026-11-08T00:00:00.000Z',
+      });
+
+      expect(supabase.from).toHaveBeenCalledWith('transactions');
+      expect(updateMock).toHaveBeenCalledWith({
+        due_date: '2026-11-08T00:00:00.000Z',
+      });
+      expect(result[0].due_date).toBe('2026-11-08T00:00:00.000Z');
+    });
   });
 });
+

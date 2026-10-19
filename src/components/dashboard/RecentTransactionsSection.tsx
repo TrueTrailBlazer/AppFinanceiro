@@ -1,4 +1,5 @@
 import { formatCurrency } from '../../utils/money';
+import { formatLocalDate } from '../../utils/date';
 import type { DisplayTransaction } from '../../types/models';
 
 export interface RecentTransactionsSectionProps {
@@ -56,7 +57,7 @@ export function RecentTransactionsSection({
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-semibold text-slate-900 truncate">{tx.name}</span>
-                    <span className="text-xs text-slate-500 truncate capitalize">{tx.category || 'Outros'} • {new Date(tx.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}</span>
+                    <span className="text-xs text-slate-500 truncate capitalize">{tx.category || 'Outros'} • {formatLocalDate(tx.created_at, { day: '2-digit', month: 'short' })}</span>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-3">

@@ -27,7 +27,7 @@ export function UpcomingBillsSection({
 }: UpcomingBillsSectionProps) {
   const pendingBills = (bills || [])
     .filter(t => !t.is_paid)
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    .sort((a, b) => new Date(a.due_date || a.created_at).getTime() - new Date(b.due_date || b.created_at).getTime())
     .slice(0, 3);
 
   return (
@@ -61,7 +61,8 @@ export function UpcomingBillsSection({
           </div>
         ) : (
           pendingBills.map(t => {
-            const daysRemaining = getDaysRemaining(t.created_at);
+            const effectiveDate = t.due_date || t.created_at;
+            const daysRemaining = getDaysRemaining(effectiveDate);
             const isOverdue = daysRemaining < 0;
 
             return (

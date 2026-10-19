@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDate } from '../contexts/DateContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { getLocalDateString, parseLocalDate, addMonthsPreservingDay } from '../utils/date';
@@ -20,6 +21,7 @@ import TransactionDateAndStatus from '../components/transactions/TransactionDate
 import InstallmentConfigCard from '../components/transactions/InstallmentConfigCard';
 import FutureInstallmentsPrompt from '../components/transactions/FutureInstallmentsPrompt';
 import { getInstallmentInfo } from '../utils/installments';
+import { extractErrorMessage } from '../utils/errors';
 import type { 
   TransactionRow, 
   DisplayTransaction, 
@@ -30,6 +32,7 @@ import type {
 
 export default function AddTransaction() {
   const { user } = useAuth();
+  const { currentDate } = useDate();
   const navigate = useNavigate();
   const location = useLocation();
   const editingTransaction = (location.state as { transaction?: TransactionRow | DisplayTransaction } | undefined)?.transaction;
@@ -41,7 +44,17 @@ export default function AddTransaction() {
   const [name, setName] = useState('');
   const [type, setType] = useState('variable');
   const [category, setCategory] = useState('others');
-  const [date, setDate] = useState(() => getLocalDateString());
+  
+  // Inicializa a competência orçamentária de acordo com o mês visualizado
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    if (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth()) {
+      return getLocalDateString(today);
+    }
+    const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), Math.min(today.getDate(), 28));
+    return getLocalDateString(monthDate);
+  });
+  const [dueDate, setDueDate] = useState<string>(() => date);
   const [isPaid, setIsPaid] = useState(false);
   const [notes, setNotes] = useState('');
 
@@ -67,7 +80,13 @@ export default function AddTransaction() {
 
       if (editingTransaction.created_at) {
         const dbDate = new Date(editingTransaction.created_at);
-        setDate(getLocalDateString(dbDate));
+        const localDateStr = getLocalDateString(dbDate);
+        setDate(localDateStr);
+        if (editingTransaction.due_date) {
+          setDueDate(getLocalDateString(new Date(editingTransaction.due_date)));
+        } else {
+          setDueDate(localDateStr);
+        }
       }
 
       setNotes(editingTransaction.notes || '');
@@ -81,8 +100,13 @@ export default function AddTransaction() {
 
     const now = new Date();
     const baseDate = parseLocalDate(date, now);
+    const baseDueDate = dueDate ? parseLocalDate(dueDate, now) : null;
     const originalLocalDate = editingTransaction ? getLocalDateString(new Date(editingTransaction.created_at)) : null;
+    const originalDueDateStr = editingTransaction?.due_date 
+      ? getLocalDateString(new Date(editingTransaction.due_date)) 
+      : originalLocalDate;
     const isDateChanged = date !== originalLocalDate;
+    const isDueDateChanged = dueDate !== originalDueDateStr;
     const formattedNotes = notes.trim() || null;
 
     try {
@@ -100,7 +124,9 @@ export default function AddTransaction() {
             isPaid,
             baseDate.toISOString(),
             isDateChanged,
-            formattedNotes
+            formattedNotes,
+            baseDueDate ? baseDueDate.toISOString() : null,
+            isDueDateChanged
           );
         } else {
           const transactionData: TransactionUpdate = {
@@ -110,7 +136,8 @@ export default function AddTransaction() {
             type,
             category,
             is_paid: isPaid,
-            notes: formattedNotes
+            due_date: baseDueDate ? baseDueDate.toISOString() : null,
+            ...(formattedNotes ? { notes: formattedNotes } : {})
           };
           if (isDateChanged) {
             transactionData.created_at = baseDate.toISOString();
@@ -133,6 +160,7 @@ export default function AddTransaction() {
           const txs: TransactionInsert[] = [];
           for (let i = 1; i <= count; i++) {
             const stepDate = addMonthsPreservingDay(baseDate, i - startAt);
+            const stepDueDate = baseDueDate ? addMonthsPreservingDay(baseDueDate, i - startAt) : null;
 
             const txName = `${name} (${i}/${count})`;
             const txIsPaid = i < startAt ? true : (i === startAt ? isPaid : false);
@@ -145,8 +173,9 @@ export default function AddTransaction() {
               category,
               is_paid: txIsPaid,
               created_at: stepDate.toISOString(),
+              due_date: stepDueDate ? stepDueDate.toISOString() : null,
               installment_group_id: installmentGroupId, // Chave relacional
-              notes: formattedNotes
+              ...(formattedNotes ? { notes: formattedNotes } : {})
             });
           }
           await createBatchTransactions(txs);
@@ -159,14 +188,16 @@ export default function AddTransaction() {
             category,
             is_paid: isPaid,
             created_at: baseDate.toISOString(),
-            notes: formattedNotes
+            due_date: baseDueDate ? baseDueDate.toISOString() : null,
+            ...(formattedNotes ? { notes: formattedNotes } : {})
           };
           await createTransaction(transactionData);
         }
       }
       navigate(-1);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Erro ao salvar';
+      console.error('[AddTransaction] Erro detalhado ao salvar:', error);
+      const msg = extractErrorMessage(error, 'Falha ao salvar lançamento no banco de dados');
       showAlert('Erro ao salvar: ' + msg, 'error');
     } finally {
       setLoading(false);
@@ -189,7 +220,8 @@ export default function AddTransaction() {
         }
         navigate(-1);
       } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Erro ao apagar';
+        console.error('[AddTransaction] Erro detalhado ao apagar:', error);
+        const msg = extractErrorMessage(error, 'Falha ao excluir lançamento');
         showAlert('Erro ao apagar: ' + msg, 'error');
         setLoading(false);
       }
@@ -254,8 +286,11 @@ export default function AddTransaction() {
               <TransactionDateAndStatus 
                 date={date}
                 setDate={setDate}
+                dueDate={dueDate}
+                setDueDate={setDueDate}
                 isPaid={isPaid}
                 setIsPaid={setIsPaid}
+                type={type}
               />
 
               {/* INSTALLMENTS LOGIC */}

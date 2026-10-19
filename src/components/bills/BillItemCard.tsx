@@ -29,7 +29,20 @@ export default function BillItemCard({
   onUploadReceipt
 }: BillItemCardProps) {
   const iconName = getBillIcon(bill);
-  const isOverdue = new Date(bill.created_at) < new Date();
+  const effectiveDueDate = bill.due_date || bill.created_at;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDateTime = new Date(effectiveDueDate);
+  dueDateTime.setHours(0, 0, 0, 0);
+  const isOverdue = !bill.is_paid && dueDateTime < today;
+
+  const createdDate = new Date(bill.created_at);
+  const isCrossMonthDue = Boolean(
+    bill.due_date && (
+      dueDateTime.getMonth() !== createdDate.getMonth() ||
+      dueDateTime.getFullYear() !== createdDate.getFullYear()
+    )
+  );
 
   return (
     <article 
@@ -52,8 +65,13 @@ export default function BillItemCard({
           </h4>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={`text-[11px] font-medium ${bill.is_paid ? 'text-slate-400' : 'text-slate-500'}`}>
-              {bill.is_paid ? 'Pago em ' : 'Vence: '}{formatLocalDate(bill.created_at, { day: '2-digit', month: 'short' })}
+              {bill.is_paid ? 'Pago em ' : 'Vence: '}{formatLocalDate(effectiveDueDate, { day: '2-digit', month: 'short' })}
             </span>
+            {isCrossMonthDue && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                Ref: {formatLocalDate(bill.created_at, { month: 'short' })}
+              </span>
+            )}
             {!bill.is_paid && (
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
                 isOverdue ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -64,6 +82,11 @@ export default function BillItemCard({
             {bill.is_paid && (
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-0.5">
                 <span className="material-symbols-outlined text-[10px]">done</span> Pago
+              </span>
+            )}
+            {bill.notes && (
+              <span className="text-[10px] text-slate-400 truncate max-w-[220px]" title={bill.notes}>
+                • {bill.notes}
               </span>
             )}
           </div>

@@ -126,6 +126,7 @@ export type Database = {
           bank_name: string | null
           category: string | null
           created_at: string
+          due_date: string | null
           id: number
           installment_group_id: string | null
           is_paid: boolean | null
@@ -142,6 +143,7 @@ export type Database = {
           bank_name?: string | null
           category?: string | null
           created_at?: string
+          due_date?: string | null
           id?: number
           installment_group_id?: string | null
           is_paid?: boolean | null
@@ -158,6 +160,7 @@ export type Database = {
           bank_name?: string | null
           category?: string | null
           created_at?: string
+          due_date?: string | null
           id?: number
           installment_group_id?: string | null
           is_paid?: boolean | null
