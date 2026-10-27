@@ -13,7 +13,6 @@ import { useDate } from '../../contexts/DateContext';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { parseCents } from '../../utils/money';
-import { getLocalDateString } from '../../utils/date';
 import { SettingsHeader } from './SettingsHeader';
 import { RecurringHero } from './recurring/RecurringHero';
 import { RecurringList } from './recurring/RecurringList';
@@ -127,7 +126,7 @@ export function RecurringExpenses({ onBack }: RecurringExpensesProps) {
           category: item.category,
           is_paid: false,
           created_at: date.toISOString(),
-          due_date: getLocalDateString(date)
+          due_date: date.toISOString()
         };
       });
 
