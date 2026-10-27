@@ -68,8 +68,8 @@ export default function BillItemCard({
               {bill.is_paid ? 'Pago em ' : 'Vence: '}{formatLocalDate(effectiveDueDate, { day: '2-digit', month: 'short' })}
             </span>
             {isCrossMonthDue && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                Ref: {formatLocalDate(bill.created_at, { month: 'short' })}
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 capitalize">
+                {formatLocalDate(bill.created_at, { month: 'long' })}
               </span>
             )}
             {!bill.is_paid && (
