@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLocalDateString, parseLocalDate, addMonthsPreservingDay, formatLocalDate } from './date';
+import { getLocalDateString, parseLocalDate, addMonthsPreservingDay, formatLocalDate, toStoredTimestamp } from './date';
 
 describe('date - getLocalDateString', () => {
   it('deve formatar data local como YYYY-MM-DD', () => {
@@ -132,5 +132,29 @@ describe('date - formatLocalDate', () => {
     expect(parsed.getFullYear()).toBe(2026);
     expect(parsed.getMonth()).toBe(4);
     expect(parsed.getDate()).toBe(1);
+  });
+});
+
+describe('date - toStoredTimestamp', () => {
+  it('deve fixar meia-noite/meio-dia local evitando recuo de dia no fuso brasileiro UTC-3', () => {
+    const timestamp = toStoredTimestamp('2026-11-05');
+    const parsed = new Date(timestamp);
+    // No fuso local, o dia tem que ser rigorosamente 05
+    expect(parsed.getDate()).toBe(5);
+    expect(parsed.getMonth()).toBe(10); // Novembro = 10
+    expect(parsed.getFullYear()).toBe(2026);
+    expect(getLocalDateString(timestamp)).toBe('2026-11-05');
+  });
+
+  it('deve converter Date para ISO string', () => {
+    const d = new Date(2026, 9, 15, 12, 0, 0);
+    const timestamp = toStoredTimestamp(d);
+    expect(typeof timestamp).toBe('string');
+    expect(getLocalDateString(timestamp)).toBe('2026-10-15');
+  });
+
+  it('deve retornar ISO string atual caso o input seja nulo ou indefinido', () => {
+    expect(typeof toStoredTimestamp(null)).toBe('string');
+    expect(typeof toStoredTimestamp(undefined)).toBe('string');
   });
 });

@@ -13,6 +13,7 @@ import { useDate } from '../../contexts/DateContext';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { parseCents } from '../../utils/money';
+import { toStoredTimestamp } from '../../utils/date';
 import { SettingsHeader } from './SettingsHeader';
 import { RecurringHero } from './recurring/RecurringHero';
 import { RecurringList } from './recurring/RecurringList';
@@ -125,8 +126,8 @@ export function RecurringExpenses({ onBack }: RecurringExpensesProps) {
           type: 'variable',
           category: item.category,
           is_paid: false,
-          created_at: date.toISOString(),
-          due_date: date.toISOString()
+          created_at: toStoredTimestamp(date),
+          due_date: toStoredTimestamp(date)
         };
       });
 

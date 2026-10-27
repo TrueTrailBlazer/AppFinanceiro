@@ -126,6 +126,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     run();
   }, [user, fetchMonthData]);
 
+  const monthKeyRef = useRef(monthKey);
+  useEffect(() => {
+    monthKeyRef.current = monthKey;
+  }, [monthKey]);
+
   const fetchMonthDataRef = useRef(fetchMonthData);
   useEffect(() => {
     fetchMonthDataRef.current = fetchMonthData;
@@ -140,7 +145,13 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, 
         () => {
-          fetchMonthDataRef.current?.(true); // Força refresh sem piscar a tela
+          // Invalida outros meses no cache para que navegações futuras busquem dados atualizados
+          const currentKey = monthKeyRef.current;
+          setCache(prev => {
+            const current = prev[currentKey];
+            return current ? { [currentKey]: current } : {};
+          });
+          fetchMonthDataRef.current?.(true); // Força refresh do mês ativo sem piscar a tela
         }
       )
       .subscribe();

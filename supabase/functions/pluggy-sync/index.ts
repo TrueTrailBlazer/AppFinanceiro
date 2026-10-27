@@ -73,15 +73,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Autenticação na Pluggy e prevenção de IDOR
+    // 1. Autenticação na Pluggy e prevenção estrita de IDOR
     const { data: existingItem } = await supabaseClient
       .from('pluggy_items')
       .select('user_id')
       .eq('item_id', itemId)
-      .single();
+      .maybeSingle();
 
-    if (existingItem && existingItem.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Acesso negado ao item' }), {
+    if (!existingItem || existingItem.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Acesso negado: item bancário não encontrado ou não pertence a você' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

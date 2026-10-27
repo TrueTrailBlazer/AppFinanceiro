@@ -5,6 +5,7 @@ import { Calendar, Search } from 'lucide-react';
 import { getCategory } from '../utils/constants';
 import { formatCents, parseCents } from '../utils/money';
 import { formatLocalDate, parseLocalDate } from '../utils/date';
+import { isInternalReserveTransaction } from '../utils/transactionSelectors';
 import { fetchTransactionsByCategory } from '../services/transactions';
 import { BankBadge } from '../components/ui/BankBadge';
 import BankTransactionDetailModal from '../components/extract/BankTransactionDetailModal';
@@ -55,10 +56,6 @@ export default function CategoryDetails() {
         const data = await fetchTransactionsByCategory(user.id, category, startIso, endIso);
 
         const isBankTransaction = (t: TransactionRow) => Boolean(t.pluggy_transaction_id);
-        const isInternalTransfer = (t: TransactionRow) => {
-          const name = (t.name || '').toLowerCase();
-          return name.includes('dinheiro retirado') || name.includes('saldo reservado');
-        };
 
         const periodTxs = data || [];
 
@@ -69,7 +66,7 @@ export default function CategoryDetails() {
 
         // 3. Aplica regra de desacoplamento e exclui transferências internas e receitas
         const filtered = periodTxs.filter(t => {
-          if (t.type === 'income' || isInternalTransfer(t)) {
+          if (t.type === 'income' || isInternalReserveTransaction(t.name || '')) {
             return false;
           }
           if (monthKey) {

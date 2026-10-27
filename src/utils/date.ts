@@ -86,3 +86,21 @@ export function formatLocalDate(
 }
 
 export const addMonthsSafe = addMonthsPreservingDay;
+
+/**
+ * Retorna uma string ISO 8601 segura para armazenamento em colunas TIMESTAMPTZ do PostgreSQL.
+ * Fixa o horário no meio-dia local (12:00:00) quando a entrada for no formato date-only (YYYY-MM-DD),
+ * evitando o deslocamento de -1 dia que ocorreria ao converter 00:00:00 UTC para o fuso brasileiro (UTC-3).
+ */
+export function toStoredTimestamp(dateInput?: Date | string | number | null): string {
+  if (!dateInput) return new Date().toISOString();
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [year, month, day] = trimmed.split('-').map(Number);
+      return new Date(year, month - 1, day, 12, 0, 0, 0).toISOString();
+    }
+  }
+  const d = toLocalDate(dateInput);
+  return d.toISOString();
+}

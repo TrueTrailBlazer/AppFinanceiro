@@ -13,15 +13,16 @@ export type { BankSummary, PlannedSummary, OverallSummary };
  * Identifica movimentações internas de cofrinho / reserva bancária (ex: Mercado Pago)
  * que não devem ser contabilizadas como despesa nem como receita no fluxo de caixa.
  */
-export function isInternalReserveTransaction(name: string = ''): boolean {
-  const n = name.toLowerCase();
+export function isInternalReserveTransaction(name: string = '', operationType: string = ''): boolean {
+  const n = (name + ' ' + operationType).toLowerCase();
   return (
     n.includes('dinheiro retirado') ||
     n.includes('dinheiro reservado') ||
     n.includes('saldo reservado') ||
     n.includes('dinheiro guardado') ||
     n.includes('reserva programada') ||
-    n.includes('saldo_reservado')
+    n.includes('saldo_reservado') ||
+    n.includes('cofrinho')
   );
 }
 

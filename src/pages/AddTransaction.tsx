@@ -4,7 +4,7 @@ import { useDate } from '../contexts/DateContext';
 import { useTransactionsContext } from '../contexts/TransactionContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
-import { getLocalDateString, parseLocalDate, addMonthsPreservingDay } from '../utils/date';
+import { getLocalDateString, parseLocalDate, addMonthsPreservingDay, toStoredTimestamp } from '../utils/date';
 import { parseCents, formatCents, splitInstallments } from '../utils/money';
 import { 
   createTransaction, 
@@ -124,10 +124,10 @@ export default function AddTransaction() {
             type,
             category,
             isPaid,
-            baseDate.toISOString(),
+            toStoredTimestamp(baseDate),
             isDateChanged,
             formattedNotes,
-            baseDueDate ? baseDueDate.toISOString() : null,
+            baseDueDate ? toStoredTimestamp(baseDueDate) : null,
             isDueDateChanged
           );
         } else {
@@ -138,11 +138,11 @@ export default function AddTransaction() {
             type,
             category,
             is_paid: isPaid,
-            due_date: baseDueDate ? baseDueDate.toISOString() : null,
+            due_date: baseDueDate ? toStoredTimestamp(baseDueDate) : null,
             ...(formattedNotes ? { notes: formattedNotes } : {})
           };
           if (isDateChanged) {
-            transactionData.created_at = baseDate.toISOString();
+            transactionData.created_at = toStoredTimestamp(baseDate);
           }
           await updateTransaction(user.id, Number(editingTransaction.id), transactionData);
         }
@@ -174,8 +174,8 @@ export default function AddTransaction() {
               type,
               category,
               is_paid: txIsPaid,
-              created_at: stepDate.toISOString(),
-              due_date: stepDueDate ? stepDueDate.toISOString() : null,
+              created_at: toStoredTimestamp(stepDate),
+              due_date: stepDueDate ? toStoredTimestamp(stepDueDate) : null,
               installment_group_id: installmentGroupId, // Chave relacional
               ...(formattedNotes ? { notes: formattedNotes } : {})
             });
@@ -189,8 +189,8 @@ export default function AddTransaction() {
             type,
             category,
             is_paid: isPaid,
-            created_at: baseDate.toISOString(),
-            due_date: baseDueDate ? baseDueDate.toISOString() : null,
+            created_at: toStoredTimestamp(baseDate),
+            due_date: baseDueDate ? toStoredTimestamp(baseDueDate) : null,
             ...(formattedNotes ? { notes: formattedNotes } : {})
           };
           await createTransaction(transactionData);

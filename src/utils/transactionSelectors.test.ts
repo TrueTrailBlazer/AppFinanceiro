@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  isInternalReserveTransaction,
   consolidateMonthlyTransactions,
   selectBankTransactions,
   selectPlannedBills,
@@ -9,6 +10,20 @@ import {
   computePlannedSummary
 } from './transactionSelectors';
 import type { DisplayTransaction, TransactionRow } from '../types/models';
+
+describe('transactionSelectors - isInternalReserveTransaction', () => {
+  it('deve identificar todos os termos conhecidos de cofrinho e reserva bancária', () => {
+    expect(isInternalReserveTransaction('Dinheiro retirado')).toBe(true);
+    expect(isInternalReserveTransaction('Saldo reservado')).toBe(true);
+    expect(isInternalReserveTransaction('Dinheiro reservado Cofrinho')).toBe(true);
+    expect(isInternalReserveTransaction('Reserva programada')).toBe(true);
+    expect(isInternalReserveTransaction('Dinheiro guardado')).toBe(true);
+    expect(isInternalReserveTransaction('Cofrinho viagem')).toBe(true);
+    expect(isInternalReserveTransaction('Pix enviado', 'SALDO_RESERVADO')).toBe(true);
+    expect(isInternalReserveTransaction('Padaria São José')).toBe(false);
+    expect(isInternalReserveTransaction('Supermercado')).toBe(false);
+  });
+});
 
 describe('transactionSelectors - consolidateMonthlyTransactions', () => {
   it('deve descartar movimentações de cofrinho e consolidar rendimentos', () => {
