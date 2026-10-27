@@ -64,9 +64,9 @@ export default function CategoryDetails() {
           ? isBankSource 
           : periodTxs.some(t => isBankTransaction(t));
 
-        // 3. Aplica regra de desacoplamento e exclui transferências internas e receitas
+        // 3. Aplica regra de desacoplamento e exclui transferências internas do banco e receitas
         const filtered = periodTxs.filter(t => {
-          if (t.type === 'income' || isInternalReserveTransaction(t.name || '')) {
+          if (t.type === 'income' || (isBankTransaction(t) && isInternalReserveTransaction(t.name || ''))) {
             return false;
           }
           if (monthKey) {

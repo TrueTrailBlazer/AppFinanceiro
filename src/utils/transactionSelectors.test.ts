@@ -26,23 +26,27 @@ describe('transactionSelectors - isInternalReserveTransaction', () => {
 });
 
 describe('transactionSelectors - consolidateMonthlyTransactions', () => {
-  it('deve descartar movimentações de cofrinho e consolidar rendimentos', () => {
+  it('deve descartar movimentações de cofrinho bancárias mas preservar contas planejadas manuais do usuário', () => {
     const raw: Partial<TransactionRow>[] = [
-      { id: 1, name: 'Dinheiro retirado', amount: 10000, type: 'income', created_at: '2026-10-01T10:00:00Z' },
-      { id: 2, name: 'Saldo reservado', amount: 5000, type: 'expense', created_at: '2026-10-02T10:00:00Z' },
-      { id: 3, name: 'Dinheiro reservado Dinheiro', amount: 239976, type: 'variable', created_at: '2026-10-02T11:00:00Z' },
-      { id: 4, name: 'Dinheiro reservado Cofrinho com meu amorzinho', amount: 20000, type: 'variable', created_at: '2026-10-02T12:00:00Z' },
-      { id: 5, name: 'Reserva programada Cofrinho com meu amorzinho', amount: 20000, type: 'variable', created_at: '2026-10-02T13:00:00Z' },
-      { id: 6, name: 'Dinheiro guardado Reserva', amount: 15000, type: 'variable', created_at: '2026-10-02T14:00:00Z' },
-      { id: 7, name: 'Rendimento Nubank', amount: 150, type: 'income', created_at: '2026-10-03T10:00:00Z' },
-      { id: 8, name: 'Rendimento Inter', amount: 250, type: 'income', created_at: '2026-10-04T10:00:00Z' },
+      { id: 1, name: 'Dinheiro retirado', amount: 10000, type: 'income', created_at: '2026-10-01T10:00:00Z', pluggy_transaction_id: 'plg-1' },
+      { id: 2, name: 'Saldo reservado', amount: 5000, type: 'expense', created_at: '2026-10-02T10:00:00Z', pluggy_transaction_id: 'plg-2' },
+      { id: 3, name: 'Dinheiro reservado Dinheiro', amount: 239976, type: 'variable', created_at: '2026-10-02T11:00:00Z', pluggy_transaction_id: 'plg-3' },
+      { id: 4, name: 'Dinheiro reservado Cofrinho com meu amorzinho', amount: 20000, type: 'variable', created_at: '2026-10-02T12:00:00Z', pluggy_transaction_id: 'plg-4' },
+      { id: 5, name: 'Reserva programada Cofrinho com meu amorzinho', amount: 20000, type: 'variable', created_at: '2026-10-02T13:00:00Z', pluggy_transaction_id: 'plg-5' },
+      { id: 6, name: 'Dinheiro guardado Reserva', amount: 15000, type: 'variable', created_at: '2026-10-02T14:00:00Z', pluggy_transaction_id: 'plg-6' },
+      { id: 7, name: 'Rendimento Nubank', amount: 150, type: 'income', created_at: '2026-10-03T10:00:00Z', pluggy_transaction_id: 'plg-7' },
+      { id: 8, name: 'Rendimento Inter', amount: 250, type: 'income', created_at: '2026-10-04T10:00:00Z', pluggy_transaction_id: 'plg-8' },
       { id: 9, name: 'Supermercado', amount: 20000, type: 'expense', created_at: '2026-10-05T10:00:00Z' },
+      // Lançamento manual do usuário (sem pluggy_transaction_id): NÃO deve ser descartado
+      { id: 10, name: 'Cofrinho com meu amor', amount: 20000, type: 'variable', created_at: '2026-10-05T10:00:00Z', pluggy_transaction_id: null },
     ];
 
     const result = consolidateMonthlyTransactions(raw as TransactionRow[], '2026-9');
     
-    // Deve conter apenas 2 itens: Supermercado e Rendimentos consolidado (todos os 6 de cofrinho descartados)
-    expect(result).toHaveLength(2);
+    // Deve conter 3 itens: Supermercado, Cofrinho com meu amor (manual) e Rendimentos consolidado
+    expect(result).toHaveLength(3);
+    expect(result.some(t => t.name === 'Cofrinho com meu amor')).toBe(true);
+    expect(result.some(t => t.name === 'Supermercado')).toBe(true);
     
     const consolidatedYield = result.find(t => t.is_consolidated);
     expect(consolidatedYield).toBeDefined();

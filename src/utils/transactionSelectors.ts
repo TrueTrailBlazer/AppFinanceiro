@@ -41,8 +41,9 @@ export function consolidateMonthlyTransactions(
 
   for (const t of rawTransactions) {
     const name = t.name || '';
-    // Não contabiliza movimentações internas de cofrinho / reservas
-    if (isInternalReserveTransaction(name)) {
+    // Não contabiliza movimentações internas de cofrinho / reservas vindas do banco (Open Finance)
+    // Lançamentos manuais planejados pelo próprio usuário nunca devem ser descartados
+    if (Boolean(t.pluggy_transaction_id) && isInternalReserveTransaction(name)) {
       continue;
     }
     if (name.toLowerCase().includes('rendimento')) {
