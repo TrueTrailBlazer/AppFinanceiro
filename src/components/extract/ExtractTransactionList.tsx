@@ -1,6 +1,5 @@
 import { getCategory } from '../../utils/constants';
 import { formatCurrency } from '../../utils/money';
-import { formatLocalDate } from '../../utils/date';
 import type { DisplayTransaction } from '../../types/models';
 
 function getTransactionIcon(t: DisplayTransaction): string {
@@ -89,14 +88,6 @@ export default function ExtractTransactionList({
                               <span className="text-slate-300 text-[10px]">•</span>
                               <span className="text-[11px] text-slate-400 italic truncate max-w-[140px]" title={t.notes}>
                                 {t.notes}
-                              </span>
-                            </>
-                          )}
-                          {t.due_date && (
-                            <>
-                              <span className="text-slate-300 text-[10px]">•</span>
-                              <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
-                                Vence: {formatLocalDate(t.due_date, { day: '2-digit', month: 'short' })}
                               </span>
                             </>
                           )}
