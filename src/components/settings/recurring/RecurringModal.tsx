@@ -35,15 +35,15 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background/95 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background animate-in slide-in-from-bottom-10 duration-300 md:flex-initial md:rounded-3xl md:border md:border-border max-h-[100dvh]">
+    <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex flex-col justify-end md:justify-center md:items-center">
+      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-white animate-in slide-in-from-bottom-10 duration-300 md:flex-initial md:rounded-3xl md:border md:border-slate-200 max-h-[100dvh]">
         
-        <div className="px-5 py-5 border-b border-border text-center bg-card flex items-center justify-between shrink-0">
+        <div className="px-5 py-5 border-b border-slate-200 text-center bg-white flex items-center justify-between shrink-0">
           <div className="w-8" />
-          <h2 className="text-lg font-bold text-foreground">
+          <h2 className="text-lg font-bold text-slate-900">
             {editingExpense ? 'Editar Despesa' : 'Nova Despesa'}
           </h2>
-          <button onClick={onClose} className="text-gray-500 p-1 hover:text-foreground transition-colors" type="button" aria-label="Fechar modal">
+          <button onClick={onClose} className="text-slate-500 p-1 hover:text-slate-900 transition-colors" type="button" aria-label="Fechar modal">
             <X size={20} />
           </button>
         </div>
@@ -51,10 +51,10 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
         <div className="flex-1 overflow-y-auto p-5 pb-8">
           <form id="recurring-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-6">
-              <div className="relative bg-card-hover rounded-xl p-4 border border-border focus-within:border-blue-500 transition-all shadow-inner">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Valor da Conta</label>
+              <div className="relative bg-slate-50 rounded-xl p-4 border border-slate-200 focus-within:border-emerald-500 transition-all shadow-inner">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Valor da Conta</label>
                 <div className="flex items-center">
-                  <span className="text-xl mr-2 font-medium text-blue-500">R$</span>
+                  <span className="text-xl mr-2 font-medium text-emerald-700">R$</span>
                   <input
                     type="text" 
                     inputMode="numeric"
@@ -71,25 +71,25 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
                       setDisplayAmount(formatCents(cents, false));
                     }}
                     placeholder="0,00"
-                    className="w-full bg-transparent text-4xl font-black text-foreground placeholder-gray-800 outline-none"
+                    className="w-full bg-transparent text-4xl font-black text-slate-900 placeholder-slate-300 outline-none"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5 ml-1"><Type size={12}/> Nome da Conta</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5 ml-1"><Type size={12}/> Nome da Conta</label>
                 <input 
                   type="text" 
                   placeholder="Ex: Netflix, Aluguel, Internet..." 
                   value={newName} 
                   onChange={e => setNewName(e.target.value)} 
                   autoFocus
-                  className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-medium shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-900 outline-none focus:border-emerald-500 transition-all font-medium shadow-sm"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1.5 ml-1"><Calendar size={12}/> Dia de Vencimento (1 a 31)</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5 ml-1"><Calendar size={12}/> Dia de Vencimento (1 a 31)</label>
                 <input 
                   type="text" 
                   inputMode="numeric" 
@@ -102,14 +102,14 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
                       setNewDay(val);
                     }
                   }}
-                  className="w-full bg-card-hover border border-border rounded-xl px-4 py-3.5 text-sm text-foreground outline-none focus:border-blue-500 transition-all font-bold shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-900 outline-none focus:border-emerald-500 transition-all font-bold shadow-sm"
                 />
-                <span className="text-[9px] text-gray-600 block ml-1">Lançaremos automaticamente neste dia todo mês.</span>
+                <span className="text-[9px] text-slate-500 block ml-1">Lançaremos automaticamente neste dia todo mês.</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 block tracking-wider">Selecione o Ícone</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 block tracking-wider">Selecione o Ícone</label>
               <div className="grid grid-cols-4 gap-2">
                 {Object.entries(CATEGORIES)
                   .filter(([k]) => !['salary', 'investment', 'extra'].includes(k))
@@ -122,11 +122,11 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
                         onClick={() => setNewCategory(key)}
                         className={`relative p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5
                         ${isSelected 
-                          ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.2)]' 
-                          : 'bg-card border-border opacity-60 hover:opacity-100'}`}
+                          ? 'bg-emerald-50 border-emerald-500 ' 
+                          : 'bg-white border-slate-200 opacity-60 hover:opacity-100'}`}
                       >
-                        <cat.icon size={18} className={isSelected ? 'text-blue-400' : 'text-gray-400'} />
-                        <span className={`text-[8px] font-black uppercase tracking-tight truncate max-w-full ${isSelected ? 'text-foreground' : 'text-gray-600'}`}>{cat.label}</span>
+                        <cat.icon size={18} className={isSelected ? 'text-emerald-700' : 'text-slate-500'} />
+                        <span className={`text-[8px] font-black uppercase tracking-tight truncate max-w-full ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{cat.label}</span>
                       </button>
                     );
                   })}
@@ -135,8 +135,8 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
           </form>
         </div>
 
-        <div className="p-4 pb-8 bg-card border-t border-border shrink-0 flex gap-3 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-          <button type="button" onClick={onClose} className="flex-1 px-5 py-4 rounded-xl border border-border-strong text-gray-500 dark:text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center">
+        <div className="p-4 pb-8 bg-white border-t border-slate-200 shrink-0 flex gap-3 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+          <button type="button" onClick={onClose} className="flex-1 px-5 py-4 rounded-xl border border-slate-300 text-slate-500 dark:text-slate-500 font-bold hover:bg-slate-100 active:scale-95 transition-all text-center">
             Cancelar
           </button>
           
@@ -144,7 +144,7 @@ export function RecurringModal({ isOpen, onClose, editingExpense, onSave }: Recu
             type="submit" 
             form="recurring-form" 
             disabled={!newName || !amountCents || !newDay}
-            className="flex-[2] bg-blue-600 disabled:bg-blue-600/40 disabled:text-white/90 hover:bg-blue-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg disabled:shadow-none active:scale-95 transition-all tracking-wide"
+            className="flex-[2] bg-emerald-600 disabled:bg-emerald-600/40 disabled:text-white/90 hover:bg-emerald-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg disabled:shadow-none active:scale-95 transition-all tracking-wide"
           >
             Salvar Despesa
           </button>

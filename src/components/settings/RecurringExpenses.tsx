@@ -13,6 +13,8 @@ import { useDate } from '../../contexts/DateContext';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { parseCents } from '../../utils/money';
+import { getLocalDateString } from '../../utils/date';
+import { SettingsHeader } from './SettingsHeader';
 import { RecurringHero } from './recurring/RecurringHero';
 import { RecurringList } from './recurring/RecurringList';
 import { RecurringModal } from './recurring/RecurringModal';
@@ -124,7 +126,8 @@ export function RecurringExpenses({ onBack }: RecurringExpensesProps) {
           type: 'variable',
           category: item.category,
           is_paid: false,
-          created_at: date.toISOString()
+          created_at: date.toISOString(),
+          due_date: getLocalDateString(date)
         };
       });
 
@@ -149,52 +152,41 @@ export function RecurringExpenses({ onBack }: RecurringExpensesProps) {
   const totalFixed = useMemo(() => recurring.reduce((acc, item) => acc + parseCents(item.amount), 0), [recurring]);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-start h-[100dvh] overflow-hidden animate-in fade-in duration-300">
-      
-      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background overflow-hidden relative shadow-2xl">
-        
-        {/* Header Minimalista */}
-        <div className="flex items-center justify-between py-5 px-5 bg-card border-b border-border shrink-0">
-          <h1 className="text-lg font-bold text-foreground tracking-tight text-left">Despesas Fixas</h1>
-          <button 
+    <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300 pt-1 pb-8">
+      <SettingsHeader
+        title="Despesas Fixas"
+        onBack={onBack}
+        action={
+          <button
             onClick={() => { setEditingExpense(null); setIsModalOpen(true); }}
-            className="flex items-center gap-1.5 bg-blue-600/10 text-blue-500 hover:text-foreground hover:bg-blue-600 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl transition-all active:scale-95 text-xs font-bold shadow-sm shrink-0"
             type="button"
           >
             <Plus size={16} /> Nova
           </button>
-        </div>
+        }
+      />
 
-        {/* List Content */}
-        <div className="flex-1 overflow-y-auto py-4 px-2 custom-scrollbar">
-          <RecurringHero 
-            totalFixed={totalFixed} 
-            isGenerating={isGenerating} 
-            onGenerate={generateMonthExpenses} 
-          />
+      <p className="text-[12px] text-slate-500 -mt-2 mb-4 px-1">
+        Contas que se repetem todo mês. Cadastre uma vez e lance todas de uma vez a cada mês.
+      </p>
 
-          <RecurringList 
-            recurring={recurring} 
-            loading={loading} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete} 
-          />
-        </div>
+      <RecurringHero
+        totalFixed={totalFixed}
+        isGenerating={isGenerating}
+        onGenerate={generateMonthExpenses}
+        monthTitle={monthTitle}
+      />
 
-        {/* Footer Voltar - Estilo Unificado */}
-        <div className="p-4 pb-8 bg-card border-t border-border shrink-0 w-full shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-          <button 
-            onClick={onBack} 
-            className="w-full px-5 py-4 rounded-xl border border-border-strong text-foreground/70 hover:text-foreground font-bold hover:bg-border active:scale-95 transition-all text-center tracking-wide"
-            type="button"
-          >
-            Voltar
-          </button>
-        </div>
-      </div>
+      <RecurringList
+        recurring={recurring}
+        loading={loading}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
 
       {isModalOpen && (
-        <RecurringModal 
+        <RecurringModal
           key={editingExpense?.id || 'new'}
           isOpen={true}
           onClose={() => setIsModalOpen(false)}

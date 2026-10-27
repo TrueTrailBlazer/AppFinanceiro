@@ -3,6 +3,7 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Camera, User, Loader2, Save } from 'lucide-react';
+import { SettingsHeader } from './SettingsHeader';
 
 export interface ProfileSettingsProps {
   onBack: () => void;
@@ -115,114 +116,84 @@ export function ProfileSettings({ onBack }: ProfileSettingsProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col md:relative md:inset-auto md:z-auto md:bg-transparent md:justify-center md:items-center animate-in slide-in-from-right-4 duration-300">
-      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background md:flex-initial md:h-auto md:max-h-[85vh] md:rounded-3xl md:border md:border-border md:shadow-2xl overflow-hidden relative">
-        {/* Header */}
-        <div className="px-5 py-5 border-b border-border text-center bg-card shrink-0">
-          <h2 className="text-lg font-bold text-foreground">Editar Perfil</h2>
-        </div>
+    <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300 pt-1 pb-8">
+      <SettingsHeader title="Meu Perfil" onBack={onBack} />
 
-        {/* Conteúdo */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <form id="profile-form" onSubmit={handleSave} className="space-y-8 flex flex-col items-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-full bg-card border-2 border-border overflow-hidden flex items-center justify-center relative shadow-2xl">
-                  {avatarPreview ? (
-                    <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={48} className="text-gray-600" />
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    aria-label="Alterar foto"
-                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Camera className="text-foreground" size={24} />
-                  </button>
-                </div>
-
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                  className="hidden"
-                  accept="image/*"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  aria-label="Tirar foto"
-                  className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-foreground shadow-lg active:scale-90 transition-transform md:hidden"
-                >
-                  <Camera size={16} />
-                </button>
-              </div>
-
-              {avatarPreview && (
-                <button
-                  type="button"
-                  onClick={handleDeletePhoto}
-                  className="text-[10px] font-bold text-red-500 uppercase tracking-wider hover:text-red-400 py-1 px-3 rounded-lg hover:bg-red-500/10 active:scale-95 transition-all"
-                >
-                  Remover Foto
-                </button>
+      <form id="profile-form" onSubmit={handleSave} className="bg-white rounded-3xl p-6 shadow-sm border border-border-subtle space-y-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            <div className="w-28 h-28 rounded-full bg-slate-100 border border-border-subtle overflow-hidden flex items-center justify-center">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <User size={44} className="text-slate-400" />
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Alterar foto"
+              className="absolute bottom-0 right-0 bg-emerald-600 hover:bg-emerald-700 p-2.5 rounded-full text-white shadow-md active:scale-90 transition-all"
+            >
+              <Camera size={16} />
+            </button>
+          </div>
 
-            {/* Campos */}
-            <div className="w-full space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Seu Nome</label>
-                <div className="relative bg-card-hover rounded-xl border border-border focus-within:border-blue-500/50 transition-colors">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User size={16} className="text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Como devemos te chamar?"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm text-foreground outline-none font-medium"
-                  />
-                </div>
-              </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            className="hidden"
+            accept="image/*"
+          />
 
-              <div className="space-y-1.5 opacity-50">
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Email (Não editável)</label>
-                <input
-                  type="text"
-                  disabled
-                  value={user?.email || ''}
-                  className="w-full bg-card border border-border rounded-xl px-4 py-3.5 text-sm text-gray-600 cursor-not-allowed"
-                />
+          {avatarPreview && (
+            <button
+              type="button"
+              onClick={handleDeletePhoto}
+              className="text-[12px] font-bold text-rose-600 hover:bg-rose-50 py-1.5 px-3 rounded-lg active:scale-95 transition-all"
+            >
+              Remover foto
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Seu nome</label>
+            <div className="relative bg-slate-50 rounded-xl border border-slate-200 focus-within:border-emerald-500 transition-colors">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User size={16} className="text-slate-400" />
               </div>
+              <input
+                type="text"
+                placeholder="Como devemos te chamar?"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm text-slate-900 outline-none font-medium"
+              />
             </div>
-          </form>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">E-mail (não editável)</label>
+            <input
+              type="text"
+              disabled
+              value={user?.email || ''}
+              className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-500 cursor-not-allowed"
+            />
+          </div>
         </div>
 
-        {/* Footer Action Bar */}
-        <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex-1 px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            form="profile-form"
-            disabled={loading || !name}
-            className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Salvar Alterações</>}
-          </button>
-        </div>
-      </div>
+        <button
+          type="submit"
+          disabled={loading || !name}
+          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        >
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <><Save size={18} /> Salvar alterações</>}
+        </button>
+      </form>
     </div>
   );
 }

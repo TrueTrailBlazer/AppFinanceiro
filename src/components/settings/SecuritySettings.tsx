@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Lock, Check, Eye, EyeOff, ShieldCheck, KeyRound, AlertCircle } from 'lucide-react';
+import { SettingsHeader } from './SettingsHeader';
 
 export interface SecuritySettingsProps {
   onBack: () => void;
@@ -94,88 +95,79 @@ export function SecuritySettings({ onBack, isRecovery = false }: SecuritySetting
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] bg-background animate-in slide-in-from-right-4 duration-300 flex flex-col md:relative md:inset-auto md:z-auto md:overflow-visible">
-      
-      {/* Header Minimalista S/ Botão */}
-      <div className="py-5 px-1 bg-card border-b border-border shrink-0 text-center">
-        <h1 className="text-lg font-bold text-foreground">
-          {isRecovery ? 'Redefinir Senha' : 'Alterar Senha'}
-        </h1>
-      </div>
+  const inputClass = 'w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500 transition-all placeholder-slate-400';
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-2 space-y-6">
-        
+  return (
+    <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300 pt-1 pb-8">
+      <SettingsHeader title={isRecovery ? 'Redefinir Senha' : 'Segurança'} onBack={onBack} />
+
+      <div className="space-y-4">
         {/* Intro */}
-        <div className="bg-card border border-border p-5 rounded-2xl flex gap-4 items-center">
-          <div className="p-3 bg-blue-900/10 text-blue-500 rounded-full shrink-0">
-            <ShieldCheck size={24} />
+        <div className="bg-white border border-border-subtle p-4 rounded-2xl flex gap-4 items-center shadow-sm">
+          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-full shrink-0">
+            <ShieldCheck size={22} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">
-              {isRecovery ? 'Redefinição de Acesso' : 'Segurança Forte'}
+            <h3 className="text-sm font-bold text-slate-900">
+              {isRecovery ? 'Redefinição de acesso' : 'Alterar senha de acesso'}
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {isRecovery 
-                ? 'Crie uma nova senha segura para redefinir o acesso à sua conta.' 
-                : 'Preencha os dados abaixo para atualizar sua credencial de acesso.'}
+            <p className="text-xs text-slate-500 mt-0.5">
+              {isRecovery
+                ? 'Crie uma nova senha segura para redefinir o acesso à sua conta.'
+                : 'Preencha os dados abaixo para atualizar sua senha.'}
             </p>
           </div>
         </div>
 
-        <form id="security-form" onSubmit={handleUpdatePassword} className="space-y-5 pb-8">
-          
+        <form onSubmit={handleUpdatePassword} className="bg-white border border-border-subtle rounded-3xl p-5 shadow-sm space-y-5">
+
           {/* Senha Atual (apenas quando não estiver em fluxo de recuperação) */}
           {!isRecovery && (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Senha Atual</label>
-                <div className="relative">
-                  <KeyRound size={16} className="absolute left-3 top-3.5 text-gray-500" />
-                  <input 
-                    type={showPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Digite sua senha atual"
-                    className="w-full bg-card-hover border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all placeholder-gray-600"
-                  />
-                </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Senha atual</label>
+              <div className="relative">
+                <KeyRound size={16} className="absolute left-3 top-3.5 text-slate-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                  className={inputClass}
+                />
               </div>
-
-              <div className="h-px bg-border my-2"></div>
-            </>
+            </div>
           )}
 
           {/* Nova Senha */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nova Senha</label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Nova senha</label>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
-              <input 
+              <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
+              <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Crie uma nova senha"
-                className="w-full bg-card-hover border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-foreground outline-none focus:border-blue-500 transition-all placeholder-gray-600"
+                className={inputClass}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
-                className="absolute right-3 top-3 text-gray-500 hover:text-foreground"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-700"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Checklist de Validação (Feedback Visual) */}
-          <div className="bg-card p-3 rounded-xl border border-border grid grid-cols-1 gap-2">
+          {/* Checklist de Validação */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-1 gap-2">
             {validations.map((v, i) => {
               const isValid = v.test(password);
               return (
-                <div key={i} className={`flex items-center gap-2 text-[11px] transition-colors ${isValid ? 'text-green-500 font-bold' : 'text-gray-500'}`}>
-                  {isValid ? <Check size={14} /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-600" />}
+                <div key={i} className={`flex items-center gap-2 text-[12px] transition-colors ${isValid ? 'text-emerald-700 font-bold' : 'text-slate-500'}`}>
+                  {isValid ? <Check size={14} /> : <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />}
                   <span>{v.label}</span>
                 </div>
               );
@@ -184,49 +176,35 @@ export function SecuritySettings({ onBack, isRecovery = false }: SecuritySetting
 
           {/* Confirmar */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Confirmar Nova Senha</label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Confirmar nova senha</label>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
-              <input 
-                type={showPassword ? 'text' : 'password'} 
+              <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repita a nova senha"
-                className={`w-full bg-card-hover border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-foreground outline-none transition-all placeholder-gray-600
-                  ${confirmPassword && password !== confirmPassword ? 'border-red-500/50 focus:border-red-500' : 'focus:border-blue-500'}
-                `}
+                className={`${inputClass} ${confirmPassword && password !== confirmPassword ? '!border-rose-400' : ''}`}
               />
             </div>
           </div>
 
           {/* Feedback Final */}
           {message && (
-            <div className={`p-4 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 ${message.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+            <div className={`p-4 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
               {message.type === 'success' ? <ShieldCheck size={18}/> : <AlertCircle size={18}/>}
               {message.text}
             </div>
           )}
-        </form>
-      </div>
 
-      {/* FOOTER LISTA - Thumb Zone */}
-      <div className="p-4 pb-8 md:pb-4 border-t border-border bg-card shrink-0 flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-10 sticky bottom-0">
-        <button 
-          type="button" 
-          onClick={onBack} 
-          className="px-5 py-3.5 rounded-xl border border-border-strong text-gray-300 font-bold hover:bg-border active:scale-95 transition-all text-center flex-1 md:flex-none"
-        >
-          Voltar
-        </button>
-        
-        <button 
-          type="submit" 
-          form="security-form"
-          disabled={loading || !isPasswordValid || password !== confirmPassword || (!isRecovery && !currentPassword)}
-          className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
-        >
-          {loading ? 'Validando...' : (isRecovery ? 'Redefinir Senha' : 'Salvar Senha')}
-        </button>
+          <button
+            type="submit"
+            disabled={loading || !isPasswordValid || password !== confirmPassword || (!isRecovery && !currentPassword)}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-sm active:scale-[0.98] transition-all"
+          >
+            {loading ? 'Validando...' : (isRecovery ? 'Redefinir senha' : 'Salvar senha')}
+          </button>
+        </form>
       </div>
     </div>
   );

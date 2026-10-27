@@ -78,15 +78,22 @@ export function AppLayout() {
               <h1 className="text-lg font-bold text-slate-900 tracking-tight">
                 {location.pathname === '/bills' ? 'Contas a Pagar' : 
                  location.pathname === '/extract' ? 'Extrato Bancário' : 
-                 location.pathname === '/analysis' ? 'Análise' : 'App Financeiro'}
+                 location.pathname === '/analysis' ? 'Análise' :
+                 location.pathname === '/settings' ? 'Configurações' : 'App Financeiro'}
               </h1>
             )}
           </div>
 
-          {/* Settings Action Button */}
-          <button onClick={() => navigate('/settings')} aria-label="Configurações" className="w-10 h-10 rounded-full bg-white border border-border-subtle flex items-center justify-center text-on-surface-variant hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-sm" type="button">
-            <span className="material-symbols-outlined text-[20px]">settings</span>
-          </button>
+          {/* Settings / Back Action Button */}
+          {location.pathname === '/settings' ? (
+            <button onClick={() => navigate('/')} aria-label="Voltar para o início" className="w-10 h-10 rounded-full bg-white border border-border-subtle flex items-center justify-center text-on-surface-variant hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-sm" type="button">
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          ) : (
+            <button onClick={() => navigate('/settings')} aria-label="Configurações" className="w-10 h-10 rounded-full bg-white border border-border-subtle flex items-center justify-center text-on-surface-variant hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-sm" type="button">
+              <span className="material-symbols-outlined text-[20px]">settings</span>
+            </button>
+          )}
         </div>
       </header>
 

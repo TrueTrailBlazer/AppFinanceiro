@@ -3,8 +3,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { 
   Building2, Plus, RefreshCw, Trash2, 
-  ArrowLeft, ShieldCheck, Loader2 
+  ShieldCheck, Loader2 
 } from 'lucide-react';
+import { SettingsHeader } from './SettingsHeader';
 import { 
   fetchConnectToken, 
   fetchUserPluggyItems, 
@@ -156,8 +157,8 @@ export function BankConnections({ onBack }: BankConnectionsProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-start h-[100dvh] overflow-hidden animate-in fade-in duration-300">
-      
+    <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300 pt-1 pb-8">
+
       {/* Widget oficial Pluggy Connect quando o token é gerado */}
       {connectToken && (
         <PluggyConnect
@@ -169,157 +170,133 @@ export function BankConnections({ onBack }: BankConnectionsProps) {
         />
       )}
 
-      <div className="flex-1 w-full flex flex-col max-w-md mx-auto bg-background overflow-hidden relative shadow-2xl">
-        
-        {/* Header Minimalista */}
-        <div className="flex items-center justify-between py-5 px-5 bg-card border-b border-border shrink-0">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={onBack}
-              aria-label="Voltar"
-              className="p-2 -ml-2 rounded-full hover:bg-card-hover text-foreground transition-all"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Contas Bancárias</h1>
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md border border-blue-500/20">
+      <SettingsHeader
+        title="Contas Bancárias"
+        onBack={onBack}
+        action={
+          <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md border border-emerald-200 shrink-0">
             Open Finance
           </span>
-        </div>
+        }
+      />
 
+      <div className="space-y-4">
         {/* Banner de Segurança */}
-        <div className="p-4 mx-4 mt-4 bg-card border border-border rounded-2xl flex flex-col gap-2.5">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl shrink-0 mt-0.5">
-              <ShieldCheck size={18} />
-            </div>
-            <div className="text-xs text-foreground/80 leading-relaxed">
-              <p className="font-semibold text-foreground">Conexão Segura e Criptografada</p>
-              <p className="text-gray-500 text-[11px] mt-0.5">
-                Seus dados são sincronizados em modo somente-leitura através do ecossistema Open Finance regulamentado pelo Banco Central.
-              </p>
-            </div>
+        <div className="p-4 bg-white border border-border-subtle rounded-2xl flex items-start gap-3 shadow-sm">
+          <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl shrink-0">
+            <ShieldCheck size={18} />
           </div>
-          <div className="pt-2 border-t border-border/60 text-[11px] text-gray-400 flex items-center gap-2 font-medium">
-            <span className="text-foreground font-semibold">Instrução:</span>
-            <span>Conecte suas contas em <b>meu.pluggy.ai</b> e escolha o conector <b>MeuPluggy</b> no widget.</span>
+          <div className="text-xs leading-relaxed">
+            <p className="font-bold text-slate-900">Conexão segura</p>
+            <p className="text-slate-500 text-[12px] mt-0.5">
+              Seus dados são lidos em modo somente leitura pelo Open Finance, regulamentado pelo Banco Central.
+            </p>
           </div>
         </div>
 
-        {/* Conteúdo com Scroll */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-3">
-              <Loader2 className="animate-spin text-blue-500" size={28} />
-              <p className="text-xs font-medium">Buscando contas bancárias...</p>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
+            <Loader2 className="animate-spin text-emerald-600" size={28} />
+            <p className="text-xs font-medium">Buscando contas bancárias...</p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-8 text-center flex flex-col items-center justify-center my-2">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 mb-4">
+              <Building2 size={28} />
             </div>
-          ) : items.length === 0 ? (
-            <div className="bg-card border border-border border-dashed rounded-3xl p-8 text-center flex flex-col items-center justify-center my-6">
-              <div className="w-16 h-16 rounded-2xl bg-card-hover border border-border flex items-center justify-center text-blue-500 mb-4 shadow-inner">
-                <Building2 size={28} />
-              </div>
-              <h3 className="font-bold text-foreground text-sm mb-1">Nenhum banco conectado</h3>
-              <p className="text-xs text-gray-500 max-w-[240px] mb-6">
-                Conecte seu banco via Pluggy para que seus gastos e rendimentos caiam automaticamente no seu extrato.
-              </p>
-              <button
-                onClick={handleStartConnect}
-                disabled={connecting}
-                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
-              >
-                {connecting ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-                {connecting ? 'Iniciando Pluggy...' : 'Conectar Meu Primeiro Banco'}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                  Instituições Conectadas ({items.length})
-                </h2>
-              </div>
-
-              {items.map((item) => {
-                const isSyncing = syncingItemId === item.item_id;
-                const lastSync = item.last_sync_at 
-                  ? new Date(item.last_sync_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                  : 'Nunca';
-
-                return (
-                  <div 
-                    key={item.id}
-                    className="p-4 bg-card border border-border rounded-2xl flex flex-col gap-3 shadow-sm hover:border-border/80 transition-all"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {item.connector_image_url ? (
-                          <img 
-                            src={item.connector_image_url} 
-                            alt={item.connector_name || 'Banco'} 
-                            className="w-10 h-10 rounded-xl object-contain bg-card-hover p-1 border border-border"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20">
-                            <Building2 size={20} />
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-bold text-foreground text-sm">{item.connector_name || 'Banco Conectado'}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Conectado
-                            </span>
-                            <span className="text-[10px] text-gray-500">• Último sync: {lastSync}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleDeleteItem(item.item_id, item.connector_name)}
-                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                        title="Desconectar instituição"
-                        aria-label="Desconectar instituição"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-
-                    {/* Botão de sincronização sob demanda */}
-                    <div className="pt-2 border-t border-border flex items-center justify-between">
-                      <span className="text-[10px] text-gray-500">Extrato automático ativado</span>
-                      <button
-                        onClick={() => handleSyncItem(item.item_id, item.connector_name)}
-                        disabled={isSyncing}
-                        className="flex items-center gap-1.5 py-1.5 px-3 bg-card-hover hover:bg-card-hover/80 text-foreground text-xs font-semibold rounded-xl border border-border transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        <RefreshCw size={13} className={isSyncing ? 'animate-spin text-blue-500' : 'text-gray-400'} />
-                        {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-        </div>
-
-        {/* Footer com botão de adicionar caso já tenha bancos */}
-        {items.length > 0 && (
-          <div className="p-4 border-t border-border bg-card/50 backdrop-blur-md shrink-0">
+            <h3 className="font-bold text-slate-900 text-sm mb-1">Nenhum banco conectado</h3>
+            <p className="text-xs text-slate-500 max-w-[240px] mb-6">
+              Conecte seu banco para que seus gastos e rendimentos caiam automaticamente no extrato.
+            </p>
             <button
               onClick={handleStartConnect}
               disabled={connecting}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+              type="button"
+            >
+              {connecting ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+              {connecting ? 'Iniciando...' : 'Conectar meu banco'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">
+              Instituições conectadas ({items.length})
+            </h2>
+
+            {items.map((item) => {
+              const isSyncing = syncingItemId === item.item_id;
+              const lastSync = item.last_sync_at
+                ? new Date(item.last_sync_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                : 'Nunca';
+
+              return (
+                <div
+                  key={item.id}
+                  className="p-4 bg-white border border-border-subtle rounded-2xl flex flex-col gap-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {item.connector_image_url ? (
+                        <img
+                          src={item.connector_image_url}
+                          alt={item.connector_name || 'Banco'}
+                          className="w-10 h-10 rounded-xl object-contain bg-slate-50 p-1 border border-slate-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                          <Building2 size={20} />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 text-sm truncate">{item.connector_name || 'Banco conectado'}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Conectado
+                          </span>
+                          <span className="text-[11px] text-slate-500">• Última sincronização: {lastSync}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteItem(item.item_id, item.connector_name)}
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all shrink-0"
+                      title="Desconectar instituição"
+                      aria-label="Desconectar instituição"
+                      type="button"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500">Extrato automático ativado</span>
+                    <button
+                      onClick={() => handleSyncItem(item.item_id, item.connector_name)}
+                      disabled={isSyncing}
+                      className="flex items-center gap-1.5 py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl border border-slate-200 transition-all active:scale-95 disabled:opacity-50"
+                      type="button"
+                    >
+                      <RefreshCw size={13} className={isSyncing ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
+                      {isSyncing ? 'Sincronizando...' : 'Sincronizar agora'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            <button
+              onClick={handleStartConnect}
+              disabled={connecting}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm rounded-2xl transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+              type="button"
             >
               {connecting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-              {connecting ? 'Iniciando Pluggy...' : 'Conectar Outra Conta Bancária'}
+              {connecting ? 'Iniciando...' : 'Conectar outra conta'}
             </button>
           </div>
         )}
-
       </div>
     </div>
   );
