@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     // 1. Autenticação na Pluggy e prevenção estrita de IDOR
     const { data: existingItem } = await supabaseClient
       .from('pluggy_items')
-      .select('user_id')
+      .select('user_id, last_sync_at')
       .eq('item_id', itemId)
       .maybeSingle();
 
@@ -129,10 +129,18 @@ Deno.serve(async (req) => {
     let totalReconciled = 0;
     const failedAccountIds = new Set<string>();
 
-    // 4. Para cada conta, busca as transações (últimos 90 dias se for o primeiro sync)
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    const fromDateIso = ninetyDaysAgo.toISOString().split('T')[0];
+    // 4. Determina período de sincronização:
+    // Se o item já tiver sido sincronizado anteriormente, busca a partir de last_sync_at - 3 dias (margem de compensação)
+    // Se for o primeiro sync do item, busca os últimos 90 dias
+    let fromDate: Date;
+    if (existingItem?.last_sync_at) {
+      fromDate = new Date(existingItem.last_sync_at);
+      fromDate.setDate(fromDate.getDate() - 3);
+    } else {
+      fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - 90);
+    }
+    const fromDateIso = fromDate.toISOString().split('T')[0];
 
     for (const acc of accounts || []) {
       let nextCursor: string | null = null;

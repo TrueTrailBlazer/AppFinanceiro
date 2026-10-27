@@ -39,8 +39,20 @@ Deno.serve(async (req) => {
   try {
     const webhookSecret = Deno.env.get('PLUGGY_WEBHOOK_SECRET');
     const headerSecret = req.headers.get('x-webhook-secret');
-    if (!webhookSecret || !headerSecret || headerSecret !== webhookSecret) {
-      console.error('[Pluggy Webhook] Acesso não autorizado: Header x-webhook-secret inválido ou segredo do webhook não configurado no servidor.');
+    if (!webhookSecret || !headerSecret) {
+      console.error('[Pluggy Webhook] Acesso não autorizado: Header x-webhook-secret ausente ou segredo não configurado.');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const a = new TextEncoder().encode(headerSecret);
+    const b = new TextEncoder().encode(webhookSecret);
+    const isTimingSafeMatch = a.byteLength === b.byteLength && crypto.subtle.timingSafeEqual(a, b);
+
+    if (!isTimingSafeMatch) {
+      console.error('[Pluggy Webhook] Acesso não autorizado: Header x-webhook-secret inválido.');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
