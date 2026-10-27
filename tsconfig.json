@@ -16,5 +16,5 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "node"]
   },
-  "include": ["src"]
+  "include": ["src", "supabase/functions/_shared"]
 }

@@ -1,5 +1,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { matchBillsToBankTransactions } from '../_shared/reconcile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,6 +126,8 @@ Deno.serve(async (req) => {
 
     const { results: accounts } = await accountsRes.json();
     let totalImported = 0;
+    let totalReconciled = 0;
+    const failedAccountIds = new Set<string>();
 
     // 4. Para cada conta, busca as transações (últimos 90 dias se for o primeiro sync)
     const ninetyDaysAgo = new Date();
@@ -146,6 +149,7 @@ Deno.serve(async (req) => {
         if (!txRes.ok) {
           const errText = await txRes.text();
           console.error(`[Pluggy Sync] Falha ao buscar transações da conta ${acc.id}:`, errText);
+          failedAccountIds.add(acc.id);
           break;
         }
 
@@ -195,52 +199,36 @@ Deno.serve(async (req) => {
             .upsert(transactionsToUpsert, { onConflict: 'pluggy_transaction_id', ignoreDuplicates: true })
             .select();
 
-          if (!upsertErr) {
-            totalImported += insertedData?.length || 0;
+          if (upsertErr) {
+            console.error(`[Pluggy Sync] Falha ao gravar transações da conta ${acc.id}:`, upsertErr.message);
+            failedAccountIds.add(acc.id);
+          } else {
+            const newlyInserted = insertedData || [];
+            totalImported += newlyInserted.length;
 
-            // --- ETAPA 5: CONCILIAÇÃO INTELIGENTE ---
-            // Busca contas pendentes do usuário para tentar dar baixa automática
-            const { data: pendingBills } = await supabaseClient
-              .from('transactions')
-              .select('id, amount, created_at, due_date')
-              .eq('user_id', user.id)
-              .is('pluggy_transaction_id', null)
-              .eq('is_paid', false)
-              .neq('type', 'income');
+            // --- CONCILIAÇÃO INTELIGENTE (somente com transações recém-importadas) ---
+            if (newlyInserted.length > 0) {
+              const { data: pendingBills } = await supabaseClient
+                .from('transactions')
+                .select('id, name, amount, created_at, due_date')
+                .eq('user_id', user.id)
+                .is('pluggy_transaction_id', null)
+                .eq('is_paid', false)
+                .neq('type', 'income');
 
-            if (pendingBills && pendingBills.length > 0) {
-              const idsToMarkAsPaid = new Set<string>();
-
-              for (const tx of transactionsToUpsert) {
-                if (tx.type === 'income') continue;
-
-                const txDate = new Date(tx.created_at).getTime();
-
-                // Procura uma conta pendente que bata o valor (tolerância de até R$ 1,00 / 100 centavos) e a data (± 4 dias)
-                const match = pendingBills.find((bill: any) => {
-                  if (idsToMarkAsPaid.has(bill.id)) return false;
-                  const amountDiff = Math.abs(bill.amount - tx.amount);
-                  if (amountDiff > 100) return false;
-                  
-                  const billDate = new Date(bill.due_date || bill.created_at).getTime();
-                  const diffDays = Math.abs((txDate - billDate) / (1000 * 60 * 60 * 24));
-                  return diffDays <= 4;
-                });
-
-                if (match) {
-                  idsToMarkAsPaid.add(match.id);
+              if (pendingBills && pendingBills.length > 0) {
+                const idsToMarkAsPaid = matchBillsToBankTransactions(newlyInserted, pendingBills);
+                if (idsToMarkAsPaid.length > 0) {
+                  const { error: payErr } = await supabaseClient
+                    .from('transactions')
+                    .update({ is_paid: true })
+                    .eq('user_id', user.id)
+                    .in('id', idsToMarkAsPaid);
+                  if (!payErr) totalReconciled += idsToMarkAsPaid.length;
                 }
               }
-
-              if (idsToMarkAsPaid.size > 0) {
-                // Atualiza as contas pendentes para pagas (baixa automática)
-                await supabaseClient
-                  .from('transactions')
-                  .update({ is_paid: true })
-                  .in('id', Array.from(idsToMarkAsPaid));
-              }
             }
-            // ------------------------------------------
+            // ------------------------------------------------------------------------
           }
         }
 
@@ -249,7 +237,19 @@ Deno.serve(async (req) => {
       } while (nextCursor && pageCount < MAX_PAGES);
     }
 
-    // 5. Atualiza registro na tabela pluggy_items
+    const totalAccounts = (accounts || []).length;
+
+    // Todas as contas falharam: não reportar sucesso
+    if (totalAccounts > 0 && failedAccountIds.size === totalAccounts) {
+      return new Response(JSON.stringify({ error: 'Não foi possível buscar as transações no banco agora. Tente novamente em instantes.' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const isPartial = failedAccountIds.size > 0;
+
+    // 5. Atualiza registro na tabela pluggy_items (só marca "última sincronização" se tudo deu certo)
     await supabaseClient
       .from('pluggy_items')
       .upsert({
@@ -260,10 +260,17 @@ Deno.serve(async (req) => {
         connector_image_url: itemData.connector?.imageUrl || null,
         status: itemData.status || 'UPDATED',
         execution_status: itemData.executionStatus || 'SUCCESS',
-        last_sync_at: new Date().toISOString(),
+        ...(isPartial ? {} : { last_sync_at: new Date().toISOString() }),
       }, { onConflict: 'item_id' });
 
-    return new Response(JSON.stringify({ success: true, totalTransactions: totalImported }), {
+    return new Response(JSON.stringify({
+      success: true,
+      partial: isPartial,
+      failedAccounts: failedAccountIds.size,
+      totalAccounts,
+      totalTransactions: totalImported,
+      reconciledBills: totalReconciled,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

@@ -84,8 +84,15 @@ export function BankConnections({ onBack }: BankConnectionsProps) {
 
       // Dispara sincronização inicial de contas e transações
       const syncResult = await syncPluggyItem(item.id);
-      const total = (syncResult?.totalTransactions as number | undefined) ?? 0;
-      showAlert(`Conexão concluída! ${total} transações importadas para o seu extrato.`, 'success');
+      const total = syncResult?.totalTransactions ?? 0;
+      if (syncResult?.partial) {
+        showAlert(
+          `Conexão concluída, mas a sincronização foi parcial: ${total} transações importadas. Tente sincronizar novamente em instantes.`,
+          'warning'
+        );
+      } else {
+        showAlert(`Conexão concluída! ${total} transações importadas para o seu extrato.`, 'success');
+      }
       await loadItems();
     } catch (syncErr: unknown) {
       const errMsg = syncErr instanceof Error ? syncErr.message : String(syncErr);
@@ -121,9 +128,15 @@ export function BankConnections({ onBack }: BankConnectionsProps) {
     setSyncingItemId(itemId);
     try {
       const result = await syncPluggyItem(itemId);
-      const total = (result?.totalTransactions as number | undefined) ?? 0;
-      if (total > 0) {
-        showAlert(`Sincronização de ${safeName} concluída! ${total} novas transações adicionadas.`, 'success');
+      const total = result?.totalTransactions ?? 0;
+      if (result?.partial) {
+        showAlert(
+          `Sincronização parcial de ${safeName}: algumas contas não responderam. ${total} transações importadas. Tente novamente em instantes.`,
+          'warning'
+        );
+      } else if (total > 0) {
+        const recMsg = result?.reconciledBills ? ` (${result.reconciledBills} contas a pagar baixadas automaticamente)` : '';
+        showAlert(`Sincronização de ${safeName} concluída! ${total} novas transações adicionadas${recMsg}.`, 'success');
       } else {
         showAlert(`Sincronização de ${safeName} concluída! Nenhuma nova movimentação encontrada (seu extrato já está em dia).`, 'info');
       }

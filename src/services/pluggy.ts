@@ -20,6 +20,11 @@ export interface PluggyConnectTokenResponse {
 export interface PluggySyncResponse {
   success?: boolean;
   error?: string;
+  partial?: boolean;
+  failedAccounts?: number;
+  totalAccounts?: number;
+  totalTransactions?: number;
+  reconciledBills?: number;
   [key: string]: unknown;
 }
 

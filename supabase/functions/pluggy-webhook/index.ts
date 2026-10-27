@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { matchBillsToBankTransactions } from '../_shared/reconcile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -179,9 +180,31 @@ Deno.serve(async (req) => {
             });
 
           if (transactionsToUpsert.length > 0) {
-            await supabaseClient
+            const { data: insertedData, error: upsertErr } = await supabaseClient
               .from('transactions')
-              .upsert(transactionsToUpsert, { onConflict: 'pluggy_transaction_id', ignoreDuplicates: true });
+              .upsert(transactionsToUpsert, { onConflict: 'pluggy_transaction_id', ignoreDuplicates: true })
+              .select();
+
+            if (!upsertErr && insertedData && insertedData.length > 0) {
+              const { data: pendingBills } = await supabaseClient
+                .from('transactions')
+                .select('id, name, amount, created_at, due_date')
+                .eq('user_id', userId)
+                .is('pluggy_transaction_id', null)
+                .eq('is_paid', false)
+                .neq('type', 'income');
+
+              if (pendingBills && pendingBills.length > 0) {
+                const idsToMarkAsPaid = matchBillsToBankTransactions(insertedData, pendingBills);
+                if (idsToMarkAsPaid.length > 0) {
+                  await supabaseClient
+                    .from('transactions')
+                    .update({ is_paid: true })
+                    .eq('user_id', userId)
+                    .in('id', idsToMarkAsPaid);
+                }
+              }
+            }
           }
 
           nextCursor = txData.next || null;
